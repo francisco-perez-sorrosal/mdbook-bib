@@ -1,0 +1,19 @@
+{{#if citation_key}}
+
+<div class="bib_div">
+<details data-key="{{citation_key}}" class=ref>
+{{!-- citation --}}
+<summary class=citation>
+<a id="{{citation_key}}">[{{citation_key}}]</a> - {{#if authors}}{{authors}} - {{/if}}{{#if title}}<cite>{{title}}</cite>.{{/if}} - {{#if pub_year}}{{pub_year}}.{{/if}}
+</summary>
+{{!-- summary/abstract --}}
+{{#if summary}}
+<section class=abstract>
+<h1>Summary/Abstract</h1>
+<div>{{summary}}</div>
+</section>
+{{/if}}
+</details>
+</div>
+<div class="hide">Citation key: {{citation_key}}</div>
+{{/if}}
