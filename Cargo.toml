@@ -2,7 +2,7 @@
 name = "mdbook-bib"
 version = "0.0.1"
 authors = ["Francisco Perez-Sorrosal <fperezsorrosal@gmail.com>"]
-keywords = ["book", "gitbook", "rustbook", "markdown", "bibliography", "bib", "plugin", "preprocessor"]
+keywords = ["mdbook", "bibliography", "bib", "plugin", "preprocessor"]
 license = "MPL-2.0"
 readme = "README.md"
 repository = "https://github.com/franciso=perez-sorrosal/mdbook-bib"
