@@ -21,10 +21,11 @@ source root of your book and then add the following configuration to the `book`
 section of the `.toml` config file of your mdbook:
 
 ```toml
+[book]
+...
 [preprocessor.bib]
-<...>
 bibliography = "my_biblio.bib"
-<...>
+renderer = ["html"]
 ```
 
 The bibliography will appear as a separate section in your book ToC. 
