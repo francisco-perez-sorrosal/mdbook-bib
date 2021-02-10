@@ -2,6 +2,7 @@
 name = "mdbook-bib"
 version = "0.0.1"
 authors = ["Francisco Perez-Sorrosal <fperezsorrosal@gmail.com>"]
+description = "mdbook plugin allowing to load and present a bibliography in BibTex format in your books and cite its references"
 keywords = ["mdbook", "bibliography", "bib", "plugin", "preprocessor"]
 license = "MPL-2.0"
 readme = "README.md"
