@@ -3,6 +3,7 @@ extern crate lazy_static;
 
 use std::collections::HashMap;
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -14,6 +15,7 @@ use mdbook::errors::{Error, Result as MdResult};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use nom_bibtex::*;
 use regex::{CaptureMatches, Captures, Regex};
+use reqwest::blocking::Response;
 use serde::{Deserialize, Serialize};
 
 mod file_utils;
@@ -69,35 +71,79 @@ impl BibItem {
     }
 }
 
-/// Load bibliography from file. Gets the references and info created from bibliography.
-pub(crate) fn load_bibliography<P: AsRef<Path>>(
-    biblio_file: P,
-) -> MdResult<HashMap<String, BibItem>> {
+/// Load bibliography from file
+pub(crate) fn load_bibliography<P: AsRef<Path>>(biblio_file: P) -> MdResult<String> {
     log::info!("Loading bibliography from {:?}...", biblio_file.as_ref());
 
     let biblio_file_ext = file_utils::get_filename_extension(biblio_file.as_ref());
     if biblio_file_ext.unwrap_or_default().to_lowercase() != "bib" {
         warn!(
-            "Only bib-based bibliography is supported for now! Yours: {:?}",
+            "Only biblatex-based bibliography is supported for now! Yours: {:?}",
             biblio_file.as_ref()
         );
-        let out: HashMap<String, BibItem> = HashMap::new();
-        return Ok(out);
+        return Ok("".to_string());
     }
+    return Ok(fs::read_to_string(biblio_file)?.to_string());
+}
 
-    let bibtex_content = fs::read_to_string(biblio_file)?.to_string();
+fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
+    let mut biblio_chunk = String::new();
+    let _ = res.read_to_string(&mut biblio_chunk);
+    let link_info_in_header = res.headers().get("link");
+    debug!("Header Link content: {:?}", link_info_in_header);
+    let link_info_as_str = link_info_in_header.unwrap().to_str();
+    return (link_info_as_str.unwrap().to_string(), biblio_chunk);
+}
 
-    let bibtex = Bibtex::parse(&bibtex_content).unwrap();
+/// Download bibliography from Zotero
+pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Error> {
+    let mut url = format!("https://api.zotero.org/users/{}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3", user_id.to_string());
+    info!("Zotero's URL biblio source:\n{:?}", url);
+    let mut res = reqwest::blocking::get(&url)?;
+    if res.status().is_client_error() || res.status().is_client_error() {
+        Err(anyhow!(format!("Error accessing Zotero API {:?}", res.error_for_status())))
+    } else {
+        let (mut link_str, mut bib_content) = extract_biblio_data_and_link_info(&mut res);
+        while link_str.contains("next") {
+            // Extract next chunk URL
+            let next_idx = link_str.find("rel=\"next\"").unwrap();
+            let end_bytes = next_idx - 3; // The > of the "next" link is 3 chars before rel=\"next\" pattern
+            let slice = &link_str[..end_bytes];
+            let start_bytes = slice.rfind("<").unwrap_or(0);
+            url = link_str[(start_bytes + 1)..end_bytes].to_string();
+            info!("Next biblio chunk URL:\n{:?}", url);
+            res = reqwest::blocking::get(&url)?;
+            let (new_link_str, new_bib_part) = extract_biblio_data_and_link_info(&mut res);
+            link_str = new_link_str;
+            bib_content.push_str(&new_bib_part);
+        }
+        Ok(bib_content.to_string())
+    }
+}
 
-    let biblio = bibtex.bibliographies();
+/// Gets the references and info created from bibliography.
+pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String, BibItem>> {
+    log::info!("Building bibliography...");
+
+    // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
+    let biblatex_content = raw_content.replace("\"", "");
+    let bib = Bibtex::parse(&biblatex_content).unwrap();
+
+    let biblio = bib.bibliographies();
     info!("{} bibliography items read", biblio.len());
 
     let bibliography: HashMap<String, BibItem> = biblio
         .into_iter()
         .map(|bib| {
             let tm: HashMap<String, String> = bib.tags().into_iter().map(|t| t.clone()).collect();
-            let mut authors_str = tm.get("author").unwrap().to_string();
+            let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
             authors_str.retain(|c| c != '\n');
+
+            let date_str = tm.get("date").unwrap_or(&"N/A".to_owned()).to_string();
+            let date: Vec<&str> = date_str.split("-").collect();
+            let pub_year = date.get(0).unwrap_or(&"N/A").to_string();
+            let pub_month = date.get(1).unwrap_or(&"N/A").to_string();
+
             let authors: Vec<String> = authors_str
                 .split("and")
                 .map(|a| a.trim().to_string())
@@ -111,8 +157,8 @@ pub(crate) fn load_bibliography<P: AsRef<Path>>(
                         .unwrap_or(&"Not Found".to_owned())
                         .to_string(),
                     authors: authors.join(", "),
-                    pub_month: tm.get("month").unwrap_or(&"N/A".to_owned()).to_string(),
-                    pub_year: tm.get("year").unwrap_or(&"N/A".to_owned()).to_string(),
+                    pub_month,
+                    pub_year,
                     summary: tm.get("abstract").unwrap_or(&"N/A".to_owned()).to_string(),
                 },
             )
@@ -132,29 +178,46 @@ impl Preprocessor for Bibiography {
         info!("Processor Name: {}", self.name());
 
         if let Some(cfg) = ctx.config.get_preprocessor(self.name()) {
-            // Get references and info the bibliography file specified in the config arg "bibliography"
-            // TODO Maybe check the file extension and decide how to process?
-            let bibliography = match cfg.get("bibliography") {
+            // Get references and info the bibliography file specified in the config
+            // arg "bibliography" or in Zotero
+
+            let bib_content = match cfg.get("bibliography") {
                 Some(biblio_file_toml) => {
                     let biblio_file = biblio_file_toml.as_str().unwrap();
                     info!("Bibliography file: {}", biblio_file);
                     let biblio_path = ctx.root.join(Path::new(&biblio_file));
                     if !biblio_path.exists() {
-                        return Err(anyhow!(format!(
+                        Err(anyhow!(format!(
                             "Bibliography file {:?} not found!",
                             biblio_path
-                        )));
+                        )))
+                    } else {
+                        info!("Bibliography path: {}", biblio_path.display());
+                        load_bibliography(biblio_path)
                     }
-                    info!("Bibliography path: {}", biblio_path.display());
-                    load_bibliography(biblio_path)
                 }
                 _ => {
-                    warn!("Bibliography file not specified. Skipping processing of bibliography");
-                    return Ok(book);
+                    warn!("Bibliography file not specified. Trying download from Zotero");
+                    match cfg.get("zotero_user_id") {
+                        Some(uid) => {
+                            let user_id = uid.to_string();
+                            download_bib_from_zotero(user_id)
+                        }
+                        _ => {
+                            warn!("Zotero user id not specified either :(");
+                            Err(anyhow!(format!("Zotero user id not specified either :(")))
+                        }
+                    }
                 }
             };
 
-            info!("Bibliography loaded {:?}", bibliography);
+            if bib_content.is_err() {
+                warn!("Bibliography content couldn't be retrieved. Skipping bibliography processing: {:?}", bib_content.err());
+                return Ok(book);
+            }
+
+            let bibliography = build_bibliography(bib_content?);
+            debug!("Bibliography loaded {:?}", bibliography);
 
             let mut handlebars = Handlebars::new();
             let references_hb = format!("\n\n{}\n\n", BIBLIO_HB);
@@ -178,7 +241,7 @@ impl Preprocessor for Bibiography {
                     format!("{}: {}", err_str, e.to_string())
                 }
             };
-            info!("Generated Bib Content: {:?}", content);
+            debug!("Generated Bib Content: {:?}", content);
 
             let b = bibliography.unwrap().clone();
             book.for_each_mut(|section: &mut BookItem| {
@@ -194,7 +257,7 @@ impl Preprocessor for Bibiography {
                 }
             });
 
-            info!(
+            debug!(
                 "Creating new Bibliography chapter with content: {:?}",
                 content
             );
