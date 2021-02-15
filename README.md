@@ -1,4 +1,6 @@
-# mdbook plugin for adding a Bibliography & Citations
+# mdbook plugin for creating Bibliography & Citations in books
+
+![Crates.io](https://img.shields.io/crates/d/mdbook-bib?style=social&link=https://crates.io/crates/mdbook-bib)
 
 ## Install
 
@@ -34,7 +36,7 @@ renderer = ["html"]
 
 The bibliography will appear as a separate section in your book ToC. 
 
-## Adding a BibLaTex-format Bibliography from Zotero
+## Adding a BibLaTex-format Bibliography from [Zotero](https://www.zotero.org/)
 
 Alternatively, you can download a publicly available library in BibLaTex format from Zotero.
 In order to do so, just specify the `Zotero UserId` of the public bibliography you want to access in the preprocessor 
@@ -43,7 +45,7 @@ section:
 ```toml
 [book]
 #...
-zotero_user_id = <a_Zotero_userID>
+zotero_user_id = __a_Zotero_userID__
 renderer = ["html"]
 ```
 
