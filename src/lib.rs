@@ -17,6 +17,7 @@ use nom_bibtex::*;
 use regex::{CaptureMatches, Captures, Regex};
 use reqwest::blocking::Response;
 use serde::{Deserialize, Serialize};
+use toml::value::Table;
 
 mod file_utils;
 
@@ -29,6 +30,101 @@ pub struct Bibiography;
 impl Bibiography {
     pub fn new() -> Bibiography {
         Bibiography
+    }
+
+    // Get references and info the bibliography file specified in the config
+    // arg "bibliography" or in Zotero
+    fn retrieve_bibliography_content(
+        ctx: &PreprocessorContext,
+        cfg: &Table,
+    ) -> Result<String, Error> {
+        let bib_content = match cfg.get("bibliography") {
+            Some(biblio_file_toml) => {
+                let biblio_file = biblio_file_toml.as_str().unwrap();
+                info!("Bibliography file: {}", biblio_file);
+                let biblio_path = ctx.root.join(Path::new(&biblio_file));
+                if !biblio_path.exists() {
+                    Err(anyhow!(format!(
+                        "Bibliography file {:?} not found!",
+                        biblio_path
+                    )))
+                } else {
+                    info!("Bibliography path: {}", biblio_path.display());
+                    load_bibliography(biblio_path)
+                }
+            }
+            _ => {
+                warn!("Bibliography file not specified. Trying download from Zotero");
+                match cfg.get("zotero_user_id") {
+                    Some(uid) => {
+                        let user_id = uid.to_string();
+                        let bib_str = download_bib_from_zotero(user_id).unwrap_or("".to_owned());
+                        if !bib_str.is_empty() {
+                            let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
+                            info!("Saving Zotero bibliography to {:?}", biblio_path);
+                            let _ = fs::write(biblio_path, bib_str.to_owned());
+                            Ok(bib_str)
+                        } else {
+                            // warn!("Bib content retrieved from Zotero is empty!");
+                            Err(anyhow!("Bib content retrieved from Zotero is empty!"))
+                        }
+                    }
+                    _ => {
+                        // warn!("Zotero user id not specified either :(");
+                        Err(anyhow!(format!("Zotero user id not specified either :(")))
+                    }
+                }
+            }
+        };
+        bib_content
+    }
+
+    fn generate_bibliography_html(bibliography: &HashMap<String, BibItem>) -> String {
+        let mut handlebars = Handlebars::new();
+        let references_hb = format!("\n\n{}\n\n", BIBLIO_HB);
+        handlebars
+            .register_template_string("references", references_hb)
+            .unwrap();
+        debug!("Hanglebars content: {:?}", handlebars);
+
+        let mut content: String = String::from("");
+        for (_key, value) in bibliography {
+            content.push_str(handlebars.render("references", &value).unwrap().as_str());
+        }
+
+        debug!("Generated Bib Content: {:?}", content);
+        content
+    }
+
+    fn expand_cite_references_in_book(book: &mut Book, bibliography: &HashMap<String, BibItem>) {
+        book.for_each_mut(|section: &mut BookItem| {
+            if let BookItem::Chapter(ref mut ch) = *section {
+                if let Some(ref chapter_path) = ch.path {
+                    info!(
+                        "Replacing placeholders({{#cite ..}}) in {}",
+                        chapter_path.as_path().display()
+                    );
+                    let new_content = replace_all_placeholders(&ch.content, &bibliography);
+                    ch.content = new_content;
+                }
+            }
+        });
+    }
+
+    fn create_bibliography_chapter(html_content: String) -> Chapter {
+        debug!(
+            "Creating new Bibliography chapter with content: {:?}",
+            html_content
+        );
+        let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
+        let biblio_content = format!("{}{}", css_style, html_content);
+        let bib_chapter = Chapter::new(
+            "Bibliography",
+            format!("# Bibliography\n{}", biblio_content),
+            PathBuf::from("bibliography.md"),
+            Vec::new(),
+        );
+        bib_chapter
     }
 }
 
@@ -101,7 +197,10 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
     info!("Zotero's URL biblio source:\n{:?}", url);
     let mut res = reqwest::blocking::get(&url)?;
     if res.status().is_client_error() || res.status().is_client_error() {
-        Err(anyhow!(format!("Error accessing Zotero API {:?}", res.error_for_status())))
+        Err(anyhow!(format!(
+            "Error accessing Zotero API {:?}",
+            res.error_for_status()
+        )))
     } else {
         let (mut link_str, mut bib_content) = extract_biblio_data_and_link_info(&mut res);
         while link_str.contains("next") {
@@ -122,7 +221,7 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
 }
 
 /// Gets the references and info created from bibliography.
-pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String, BibItem>> {
+pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String, BibItem>, Error> {
     log::info!("Building bibliography...");
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
@@ -178,97 +277,33 @@ impl Preprocessor for Bibiography {
         info!("Processor Name: {}", self.name());
 
         if let Some(cfg) = ctx.config.get_preprocessor(self.name()) {
-            // Get references and info the bibliography file specified in the config
-            // arg "bibliography" or in Zotero
-
-            let bib_content = match cfg.get("bibliography") {
-                Some(biblio_file_toml) => {
-                    let biblio_file = biblio_file_toml.as_str().unwrap();
-                    info!("Bibliography file: {}", biblio_file);
-                    let biblio_path = ctx.root.join(Path::new(&biblio_file));
-                    if !biblio_path.exists() {
-                        Err(anyhow!(format!(
-                            "Bibliography file {:?} not found!",
-                            biblio_path
-                        )))
-                    } else {
-                        info!("Bibliography path: {}", biblio_path.display());
-                        load_bibliography(biblio_path)
-                    }
-                }
-                _ => {
-                    warn!("Bibliography file not specified. Trying download from Zotero");
-                    match cfg.get("zotero_user_id") {
-                        Some(uid) => {
-                            let user_id = uid.to_string();
-                            download_bib_from_zotero(user_id)
-                        }
-                        _ => {
-                            warn!("Zotero user id not specified either :(");
-                            Err(anyhow!(format!("Zotero user id not specified either :(")))
-                        }
-                    }
-                }
-            };
+            let bib_content = Bibiography::retrieve_bibliography_content(ctx, cfg);
 
             if bib_content.is_err() {
-                warn!("Bibliography content couldn't be retrieved. Skipping bibliography processing: {:?}", bib_content.err());
+                warn!(
+                    "Raw Bibliography content couldn't be retrieved. Skipping processing: {:?}",
+                    bib_content.err()
+                );
                 return Ok(book);
             }
 
             let bibliography = build_bibliography(bib_content?);
-            debug!("Bibliography loaded {:?}", bibliography);
+            if bibliography.is_err() {
+                warn!(
+                    "Error buildig Bibliography from raw content. Skipping render: {:?}",
+                    bibliography.err()
+                );
+                return Ok(book);
+            }
 
-            let mut handlebars = Handlebars::new();
-            let references_hb = format!("\n\n{}\n\n", BIBLIO_HB);
-            handlebars
-                .register_template_string("references", references_hb)
-                .unwrap();
-            debug!("Hanglebars content: {:?}", handlebars);
+            let bib = bibliography.unwrap();
 
-            let content = match &bibliography {
-                Ok(bibliography) => {
-                    let mut rendered: String = String::from("");
-                    for (_key, value) in &*bibliography {
-                        rendered
-                            .push_str(handlebars.render("references", &value).unwrap().as_str());
-                    }
-                    rendered
-                }
-                Err(e) => {
-                    let err_str: String = "Error parsing bibliography".to_owned();
-                    error!("{}", err_str);
-                    format!("{}: {}", err_str, e.to_string())
-                }
-            };
-            debug!("Generated Bib Content: {:?}", content);
+            Bibiography::expand_cite_references_in_book(&mut book, &bib);
 
-            let b = bibliography.unwrap().clone();
-            book.for_each_mut(|section: &mut BookItem| {
-                if let BookItem::Chapter(ref mut ch) = *section {
-                    if let Some(ref chapter_path) = ch.path {
-                        info!(
-                            "Replacing placeholders({{#cite ..}}) in {}",
-                            chapter_path.as_path().display()
-                        );
-                        let new_content = replace_all_placeholders(&ch.content, &b);
-                        ch.content = new_content;
-                    }
-                }
-            });
+            let html_content = Bibiography::generate_bibliography_html(&bib);
 
-            debug!(
-                "Creating new Bibliography chapter with content: {:?}",
-                content
-            );
-            let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
-            let biblio_content = format!("{}{}", css_style, content);
-            let bib_chapter = Chapter::new(
-                "Bibliography",
-                format!("# Bibliography\n{}", biblio_content),
-                PathBuf::from("bibliography.md"),
-                Vec::new(),
-            );
+            let bib_chapter = Bibiography::create_bibliography_chapter(html_content);
+
             book.push_item(bib_chapter);
         }
         Ok(book)
