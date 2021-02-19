@@ -256,10 +256,27 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
             let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
             authors_str.retain(|c| c != '\n');
 
-            let date_str = tm.get("date").unwrap_or(&"N/A".to_owned()).to_string();
-            let date: Vec<&str> = date_str.split('-').collect();
-            let pub_year = date.get(0).unwrap_or(&"N/A").to_string();
-            let pub_month = date.get(1).unwrap_or(&"N/A").to_string();
+            let (pub_year, pub_month) = if let Some(date_str) = tm.get("date") {
+                let mut date = date_str.split('-');
+                let year = date.next().unwrap_or("N/A").to_string();
+                let month = date
+                    .next()
+                    .unwrap_or_else(|| tm.get("month").map(|s| s.as_str()).unwrap_or("N/A"))
+                    .to_string();
+                (year, month)
+            } else {
+                let year = tm
+                    .get("year")
+                    .map(|s| s.as_str())
+                    .unwrap_or("N/A")
+                    .to_string();
+                let month = tm
+                    .get("month")
+                    .map(|s| s.as_str())
+                    .unwrap_or("N/A")
+                    .to_string();
+                (year, month)
+            };
 
             let authors: Vec<String> = authors_str
                 .split("and")
