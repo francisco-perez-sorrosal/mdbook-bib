@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
@@ -81,7 +81,11 @@ impl Bibiography {
         bib_content
     }
 
-    fn generate_bibliography_html(bibliography: &HashMap<String, BibItem>) -> String {
+    fn generate_bibliography_html(
+        bibliography: &HashMap<String, BibItem>,
+        cited: &HashSet<String>,
+        cited_only: bool,
+    ) -> String {
         let mut handlebars = Handlebars::new();
         let references_hb = format!("\n\n{}\n\n", BIBLIO_HB);
         handlebars
@@ -90,15 +94,21 @@ impl Bibiography {
         debug!("Hanglebars content: {:?}", handlebars);
 
         let mut content: String = String::from("");
-        for value in bibliography.values() {
-            content.push_str(handlebars.render("references", &value).unwrap().as_str());
+        for (key, value) in bibliography {
+            if !cited_only || cited.contains(key) {
+                content.push_str(handlebars.render("references", &value).unwrap().as_str());
+            }
         }
 
         debug!("Generated Bib Content: {:?}", content);
         content
     }
 
-    fn expand_cite_references_in_book(book: &mut Book, bibliography: &HashMap<String, BibItem>) {
+    fn expand_cite_references_in_book(
+        book: &mut Book,
+        bibliography: &HashMap<String, BibItem>,
+    ) -> HashSet<String> {
+        let mut cited = HashSet::new();
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
                 if let Some(ref chapter_path) = ch.path {
@@ -106,11 +116,13 @@ impl Bibiography {
                         "Replacing placeholders({{#cite ..}}) in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content = replace_all_placeholders(&ch.content, &bibliography);
+                    let new_content =
+                        replace_all_placeholders(&ch.content, &bibliography, &mut cited);
                     ch.content = new_content;
                 }
             }
         });
+        cited
     }
 
     fn create_bibliography_chapter(html_content: String) -> Chapter {
@@ -293,7 +305,7 @@ impl Preprocessor for Bibiography {
             let bibliography = build_bibliography(bib_content?);
             if bibliography.is_err() {
                 warn!(
-                    "Error buildig Bibliography from raw content. Skipping render: {:?}",
+                    "Error building Bibliography from raw content. Skipping render: {:?}",
                     bibliography.err()
                 );
                 return Ok(book);
@@ -301,9 +313,20 @@ impl Preprocessor for Bibiography {
 
             let bib = bibliography.unwrap();
 
-            Bibiography::expand_cite_references_in_book(&mut book, &bib);
+            let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
 
-            let html_content = Bibiography::generate_bibliography_html(&bib);
+            let cited_only = match cfg.get("render-bib") {
+                None => true,
+                Some(option) => match option.as_str().unwrap() {
+                    "cited" => true,
+                    "all" => false,
+                    other => {
+                        warn!("Unknown value '{}' for option 'render-bib'. Use one of [cited, all]. Skipping bibliography.", other);
+                        return Ok(book);
+                    }
+                },
+            };
+            let html_content = Bibiography::generate_bibliography_html(&bib, &cited, cited_only);
 
             let bib_chapter = Bibiography::create_bibliography_chapter(html_content);
 
@@ -317,7 +340,11 @@ impl Preprocessor for Bibiography {
     }
 }
 
-fn replace_all_placeholders(s: &str, bibliography: &HashMap<String, BibItem>) -> String {
+fn replace_all_placeholders<'a>(
+    s: &'a str,
+    bibliography: &HashMap<String, BibItem>,
+    cited: &mut HashSet<String>,
+) -> String {
     // When replacing one thing in a string by something with a different length,
     // the indices after that will not correspond,
     // we therefore have to store the difference to correct this
@@ -329,6 +356,12 @@ fn replace_all_placeholders(s: &str, bibliography: &HashMap<String, BibItem>) ->
 
         replaced.push_str(&placeholder.render_with_path(bibliography));
         previous_end_index = placeholder.end_index;
+
+        match placeholder.placeholder_type {
+            PlaceholderType::Cite(ref cite) => {
+                cited.insert(cite.to_owned());
+            }
+        }
     }
 
     replaced.push_str(&s[previous_end_index..]);
