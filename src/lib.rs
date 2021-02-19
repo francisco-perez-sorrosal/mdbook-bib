@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use anyhow::anyhow;
 use handlebars::Handlebars;
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use mdbook::book::{Book, BookItem, Chapter};
 use mdbook::errors::{Error, Result as MdResult};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
@@ -27,11 +27,13 @@ static BIBLIO_HB: &str = include_str!("./render/references.hbs");
 
 pub struct Bibiography;
 
-impl Bibiography {
-    pub fn new() -> Bibiography {
+impl Default for Bibiography {
+    fn default() -> Bibiography {
         Bibiography
     }
+}
 
+impl Bibiography {
     // Get references and info the bibliography file specified in the config
     // arg "bibliography" or in Zotero
     fn retrieve_bibliography_content(
@@ -58,7 +60,7 @@ impl Bibiography {
                 match cfg.get("zotero_user_id") {
                     Some(uid) => {
                         let user_id = uid.to_string();
-                        let bib_str = download_bib_from_zotero(user_id).unwrap_or("".to_owned());
+                        let bib_str = download_bib_from_zotero(user_id).unwrap_or_default();
                         if !bib_str.is_empty() {
                             let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
                             info!("Saving Zotero bibliography to {:?}", biblio_path);
@@ -71,7 +73,7 @@ impl Bibiography {
                     }
                     _ => {
                         // warn!("Zotero user id not specified either :(");
-                        Err(anyhow!(format!("Zotero user id not specified either :(")))
+                        Err(anyhow!("Zotero user id not specified either :(".to_string()))
                     }
                 }
             }
@@ -88,7 +90,7 @@ impl Bibiography {
         debug!("Hanglebars content: {:?}", handlebars);
 
         let mut content: String = String::from("");
-        for (_key, value) in bibliography {
+        for value in bibliography.values() {
             content.push_str(handlebars.render("references", &value).unwrap().as_str());
         }
 
@@ -118,13 +120,13 @@ impl Bibiography {
         );
         let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
         let biblio_content = format!("{}{}", css_style, html_content);
-        let bib_chapter = Chapter::new(
+
+        Chapter::new(
             "Bibliography",
             format!("# Bibliography\n{}", biblio_content),
             PathBuf::from("bibliography.md"),
             Vec::new(),
-        );
-        bib_chapter
+        )
     }
 }
 
@@ -158,11 +160,11 @@ impl BibItem {
     ) -> BibItem {
         BibItem {
             citation_key: citation_key.to_string(),
-            title: title,
-            authors: authors,
-            pub_month: pub_month,
-            pub_year: pub_year,
-            summary: summary,
+            title,
+            authors,
+            pub_month,
+            pub_year,
+            summary,
         }
     }
 }
@@ -179,7 +181,7 @@ pub(crate) fn load_bibliography<P: AsRef<Path>>(biblio_file: P) -> MdResult<Stri
         );
         return Ok("".to_string());
     }
-    return Ok(fs::read_to_string(biblio_file)?.to_string());
+    Ok(fs::read_to_string(biblio_file)?)
 }
 
 fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
@@ -188,12 +190,13 @@ fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
     let link_info_in_header = res.headers().get("link");
     debug!("Header Link content: {:?}", link_info_in_header);
     let link_info_as_str = link_info_in_header.unwrap().to_str();
-    return (link_info_as_str.unwrap().to_string(), biblio_chunk);
+
+    (link_info_as_str.unwrap().to_string(), biblio_chunk)
 }
 
 /// Download bibliography from Zotero
 pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Error> {
-    let mut url = format!("https://api.zotero.org/users/{}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3", user_id.to_string());
+    let mut url = format!("https://api.zotero.org/users/{}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3", user_id);
     info!("Zotero's URL biblio source:\n{:?}", url);
     let mut res = reqwest::blocking::get(&url)?;
     if res.status().is_client_error() || res.status().is_client_error() {
@@ -208,7 +211,7 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
             let next_idx = link_str.find("rel=\"next\"").unwrap();
             let end_bytes = next_idx - 3; // The > of the "next" link is 3 chars before rel=\"next\" pattern
             let slice = &link_str[..end_bytes];
-            let start_bytes = slice.rfind("<").unwrap_or(0);
+            let start_bytes = slice.rfind('<').unwrap_or(0);
             url = link_str[(start_bytes + 1)..end_bytes].to_string();
             info!("Next biblio chunk URL:\n{:?}", url);
             res = reqwest::blocking::get(&url)?;
@@ -216,7 +219,7 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
             link_str = new_link_str;
             bib_content.push_str(&new_bib_part);
         }
-        Ok(bib_content.to_string())
+        Ok(bib_content)
     }
 }
 
@@ -226,20 +229,20 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
     let biblatex_content = raw_content.replace("\"", "");
-    let bib = Bibtex::parse(&biblatex_content).unwrap();
+    let bib = Bibtex::parse(&biblatex_content)?;
 
     let biblio = bib.bibliographies();
     info!("{} bibliography items read", biblio.len());
 
     let bibliography: HashMap<String, BibItem> = biblio
-        .into_iter()
+        .iter()
         .map(|bib| {
-            let tm: HashMap<String, String> = bib.tags().into_iter().map(|t| t.clone()).collect();
+            let tm: HashMap<String, String> = bib.tags().iter().cloned().collect();
             let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
             authors_str.retain(|c| c != '\n');
 
             let date_str = tm.get("date").unwrap_or(&"N/A".to_owned()).to_string();
-            let date: Vec<&str> = date_str.split("-").collect();
+            let date: Vec<&str> = date_str.split('-').collect();
             let pub_year = date.get(0).unwrap_or(&"N/A").to_string();
             let pub_month = date.get(1).unwrap_or(&"N/A").to_string();
 
@@ -324,22 +327,8 @@ fn replace_all_placeholders(s: &str, bibliography: &HashMap<String, BibItem>) ->
     for placeholder in find_placeholders(s) {
         replaced.push_str(&s[previous_end_index..placeholder.start_index]);
 
-        match placeholder.render_with_path(bibliography) {
-            Ok(new_content) => {
-                replaced.push_str(&new_content);
-                previous_end_index = placeholder.end_index;
-            }
-            Err(e) => {
-                error!("Error updating \"{}\", {}", placeholder.placeholder_text, e);
-                for cause in e.chain().skip(1) {
-                    warn!("Caused By: {}", cause);
-                }
-
-                // This should make sure we include the raw `{{# ... }}` snippet
-                // in the page content if there are any errors.
-                previous_end_index = placeholder.start_index;
-            }
-        }
+        replaced.push_str(&placeholder.render_with_path(bibliography));
+        previous_end_index = placeholder.end_index;
     }
 
     replaced.push_str(&s[previous_end_index..]);
@@ -388,13 +377,13 @@ impl<'a> Placeholder<'a> {
         })
     }
 
-    fn render_with_path(&self, bibliography: &HashMap<String, BibItem>) -> MdResult<String> {
+    fn render_with_path(&self, bibliography: &HashMap<String, BibItem>) -> String {
         match self.placeholder_type {
             PlaceholderType::Cite(ref cite) => {
                 if bibliography.contains_key(cite) {
-                    Ok(format!("\\[[{}](bibliography.html#{})\\]", cite, cite))
+                    format!("\\[[{}](bibliography.html#{})\\]", cite, cite)
                 } else {
-                    Ok(format!("\\[Unknown bib ref: {}\\]", cite))
+                    format!("\\[Unknown bib ref: {}\\]", cite)
                 }
             }
         }
