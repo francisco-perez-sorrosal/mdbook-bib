@@ -30,6 +30,19 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           override: true
+          components: rustfmt, clippy
+
+      - name: Rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets -- --deny warnings
 
       - name: Build
         uses: actions-rs/cargo@v1
