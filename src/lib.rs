@@ -7,6 +7,7 @@ use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::config::Config;
 use anyhow::anyhow;
 use handlebars::Handlebars;
 use log::{debug, info, warn};
@@ -17,8 +18,9 @@ use nom_bibtex::*;
 use regex::{CaptureMatches, Captures, Regex};
 use reqwest::blocking::Response;
 use serde::{Deserialize, Serialize};
-use toml::value::Table;
+use std::convert::TryFrom;
 
+mod config;
 mod file_utils;
 
 static NAME: &str = "bib";
@@ -39,11 +41,10 @@ impl Bibiography {
     // arg "bibliography" or in Zotero
     fn retrieve_bibliography_content(
         ctx: &PreprocessorContext,
-        cfg: &Table,
+        cfg: &Config,
     ) -> Result<String, Error> {
-        let bib_content = match cfg.get("bibliography") {
-            Some(biblio_file_toml) => {
-                let biblio_file = biblio_file_toml.as_str().unwrap();
+        let bib_content = match &cfg.bibliography {
+            Some(biblio_file) => {
                 info!("Bibliography file: {}", biblio_file);
                 let biblio_path = ctx.root.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
@@ -58,7 +59,7 @@ impl Bibiography {
             }
             _ => {
                 warn!("Bibliography file not specified. Trying download from Zotero");
-                match cfg.get("zotero_user_id") {
+                match &cfg.zotero_user_id {
                     Some(uid) => {
                         let user_id = uid.to_string();
                         let bib_str = download_bib_from_zotero(user_id).unwrap_or_default();
@@ -72,10 +73,7 @@ impl Bibiography {
                             Err(anyhow!("Bib content retrieved from Zotero is empty!"))
                         }
                     }
-                    _ => {
-                        // warn!("Zotero user id not specified either :(");
-                        Err(anyhow!("Zotero user id not specified either :(".to_string()))
-                    }
+                    _ => Err(anyhow!("Zotero user id not specified either :(")),
                 }
             }
         };
@@ -293,50 +291,40 @@ impl Preprocessor for Bibiography {
         NAME
     }
 
-    fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
+    fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
 
-        if let Some(cfg) = ctx.config.get_preprocessor(self.name()) {
-            let bib_content = Bibiography::retrieve_bibliography_content(ctx, cfg);
+        let config = Config::try_from(ctx.config.get_preprocessor(self.name()))?;
 
-            if bib_content.is_err() {
-                warn!(
-                    "Raw Bibliography content couldn't be retrieved. Skipping processing: {:?}",
-                    bib_content.err()
-                );
-                return Ok(book);
-            }
+        let bib_content = Bibiography::retrieve_bibliography_content(ctx, &config);
 
-            let bibliography = build_bibliography(bib_content?);
-            if bibliography.is_err() {
-                warn!(
-                    "Error building Bibliography from raw content. Skipping render: {:?}",
-                    bibliography.err()
-                );
-                return Ok(book);
-            }
-
-            let bib = bibliography.unwrap();
-
-            let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
-
-            let cited_only = match cfg.get("render-bib") {
-                None => true,
-                Some(option) => match option.as_str().unwrap() {
-                    "cited" => true,
-                    "all" => false,
-                    other => {
-                        warn!("Unknown value '{}' for option 'render-bib'. Use one of [cited, all]. Skipping bibliography.", other);
-                        return Ok(book);
-                    }
-                },
-            };
-            let html_content = Bibiography::generate_bibliography_html(&bib, &cited, cited_only);
-
-            let bib_chapter = Bibiography::create_bibliography_chapter(html_content);
-
-            book.push_item(bib_chapter);
+        if bib_content.is_err() {
+            warn!(
+                "Raw Bibliography content couldn't be retrieved. Skipping processing: {:?}",
+                bib_content.err()
+            );
+            return Ok(book);
         }
+
+        let bibliography = build_bibliography(bib_content?);
+        if bibliography.is_err() {
+            warn!(
+                "Error building Bibliography from raw content. Skipping render: {:?}",
+                bibliography.err()
+            );
+            return Ok(book);
+        }
+
+        let bib = bibliography.unwrap();
+
+        let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
+
+        let html_content = Bibiography::generate_bibliography_html(&bib, &cited, config.cited_only);
+
+        let bib_chapter = Bibiography::create_bibliography_chapter(html_content);
+
+        book.push_item(bib_chapter);
+
         Ok(book)
     }
 
