@@ -1,7 +1,0 @@
-.hide {
-    display: none;
-}
-.bib_div:hover + .hide {
-    display: block;
-    color: green;
-}

@@ -24,6 +24,7 @@ mod file_utils;
 static NAME: &str = "bib";
 static CSS: &str = include_str!("./render/satancisco.css");
 static BIBLIO_HB: &str = include_str!("./render/references.hbs");
+static CP2CB: &str = include_str!("./render/copy2clipboard.js");
 
 pub struct Bibiography;
 
@@ -118,8 +119,9 @@ impl Bibiography {
             "Creating new Bibliography chapter with content: {:?}",
             html_content
         );
+        let cp2cb = format!("<script type=\"text/javascript\">\n{}\n</script>\n\n", CP2CB); // Add the copy2clipboard js code
         let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
-        let biblio_content = format!("{}{}", css_style, html_content);
+        let biblio_content = format!("{}\n{}\n{}", cp2cb, css_style, html_content);
 
         Chapter::new(
             "Bibliography",
