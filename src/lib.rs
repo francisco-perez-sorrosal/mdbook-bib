@@ -294,7 +294,16 @@ impl Preprocessor for Bibiography {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
 
-        let config = Config::try_from(ctx.config.get_preprocessor(self.name()))?;
+        let config = match Config::try_from(ctx.config.get_preprocessor(self.name())) {
+            Ok(config) => config,
+            Err(err) => {
+                warn!(
+                    "Error reading configuration. Skipping processing: {:?}",
+                    err
+                );
+                return Ok(book);
+            }
+        };
 
         let bib_content = Bibiography::retrieve_bibliography_content(ctx, &config);
 
