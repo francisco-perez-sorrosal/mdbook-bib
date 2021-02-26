@@ -1,20 +1,27 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 
 use tempfile::Builder as TempFileBuilder;
 
-use crate::{build_bibliography, load_bibliography, BibItem};
+use crate::{build_bibliography, load_bibliography, BibItem, Bibiography};
 
-const DUMMY_BIB_SRC: &str = "
+const DUMMY_BIB_SRC: &str = r#"
 @misc {fps,
-    title = {\"This is a bib entry!\"},
-    author = {\"Francisco Perez-Sorrosal\"},
-    month = {\"oct\"},
-    year = {\"2020\"},
-    what_is_this = {\"blabla\"},
+    title = {"This is a bib entry!"},
+    author = {"Francisco Perez-Sorrosal"},
+    month = {"oct"},
+    year = {"2020"},
+    what_is_this = {"blabla"},
 }
-";
+@book{rust_book,
+    author = {"Klabnik, Steve and Nichols, Carol"},
+    title = {"The Rust Programming Language"},
+    year = {"2018"},
+    isbn = {"1593278284"},
+    publisher = {"No Starch Press"},
+}
+"#;
 
 #[test]
 fn load_bib_bibliography_from_file() {
@@ -47,6 +54,25 @@ fn cant_load_bib_bibliography_from_file() {
 fn bibliography_builder_returns_a_bibliography() {
     let bibliography_loaded: HashMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
-    assert_eq!(bibliography_loaded.len(), 1);
+    assert_eq!(bibliography_loaded.len(), 2);
     assert_eq!(bibliography_loaded.get("fps").unwrap().citation_key, "fps");
+}
+
+#[test]
+fn bibliography_render_all_vs_cited() {
+    let bibliography_loaded: HashMap<String, BibItem> =
+        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+
+    let mut cited = HashSet::new();
+    cited.insert("fps".to_string());
+
+    let html = Bibiography::generate_bibliography_html(&bibliography_loaded, &cited, false);
+
+    assert!(html.contains("This is a bib entry!"));
+    assert!(html.contains("The Rust Programming Language"));
+
+    let html = Bibiography::generate_bibliography_html(&bibliography_loaded, &cited, true);
+
+    assert!(html.contains("This is a bib entry!"));
+    assert!(!html.contains("The Rust Programming Language"));
 }
