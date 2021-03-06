@@ -30,7 +30,6 @@ configuration to the `.toml` config file of your mdbook:
 #...
 [preprocessor.bib]
 bibliography = "my_biblio.bib"
-renderer = ["html"]
 ```
 
 The bibliography will appear as a separate section in your book ToC. 
@@ -45,7 +44,6 @@ In order to do so, just specify the `Zotero UserId` of the public bibliography y
 #...
 [preprocessor.bib]
 zotero_user_id = __a_Zotero_userID__
-renderer = ["html"]
 ```
 
 The `Zotero UserId` is the number that appears following the `users` resource in a public bibliography URL. e.g. in the 
@@ -75,7 +73,6 @@ A complete `preprocessor.bib` section with all possible options:
 ```toml
 [preprocessor.bib]
 bibliography = "my_biblio.bib"
-renderer = ["html"]
 render-bib = "cited"
 ```
 
@@ -83,5 +80,4 @@ render-bib = "cited"
 |------------------|-------------------------------------------------------------------------|---------|
 | `bibliography`   | `.bib` file to use                                                      | -       |
 | `zotero_user_id` | Zotero user ID, alternative to bib file                                 | -       |
-| `renderer`       | ???                                                                     | -       |
 | `render-bib`     | Render the entire bibliography ("all"), or only cited entries ("cited") | `cited` |
