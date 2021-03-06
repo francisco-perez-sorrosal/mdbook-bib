@@ -1,4 +1,4 @@
-function oldCopyTextToClipboard(text) {
+function defaultCopyTextToClipboard(text) {
     var textArea = document.createElement("textarea");
     textArea.value = text;
 
@@ -24,7 +24,7 @@ function oldCopyTextToClipboard(text) {
 
 function copyToClipboard(text) {
     if (!navigator.clipboard) {
-        oldCopyTextToClipboard(text);
+        defaultCopyTextToClipboard(text);
         return;
     }
     navigator.clipboard.writeText(text).then(function() {
