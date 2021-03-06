@@ -131,7 +131,10 @@ impl Bibiography {
             "Creating new Bibliography chapter with content: {:?}",
             html_content
         );
-        let cp2cb = format!("<script type=\"text/javascript\">\n{}\n</script>\n\n", CP2CB); // Add the copy2clipboard js code
+        let cp2cb = format!(
+            "<script type=\"text/javascript\">\n{}\n</script>\n\n",
+            CP2CB
+        ); // Add the copy2clipboard js code
         let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
         let biblio_content = format!("{}\n{}\n{}", cp2cb, css_style, html_content);
 
