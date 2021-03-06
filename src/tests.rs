@@ -4,7 +4,9 @@ use std::io::Write;
 
 use tempfile::Builder as TempFileBuilder;
 
-use crate::{build_bibliography, load_bibliography, BibItem, Bibiography};
+use crate::{
+    build_bibliography, load_bibliography, replace_all_placeholders, BibItem, Bibiography,
+};
 
 const DUMMY_BIB_SRC: &str = r#"
 @misc {fps,
@@ -21,6 +23,14 @@ const DUMMY_BIB_SRC: &str = r#"
     isbn = {"1593278284"},
     publisher = {"No Starch Press"},
 }
+"#;
+
+const DUMMY_TEXT_WITH_VALID_REFERENCES: &str = r#"
+this is a dumb text that includes citations like {{ #cite fps }} and {{ #cite rust_book }}
+"#;
+
+const DUMMY_TEXT_WITH_VALID_AND_INVALID_REFERENCES: &str = r#"
+this is a dumb text that includes valid and invalid citations like {{ #cite fps }} and {{ #cite im_not_there }}
 "#;
 
 #[test]
@@ -75,4 +85,29 @@ fn bibliography_render_all_vs_cited() {
 
     assert!(html.contains("This is a bib entry!"));
     assert!(!html.contains("The Rust Programming Language"));
+}
+
+#[test]
+fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
+    let bibliography: HashMap<String, BibItem> =
+        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+
+    let mut cited: HashSet<String> = HashSet::new();
+
+    // Check valid references included in a dummy text
+    let text_with_citations =
+        replace_all_placeholders(DUMMY_TEXT_WITH_VALID_REFERENCES, &bibliography, &mut cited);
+    // TODO: These asserts will probably fail if we allow users to specify the bibliography
+    // chapter name as per issue #6
+    assert!(text_with_citations.contains("[fps](bibliography.html#fps)"));
+    assert!(text_with_citations.contains("[rust_book](bibliography.html#rust_book)"));
+
+    // Check a mix of valid and invalid references included/not included in a dummy text
+    let text_with_citations = replace_all_placeholders(
+        DUMMY_TEXT_WITH_VALID_AND_INVALID_REFERENCES,
+        &bibliography,
+        &mut cited,
+    );
+    assert!(text_with_citations.contains("[fps]"));
+    assert!(text_with_citations.contains("[Unknown bib ref:"));
 }
