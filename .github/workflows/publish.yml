@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     tags:
-      - "v0.0.*"
+      - "v0.*.*"
 
 jobs:
   test:
