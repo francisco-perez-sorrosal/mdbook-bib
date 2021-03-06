@@ -23,8 +23,7 @@ below to use the plugin.
 
 This plugin allows adding a bibliography in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to your book. To do this,
 just add your `.bib` file containing the bibliography items to the source root of your book and then add the following
-configuration to the `book`
-section of the `.toml` config file of your mdbook:
+configuration to the `.toml` config file of your mdbook:
 
 ```toml
 [book]
@@ -38,13 +37,13 @@ The bibliography will appear as a separate section in your book ToC.
 
 ## Adding a BibLaTex-format Bibliography from [Zotero](https://www.zotero.org/)
 
-Alternatively, you can download a publicly available library in BibLaTex format from Zotero.
-In order to do so, just specify the `Zotero UserId` of the public bibliography you want to access in the preprocessor 
-section: 
+Alternatively, you can use any publicly available library in BibLaTex format from Zotero.
+In order to do so, just specify the `Zotero UserId` of the public bibliography you want to access in the preprocessor section:
 
 ```toml
 [book]
 #...
+[preprocessor.bib]
 zotero_user_id = __a_Zotero_userID__
 renderer = ["html"]
 ```
@@ -67,4 +66,22 @@ following syntax:
 
 ```handlebars
 {{#cite my-citation-key}}
+``````
+
+## Configuration
+
+A complete `preprocessor.bib` section with all possible options:
+
+```toml
+[preprocessor.bib]
+bibliography = "my_biblio.bib"
+renderer = ["html"]
+render-bib = "cited"
 ```
+
+| Option           | Description                                                             | Default |
+|------------------|-------------------------------------------------------------------------|---------|
+| `bibliography`   | `.bib` file to use                                                      | -       |
+| `zotero_user_id` | Zotero user ID, alternative to bib file                                 | -       |
+| `renderer`       | ???                                                                     | -       |
+| `render-bib`     | Render the entire bibliography ("all"), or only cited entries ("cited") | `cited` |
