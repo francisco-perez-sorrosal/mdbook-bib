@@ -7,8 +7,12 @@ use tempfile::Builder as TempFileBuilder;
 use crate::PlaceholderType::Cite;
 use crate::{
     build_bibliography, find_placeholders, load_bibliography, replace_all_placeholders, BibItem,
-    Bibiography,
+    Bibiography, Config,
 };
+use toml::value::Table;
+use toml::Value;
+
+use std::convert::TryFrom;
 
 const DUMMY_BIB_SRC: &str = r#"
 @misc {fps,
@@ -141,4 +145,54 @@ fn find_only_citation_placeholders() {
         panic!("Only Cite should be recognized as placeholder type!!!");
     }
     assert_eq!(items, 0);
+}
+
+#[test]
+fn check_config_attributes() {
+    let mut t: Table = Table::new();
+
+    // Check config with default values is returned when an empty config is passed in a toml table!!!
+    match Config::try_from(Some(&t)) {
+        Ok(config) => {
+            println!("{:?}", config);
+            assert_eq!(config.bibliography, None);
+            assert_eq!(config.zotero_user_id, None);
+            assert_eq!(config.cited_only, true);
+        }
+        Err(_) => panic!("there's supposed to be always a config!!!"),
+    }
+
+    // Check config attributes are processed (those that are not specified are ignored)!!!
+    t.insert(
+        "bibliography".to_string(),
+        Value::String("biblio.bib".to_string()),
+    );
+    t.insert(
+        "zotero_user_id".to_string(),
+        Value::String("123456".to_string()),
+    );
+    t.insert("render-bib".to_string(), Value::String("all".to_string()));
+    t.insert(
+        "not-specified-config-attr".to_string(),
+        Value::String("uhg???".to_string()),
+    );
+    match Config::try_from(Some(&t)) {
+        Ok(config) => {
+            println!("{:?}", config);
+            assert_eq!(config.bibliography, Some("biblio.bib"));
+            assert_eq!(config.zotero_user_id, Some("123456"));
+            assert_eq!(config.cited_only, false);
+        }
+        Err(_) => panic!("there's supposed to be always a config!!!"),
+    }
+
+    // Intentionally add a failure specifying a non-existing value for render-bib
+    t.insert(
+        "render-bib".to_string(),
+        Value::String("non-existent!".to_string()),
+    );
+    match Config::try_from(Some(&t)) {
+        Ok(_) => panic!("there's supposed to be a failure in the config!!!"),
+        Err(_) => (),
+    }
 }
