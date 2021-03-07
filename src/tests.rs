@@ -193,6 +193,6 @@ fn check_config_attributes() {
     );
     match Config::try_from(Some(&t)) {
         Ok(_) => panic!("there's supposed to be a failure in the config!!!"),
-        Err(_) => (),
+        Err(_) => println!("Yayyyyy! A failure that is supposed to happen!"),
     }
 }
