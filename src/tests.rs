@@ -4,8 +4,10 @@ use std::io::Write;
 
 use tempfile::Builder as TempFileBuilder;
 
+use crate::PlaceholderType::Cite;
 use crate::{
-    build_bibliography, load_bibliography, replace_all_placeholders, BibItem, Bibiography,
+    build_bibliography, find_placeholders, load_bibliography, replace_all_placeholders, BibItem,
+    Bibiography,
 };
 
 const DUMMY_BIB_SRC: &str = r#"
@@ -25,12 +27,16 @@ const DUMMY_BIB_SRC: &str = r#"
 }
 "#;
 
-const DUMMY_TEXT_WITH_VALID_REFERENCES: &str = r#"
+const DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS: &str = r#"
 this is a dumb text that includes citations like {{ #cite fps }} and {{ #cite rust_book }}
 "#;
 
-const DUMMY_TEXT_WITH_VALID_AND_INVALID_REFERENCES: &str = r#"
+const DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS: &str = r#"
 this is a dumb text that includes valid and invalid citations like {{ #cite fps }} and {{ #cite im_not_there }}
+"#;
+
+const DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS: &str = r#"
+this is a dumb text that includes invalid placeholders like {{ #zoto uhmmmm }} and {{ #peto ahhhhmmm }}
 "#;
 
 #[test]
@@ -95,8 +101,11 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     let mut cited: HashSet<String> = HashSet::new();
 
     // Check valid references included in a dummy text
-    let text_with_citations =
-        replace_all_placeholders(DUMMY_TEXT_WITH_VALID_REFERENCES, &bibliography, &mut cited);
+    let text_with_citations = replace_all_placeholders(
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS,
+        &bibliography,
+        &mut cited,
+    );
     // TODO: These asserts will probably fail if we allow users to specify the bibliography
     // chapter name as per issue #6
     assert!(text_with_citations.contains("[fps](bibliography.html#fps)"));
@@ -104,10 +113,32 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
 
     // Check a mix of valid and invalid references included/not included in a dummy text
     let text_with_citations = replace_all_placeholders(
-        DUMMY_TEXT_WITH_VALID_AND_INVALID_REFERENCES,
+        DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS,
         &bibliography,
         &mut cited,
     );
     assert!(text_with_citations.contains("[fps]"));
     assert!(text_with_citations.contains("[Unknown bib ref:"));
+}
+
+#[test]
+fn find_only_citation_placeholders() {
+    // As long as placeholders are related to cites, they are found, independently of whether they
+    // are valid or not
+    let plhs = find_placeholders(DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS);
+    let mut items = 0;
+    for plh in plhs {
+        match plh.placeholder_type {
+            Cite(_) => items += 1,
+        };
+    }
+    assert_eq!(items, 2);
+
+    // When no recognized placeholders are found, they are ignored
+    let plhs = find_placeholders(DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS);
+    items = 0;
+    for _ in plhs {
+        panic!("Only Cite should be recognized as placeholder type!!!");
+    }
+    assert_eq!(items, 0);
 }
