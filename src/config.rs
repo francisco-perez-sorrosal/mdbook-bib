@@ -7,7 +7,7 @@ pub struct Config<'a> {
     /// Path to Bibtex file
     pub bibliography: Option<&'a str>,
     /// Zotero user ID, as alternative to Bibtex file
-    pub zotero_user_id: Option<&'a str>,
+    pub zotero_uid: Option<&'a str>,
     /// List only cited references, instead of all from bibliography
     pub cited_only: bool,
 }
@@ -20,7 +20,7 @@ impl<'a> TryFrom<Option<&'a Table>> for Config<'a> {
             Ok(Self {
                 bibliography: table.get("bibliography").map(|v| v.as_str().unwrap()),
 
-                zotero_user_id: table.get("zotero_user_id").map(|v| v.as_str().unwrap()),
+                zotero_uid: table.get("zotero-uid").map(|v| v.as_str().unwrap()),
 
                 cited_only: match table.get("render-bib") {
                     None => true,

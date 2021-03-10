@@ -59,7 +59,7 @@ impl Bibiography {
             }
             _ => {
                 warn!("Bibliography file not specified. Trying download from Zotero");
-                match &cfg.zotero_user_id {
+                match &cfg.zotero_uid {
                     Some(uid) => {
                         let user_id = uid.to_string();
                         let bib_str = download_bib_from_zotero(user_id).unwrap_or_default();
