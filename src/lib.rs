@@ -256,27 +256,8 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
             let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
             authors_str.retain(|c| c != '\n');
 
-            let (pub_year, pub_month) = if let Some(date_str) = tm.get("date") {
-                let mut date = date_str.split('-');
-                let year = date.next().unwrap_or("N/A").to_string();
-                let month = date
-                    .next()
-                    .unwrap_or_else(|| tm.get("month").map(|s| s.as_str()).unwrap_or("N/A"))
-                    .to_string();
-                (year, month)
-            } else {
-                let year = tm
-                    .get("year")
-                    .map(|s| s.as_str())
-                    .unwrap_or("N/A")
-                    .to_string();
-                let month = tm
-                    .get("month")
-                    .map(|s| s.as_str())
-                    .unwrap_or("N/A")
-                    .to_string();
-                (year, month)
-            };
+            info!("{:?}", &tm);
+            let (pub_year, pub_month) = extract_date(&tm);
 
             let authors: Vec<String> = authors_str
                 .split("and")
@@ -301,6 +282,30 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
     debug!("Bibiography content:\n{:?}", bibliography);
 
     Ok(bibliography)
+}
+
+fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
+    if let Some(date_str) = tm.get("date") {
+        let mut date = date_str.split('-');
+        let year = date.next().unwrap_or("N/A").to_string();
+        let month = date
+            .next()
+            .unwrap_or_else(|| tm.get("month").map(|s| s.as_str()).unwrap_or("N/A"))
+            .to_string();
+        (year, month)
+    } else {
+        let year = tm
+            .get("year")
+            .map(|s| s.as_str())
+            .unwrap_or("N/A")
+            .to_string();
+        let month = tm
+            .get("month")
+            .map(|s| s.as_str())
+            .unwrap_or("N/A")
+            .to_string();
+        (year, month)
+    }
 }
 
 impl Preprocessor for Bibiography {

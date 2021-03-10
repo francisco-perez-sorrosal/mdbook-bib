@@ -6,8 +6,8 @@ use tempfile::Builder as TempFileBuilder;
 
 use crate::PlaceholderType::Cite;
 use crate::{
-    build_bibliography, find_placeholders, load_bibliography, replace_all_placeholders, BibItem,
-    Bibiography, Config,
+    build_bibliography, extract_date, find_placeholders, load_bibliography,
+    replace_all_placeholders, BibItem, Bibiography, Config,
 };
 use toml::value::Table;
 use toml::Value;
@@ -195,4 +195,57 @@ fn check_config_attributes() {
         Ok(_) => panic!("there's supposed to be a failure in the config!!!"),
         Err(_) => println!("Yayyyyy! A failure that is supposed to happen!"),
     }
+}
+
+#[test]
+fn check_date_extractions_from_biblatex() {
+    let mut fake_bib_entry: HashMap<String, String> = HashMap::new();
+
+    // Check when no date and no year/month we return the standard Non Available string
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "N/A");
+    assert_eq!(month, "N/A");
+
+    // Check date is split properly
+    fake_bib_entry.insert("date".to_string(), "2021-02-21".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "2021");
+    assert_eq!(month, "02");
+
+    // Check date is split properly
+    fake_bib_entry.insert("date".to_string(), "2021".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "2021");
+    assert_eq!(month, "N/A");
+
+    // Check date takes precedence over year/month
+    fake_bib_entry.clear();
+    fake_bib_entry.insert("date".to_string(), "2020-03".to_string());
+    fake_bib_entry.insert("year".to_string(), "2021".to_string());
+    fake_bib_entry.insert("month".to_string(), "jul".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "2020");
+    assert_eq!(month, "03");
+
+    // Check year and month work too
+    fake_bib_entry.clear();
+    fake_bib_entry.insert("year".to_string(), "2021".to_string());
+    fake_bib_entry.insert("month".to_string(), "jul".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "2021");
+    assert_eq!(month, "jul");
+
+    // Check only month works too
+    fake_bib_entry.clear();
+    fake_bib_entry.insert("month".to_string(), "jul".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "N/A");
+    assert_eq!(month, "jul");
+
+    // Check only year works too
+    fake_bib_entry.clear();
+    fake_bib_entry.insert("year".to_string(), "2021".to_string());
+    let (year, month) = extract_date(&fake_bib_entry);
+    assert_eq!(year, "2021");
+    assert_eq!(month, "N/A");
 }
