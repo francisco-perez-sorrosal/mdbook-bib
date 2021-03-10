@@ -1,4 +1,6 @@
-# mdbook plugin for creating Bibliography & Citations in books
+# mdbook-bib
+
+A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliography & reference its citations in your books.
 
 ![Crates.io](https://img.shields.io/crates/d/mdbook-bib?style=social&link=https://crates.io/crates/mdbook-bib)
 
@@ -16,7 +18,7 @@ cd mdbook-bib
 cargo install --path .
 ```
 
-Make sure your PATH env var contains Cargo's /bin directory where the plugin was intalled. Then follow the instructions
+Make sure your PATH env var contains Cargo's /bin directory where the plugin was installed. Then follow the instructions
 below to use the plugin.
 
 ## Adding a BibLaTex-format Bibliography
