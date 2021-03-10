@@ -156,7 +156,7 @@ fn check_config_attributes() {
         Ok(config) => {
             println!("{:?}", config);
             assert_eq!(config.bibliography, None);
-            assert_eq!(config.zotero_user_id, None);
+            assert_eq!(config.zotero_uid, None);
             assert_eq!(config.cited_only, true);
         }
         Err(_) => panic!("there's supposed to be always a config!!!"),
@@ -168,7 +168,7 @@ fn check_config_attributes() {
         Value::String("biblio.bib".to_string()),
     );
     t.insert(
-        "zotero_user_id".to_string(),
+        "zotero-uid".to_string(),
         Value::String("123456".to_string()),
     );
     t.insert("render-bib".to_string(), Value::String("all".to_string()));
@@ -180,7 +180,7 @@ fn check_config_attributes() {
         Ok(config) => {
             println!("{:?}", config);
             assert_eq!(config.bibliography, Some("biblio.bib"));
-            assert_eq!(config.zotero_user_id, Some("123456"));
+            assert_eq!(config.zotero_uid, Some("123456"));
             assert_eq!(config.cited_only, false);
         }
         Err(_) => panic!("there's supposed to be always a config!!!"),

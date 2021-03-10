@@ -43,7 +43,7 @@ In order to do so, just specify the `Zotero UserId` of the public bibliography y
 [book]
 #...
 [preprocessor.bib]
-zotero_user_id = __a_Zotero_userID__
+zotero-uid = "<a_Zotero_userID>"
 ```
 
 The `Zotero UserId` is the number that appears following the `users` resource in a public bibliography URL. e.g. in the 
@@ -79,5 +79,5 @@ render-bib = "cited"
 | Option           | Description                                                             | Default |
 |------------------|-------------------------------------------------------------------------|---------|
 | `bibliography`   | `.bib` file to use                                                      | -       |
-| `zotero_user_id` | Zotero user ID, alternative to bib file                                 | -       |
-| `render-bib`     | Render the entire bibliography ("all"), or only cited entries ("cited") | `cited` |
+| `zotero-uid`     | Zotero user ID, alternative to bib file                                 | -       |
+| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited` |
