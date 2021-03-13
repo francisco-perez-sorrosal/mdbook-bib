@@ -161,6 +161,8 @@ pub struct BibItem {
     pub pub_year: String,
     /// Summary/Abstract.
     pub summary: String,
+    /// The article's url.
+    pub url: Option<String>,
 }
 
 impl BibItem {
@@ -172,6 +174,7 @@ impl BibItem {
         pub_month: String,
         pub_year: String,
         summary: String,
+        url: Option<String>,
     ) -> BibItem {
         BibItem {
             citation_key: citation_key.to_string(),
@@ -180,6 +183,7 @@ impl BibItem {
             pub_month,
             pub_year,
             summary,
+            url,
         }
     }
 }
@@ -263,6 +267,8 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
                 .split("and")
                 .map(|a| a.trim().to_string())
                 .collect();
+            let url: Option<String> = tm.get("url").map(|u| (*u.to_owned()).parse().unwrap());
+
             (
                 bib.citation_key().to_string(),
                 BibItem {
@@ -275,6 +281,7 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
                     pub_month,
                     pub_year,
                     summary: tm.get("abstract").unwrap_or(&"N/A".to_owned()).to_string(),
+                    url,
                 },
             )
         })
