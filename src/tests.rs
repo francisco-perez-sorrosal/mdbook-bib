@@ -28,6 +28,7 @@ const DUMMY_BIB_SRC: &str = r#"
     year = {"2018"},
     isbn = {"1593278284"},
     publisher = {"No Starch Press"},
+    url = {https://doc.rust-lang.org/book/},
 }
 "#;
 
@@ -95,6 +96,26 @@ fn bibliography_render_all_vs_cited() {
 
     assert!(html.contains("This is a bib entry!"));
     assert!(!html.contains("The Rust Programming Language"));
+}
+
+#[test]
+fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
+    let bibliography_loaded: HashMap<String, BibItem> =
+        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+
+    // fps dummy book does not include a url for in the BibItem
+    let fps = bibliography_loaded.get("fps");
+    assert!(fps.unwrap().url.is_none());
+    // rust_book does...
+    let rust_book = bibliography_loaded.get("rust_book");
+    assert_eq!(
+        rust_book.unwrap().url.as_ref().unwrap(),
+        "https://doc.rust-lang.org/book/"
+    );
+    // ...and is included in the render
+    let html =
+        Bibiography::generate_bibliography_html(&bibliography_loaded, &HashSet::new(), false);
+    assert!(html.contains("href=\"https://doc.rust-lang.org/book/\""));
 }
 
 #[test]
