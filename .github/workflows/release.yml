@@ -1,9 +1,11 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v0.*.*"
+  workflow_run:
+    workflows: ["Publish"]
+    branches: [master]
+    types:
+      - completed
 
 env:
   CARGO_TERM_COLOR: always
