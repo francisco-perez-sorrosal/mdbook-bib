@@ -1,0 +1,41 @@
+name: Changelog Prerelease
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    branches: [master]
+    types:
+      - completed
+
+jobs:
+  changelog_prerelease:
+    name: Changelog Update For Pre-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Github Changelog Generator wrapper
+        id: generate_changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          author: true
+          headerLabel: '# mdbook-bib Changelog Pre-release'
+          issues: true
+          issuesWoLabels: true
+          pullRequests: true
+          prWoLabels: true
+          unreleased: true
+          unreleasedLabel: 'WIP'
+          addSections: '{ "documentation":{"prefix":"**Documentation:**","labels":["documentation"]},
+                          "feature": {"prefix": "**Feature:**", "labels": ["Feature"]} }'
+          enhancementLabels: 'Type: enhancement,Type: feature'
+          exclude-labels: 'duplicate,question,invalid,wontfix,Type: Help Needed,Type: Idea,Type: Question,Status: Invalid,Status: Wontfix'
+          releaseBranch: 'master'
+      - name: Commit Changelog
+        id: commit_changelog
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: changelog-github
+          commit_message: "Auto-update changelog!!!"
+          file_pattern: "CHANGELOG.md"
