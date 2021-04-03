@@ -1,6 +1,6 @@
 [package]
 name = "mdbook-bib"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Francisco Perez-Sorrosal <fperezsorrosal < at > gmail < dot > com>"]
 description = "mdbook plugin allowing to load and present a bibliography in BibLaTex format in your books and cite its references"
 keywords = ["mdbook", "bibliography", "bib", "plugin", "preprocessor"]
