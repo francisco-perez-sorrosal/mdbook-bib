@@ -14,8 +14,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Github Changelog Generator wrapper
-        id: generate_changelog
+      - name: Update Changelog
         uses: heinrichreimer/github-changelog-generator-action@v2.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +32,6 @@ jobs:
           exclude-labels: 'duplicate,question,invalid,wontfix,Type: Help Needed,Type: Idea,Type: Question,Status: Invalid,Status: Wontfix'
           releaseBranch: 'master'
       - name: Commit Changelog
-        id: commit_changelog
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           branch: changelog-github
