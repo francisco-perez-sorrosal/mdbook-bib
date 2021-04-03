@@ -9,6 +9,7 @@ on:
 
 jobs:
   changelog_prerelease:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Changelog Update For Pre-release
     runs-on: ubuntu-latest
     steps:
