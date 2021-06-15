@@ -1,5 +1,11 @@
 #
 
+## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+
+**Documentation:**
+
+- Add and automate a Changelog [\#22](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/22)
+
 ## [v0.0.3](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.3) (2021-04-04)
 
 **Documentation:**
