@@ -247,7 +247,12 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
     log::info!("Building bibliography...");
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
-    let biblatex_content = raw_content.replace("\"", "");
+    let mut biblatex_content = raw_content.replace("\"", "");
+    // Expressions in the content such as R@10 are not parsed well
+    let re = Regex::new(r" (?P<before>[A-Za-z])@(?P<after>\d+) ").unwrap();
+    biblatex_content = re
+        .replace_all(&biblatex_content, " ${before}_at_${after} ")
+        .into_owned();
     let bib = Bibtex::parse(&biblatex_content)?;
 
     let biblio = bib.bibliographies();
