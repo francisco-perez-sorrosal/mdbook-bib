@@ -116,7 +116,7 @@ impl Bibiography {
                         chapter_path.as_path().display()
                     );
                     let new_content =
-                        replace_all_placeholders(&ch.content, &bibliography, &mut cited);
+                        replace_all_placeholders(&ch.content, bibliography, &mut cited);
                     ch.content = new_content;
                 }
             }
