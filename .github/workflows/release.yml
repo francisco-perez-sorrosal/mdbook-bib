@@ -1,11 +1,18 @@
 name: Release
 
+# on:
+#   workflow_run:
+#     workflows: ["Publish"]
+#     branches: [master]
+#     types:
+#       - completed
+
 on:
-  workflow_run:
-    workflows: ["Publish"]
-    branches: [master]
-    types:
-      - completed
+  push:
+    branches:
+      - master
+  release:
+    types: [ created ]
 
 env:
   CARGO_TERM_COLOR: always
