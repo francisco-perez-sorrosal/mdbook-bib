@@ -1,0 +1,17 @@
+[book]
+authors = ["Francisco Perez-Sorrosal & Martin Lange"]
+language = "en"
+multilingual = false
+src = "src"
+title = "mdbook-bib Manual"
+
+[build]
+build-dir = "public"
+
+[output.html]
+default-theme = "theme"
+git-repository-url = "https://github.com/francisco-perez-sorrosal/mdbook-bib"
+git-repository-icon = "fa-github"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
