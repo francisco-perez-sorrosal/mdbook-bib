@@ -124,10 +124,10 @@ impl Bibiography {
         cited
     }
 
-    fn create_bibliography_chapter(html_content: String) -> Chapter {
+    fn create_bibliography_chapter(title: String, html_content: String) -> Chapter {
         debug!(
-            "Creating new Bibliography chapter with content: {:?}",
-            html_content
+            "Creating new Bibliography chapter (with title: \"{}\") with content: {:?}",
+            title, html_content
         );
         let cp2cb = format!(
             "<script type=\"text/javascript\">\n{}\n</script>\n\n",
@@ -137,8 +137,8 @@ impl Bibiography {
         let biblio_content = format!("{}\n{}\n{}", cp2cb, css_style, html_content);
 
         Chapter::new(
-            "Bibliography",
-            format!("# Bibliography\n{}", biblio_content),
+            &title,
+            format!("# {}\n{}", title, biblio_content),
             PathBuf::from("bibliography.md"),
             Vec::new(),
         )
@@ -359,7 +359,7 @@ impl Preprocessor for Bibiography {
 
         let html_content = Bibiography::generate_bibliography_html(&bib, &cited, config.cited_only);
 
-        let bib_chapter = Bibiography::create_bibliography_chapter(html_content);
+        let bib_chapter = Bibiography::create_bibliography_chapter(config.title, html_content);
 
         book.push_item(bib_chapter);
 

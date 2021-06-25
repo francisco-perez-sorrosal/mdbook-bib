@@ -4,6 +4,8 @@ use toml::value::Table;
 
 #[derive(Debug)]
 pub struct Config<'a> {
+    /// Title for the Bibliography section of the book
+    pub title: String,
     /// Path to Bibtex file
     pub bibliography: Option<&'a str>,
     /// Zotero user ID, as alternative to Bibtex file
@@ -18,8 +20,12 @@ impl<'a> TryFrom<Option<&'a Table>> for Config<'a> {
     fn try_from(table: Option<&'a Table>) -> Result<Self, Self::Error> {
         if let Some(table) = table {
             Ok(Self {
-                bibliography: table.get("bibliography").map(|v| v.as_str().unwrap()),
+                title: match table.get("title") {
+                    Some(bib_title) => bib_title.as_str().unwrap().to_string(),
+                    None => "Bibliography".to_string(),
+                },
 
+                bibliography: table.get("bibliography").map(|v| v.as_str().unwrap()),
                 zotero_uid: table.get("zotero-uid").map(|v| v.as_str().unwrap()),
 
                 cited_only: match table.get("render-bib") {

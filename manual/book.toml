@@ -15,3 +15,4 @@ git-repository-icon = "fa-github"
 
 [preprocessor.bib]
 bibliography = "bibliography.bib"
+title="References" # Custom title

@@ -71,16 +71,18 @@ following syntax:
 
 ## Configuration Parameters
 
-| Option           | Description                                                             | Default |
-|------------------|-------------------------------------------------------------------------|---------|
-| `bibliography`   | `.bib` file to use                                                      | -       |
-| `zotero-uid`     | Zotero user ID, alternative to bib file                                 | -       |
-| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited` |
+| Option           | Description                                                             | Default        |
+|------------------|-------------------------------------------------------------------------|----------------|
+| `bibliography`   | `.bib` file to use                                                      | -              |
+| `zotero-uid`     | Zotero user ID, alternative to bib file                                 | -              |
+| `title`          | Title for the Bibliography section of the book                          | `Bibliography` |
+| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited`        |
 
 A complete `preprocessor.bib` section example, which reads the bibliography from a local file and only shows the cited entries of the bibliography:
 
 ```toml
 [preprocessor.bib]
+title = "My Biblio!"
 bibliography = "my_biblio.bib"
 render-bib = "cited"
 ```
