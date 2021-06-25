@@ -176,6 +176,7 @@ fn check_config_attributes() {
     match Config::try_from(Some(&t)) {
         Ok(config) => {
             println!("{:?}", config);
+            assert_eq!(config.title, "Bibliography");
             assert_eq!(config.bibliography, None);
             assert_eq!(config.zotero_uid, None);
             assert!(config.cited_only);
@@ -184,6 +185,8 @@ fn check_config_attributes() {
     }
 
     // Check config attributes are processed (those that are not specified are ignored)!!!
+    t.insert("title".to_string(), Value::String("References".to_string()));
+
     t.insert(
         "bibliography".to_string(),
         Value::String("biblio.bib".to_string()),
@@ -200,6 +203,7 @@ fn check_config_attributes() {
     match Config::try_from(Some(&t)) {
         Ok(config) => {
             println!("{:?}", config);
+            assert_eq!(config.title, "References");
             assert_eq!(config.bibliography, Some("biblio.bib"));
             assert_eq!(config.zotero_uid, Some("123456"));
             assert!(!config.cited_only);
