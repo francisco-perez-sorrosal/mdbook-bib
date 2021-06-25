@@ -1,31 +1,29 @@
 # mdbook-bib
 
-A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliography & reference its citations in your books.
+A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliography & citations in your books.
 
+[![Test status](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml/badge.svg)](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml)
+[![MPL-2.0 License](https://img.shields.io/github/license/francisco-perez-sorrosal/mdbook-bib)](https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE)
+[![Manual](https://img.shields.io/badge/book-master-blue.svg)](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
+
+[![Crate](https://img.shields.io/crates/v/mdbook-bib.svg)](https://crates.io/crates/mdbook-bib)
 ![Crates.io](https://img.shields.io/crates/d/mdbook-bib?style=social&link=https://crates.io/crates/mdbook-bib)
 
-## Install
+## Basic Install
+
+If you have [mdbook](https://github.com/rust-lang/mdBook) installed just do:
 
 ```sh
 cargo install mdbook-bib
 ```
 
-## Install from Sources
+Make sure your PATH env var contains Cargo's `/bin` directory where the plugin was installed. Then follow the instructions below to use the plugin.
 
-```sh
-git clone git@github.com:francisco-perez-sorrosal/mdbook-bib.git
-cd mdbook-bib
-cargo install --path .
-```
+See all options in the [Install section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/install.html).
 
-Make sure your PATH env var contains Cargo's /bin directory where the plugin was installed. Then follow the instructions
-below to use the plugin.
+## Add a BibLaTex File and Cite your Bib Entries!
 
-## Adding a BibLaTex-format Bibliography
-
-This plugin allows adding a bibliography in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to your book. To do this,
-just add your `.bib` file containing the bibliography items to the source root of your book and then add the following
-configuration to the `.toml` config file of your mdbook:
+Add a bibliography file in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to the root of your book and then add the following section to the mdbook's `.toml` config file:
 
 ```toml
 [book]
@@ -34,52 +32,16 @@ configuration to the `.toml` config file of your mdbook:
 bibliography = "my_biblio.bib"
 ```
 
-The bibliography will appear as a separate section in your book ToC. 
+The bibliography will appear as a separate section in your book ToC.
 
-## Adding a BibLaTex-format Bibliography from [Zotero](https://www.zotero.org/)
-
-Alternatively, you can use any publicly available library in BibLaTex format from Zotero.
-In order to do so, just specify the `Zotero UserId` of the public bibliography you want to access in the preprocessor section:
-
-```toml
-[book]
-#...
-[preprocessor.bib]
-zotero-uid = "<a_Zotero_userID>"
-```
-
-The `Zotero UserId` is the number that appears following the `users` resource in a public bibliography URL. e.g. in the 
-example below, the `Zotero UserId` is 475425:
-```shell
-https://api.zotero.org/users/475425/items?format=atom&v=3
-```
-
-If you have a Zotero account, you can make your library public marking the checkbox in the [Zotero Privacy Settings page](https://www.zotero.org/settings/privacy).
-
-You can find your `Zotero userID` in the [Zotero Feeds/API](https://www.zotero.org/settings/keys) section of your 
-Zotero account.
-
-## Add References/Citations to the Bibliography
-
-In your markdown files, create references/citations to the citation-keys included in the `.bib` file with the 
-following syntax:
+Now you can add references/citations to the citation-keys appearing in the `.bib` file with:
 
 ```handlebars
 {{#cite my-citation-key}}
-``````
-
-## Configuration
-
-A complete `preprocessor.bib` section with all possible options:
-
-```toml
-[preprocessor.bib]
-bibliography = "my_biblio.bib"
-render-bib = "cited"
 ```
 
-| Option           | Description                                                             | Default |
-|------------------|-------------------------------------------------------------------------|---------|
-| `bibliography`   | `.bib` file to use                                                      | -       |
-| `zotero-uid`     | Zotero user ID, alternative to bib file                                 | -       |
-| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited` |
+See other configuration options in the [Config section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/config.html).
+
+## Contribute
+
+Check the [Contrib section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/contrib.html) if you want to contribute to mdbook-bib!
