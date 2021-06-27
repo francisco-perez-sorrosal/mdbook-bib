@@ -68,15 +68,35 @@ following syntax:
 {{#cite my-citation-key}}
 ```
 
+## Configure your own Style for Bibliography Entries
+
+You can override the default biblio style provided for the biliography entries by specifying an ad-hoc Handlebars template and style. In order to do so, the `hb-tpl`, `css`, and `js` parameters are provided as configuration options. `hb-tpl` allows to point to a `.hbs` file that includes the Handlebars style. For example:
+
+```handlebars
+{{#include render/my_references.hbs}}
+```
+
+The available placeholders that can be used in the handlebars template for now are:
+
+* citation_key
+* authors
+* title
+* url
+* pub_year
+
+Also, with the parameters `css` and `js`, you can point to files that provide your own css style and/or Javascript functions used in the rendering of the Handlebars template entries (e.g. for the `bib_div` class above). For more details, check the [structure of the manual](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual) of this project.
 
 ## Configuration Parameters
 
-| Option           | Description                                                             | Default        |
-|------------------|-------------------------------------------------------------------------|----------------|
-| `bibliography`   | `.bib` file to use                                                      | -              |
-| `zotero-uid`     | Zotero user ID, alternative to bib file                                 | -              |
+| Option           | Description                                                             | Default |
+|------------------|-------------------------------------------------------------------------|---------|
+| `bibliography`   | `.bib` file to use.                                                     | -       |
+| `zotero-uid`     | Zotero user ID, alternative to bib file.                                | -       |
 | `title`          | Title for the Bibliography section of the book                          | `Bibliography` |
-| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited`        |
+| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited` |
+| `hb-tpl`         | Ad-hoc Handlebars template file used to render the bibliography. Overwrites the default style.                                                                                       | -       |
+| `css`            | Extra CSS file with the style used when rendering the ad-hoc biblio.    | -       |
+| `js`             | Extra JS file with code used when rendering the ad-hoc biblio.          | -       |
 
 A complete `preprocessor.bib` section example, which reads the bibliography from a local file and only shows the cited entries of the bibliography:
 
@@ -85,4 +105,6 @@ A complete `preprocessor.bib` section example, which reads the bibliography from
 title = "My Biblio!"
 bibliography = "my_biblio.bib"
 render-bib = "cited"
+hb-tpl = "render/my_references.hbs"
+css = "render/my_style.css"
 ```

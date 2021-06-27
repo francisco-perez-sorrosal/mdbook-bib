@@ -18,15 +18,11 @@ use nom_bibtex::*;
 use regex::{CaptureMatches, Captures, Regex};
 use reqwest::blocking::Response;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 mod config;
 mod file_utils;
 
 static NAME: &str = "bib";
-static CSS: &str = include_str!("./render/satancisco.css");
-static BIBLIO_HB: &str = include_str!("./render/references.hbs");
-static CP2CB: &str = include_str!("./render/copy2clipboard.js");
 
 pub struct Bibiography;
 
@@ -37,7 +33,7 @@ impl Default for Bibiography {
 }
 
 impl Bibiography {
-    // Get references and info the bibliography file specified in the config
+    // Get references and info from the bibliography file specified in the config
     // arg "bibliography" or in Zotero
     fn retrieve_bibliography_content(
         ctx: &PreprocessorContext,
@@ -84,13 +80,13 @@ impl Bibiography {
         bibliography: &HashMap<String, BibItem>,
         cited: &HashSet<String>,
         cited_only: bool,
+        references_tpl: String,
     ) -> String {
         let mut handlebars = Handlebars::new();
-        let references_hb = format!("\n\n{}\n\n", BIBLIO_HB);
         handlebars
-            .register_template_string("references", references_hb)
+            .register_template_string("references", references_tpl)
             .unwrap();
-        debug!("Hanglebars content: {:?}", handlebars);
+        debug!("Handlebars content: {:?}", handlebars);
 
         let mut content: String = String::from("");
         for (key, value) in bibliography {
@@ -124,21 +120,21 @@ impl Bibiography {
         cited
     }
 
-    fn create_bibliography_chapter(title: String, html_content: String) -> Chapter {
+    fn create_bibliography_chapter(
+        title: String,
+        js_html_part: String,
+        css_html_part: String,
+        biblio_html_part: String,
+    ) -> Chapter {
+        let html_content = format!("{}\n{}\n{}", js_html_part, css_html_part, biblio_html_part);
         debug!(
             "Creating new Bibliography chapter (with title: \"{}\") with content: {:?}",
             title, html_content
         );
-        let cp2cb = format!(
-            "<script type=\"text/javascript\">\n{}\n</script>\n\n",
-            CP2CB
-        ); // Add the copy2clipboard js code
-        let css_style = format!("<style>{}</style>\n\n", CSS); // Add the style css for the biblio
-        let biblio_content = format!("{}\n{}\n{}", cp2cb, css_style, html_content);
 
         Chapter::new(
             &title,
-            format!("# {}\n{}", title, biblio_content),
+            format!("# {}\n{}", title, html_content),
             PathBuf::from("bibliography.md"),
             Vec::new(),
         )
@@ -327,8 +323,9 @@ impl Preprocessor for Bibiography {
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
-
-        let config = match Config::try_from(ctx.config.get_preprocessor(self.name())) {
+        let book_src_root = ctx.root.join(ctx.config.book.src.to_owned());
+        let table = ctx.config.get_preprocessor(self.name());
+        let config = match Config::build_from(table, book_src_root) {
             Ok(config) => config,
             Err(err) => {
                 warn!(
@@ -362,9 +359,19 @@ impl Preprocessor for Bibiography {
 
         let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
 
-        let html_content = Bibiography::generate_bibliography_html(&bib, &cited, config.cited_only);
+        let bib_content_html = Bibiography::generate_bibliography_html(
+            &bib,
+            &cited,
+            config.cited_only,
+            config.bib_hb_html,
+        );
 
-        let bib_chapter = Bibiography::create_bibliography_chapter(config.title, html_content);
+        let bib_chapter = Bibiography::create_bibliography_chapter(
+            config.title,
+            config.js_html,
+            config.css_html,
+            bib_content_html,
+        );
 
         book.push_item(bib_chapter);
 

@@ -1,18 +1,28 @@
-use std::collections::{HashMap, HashSet};
+use crate::config::DEFAULT_CSS_TEMPLATE;
+use crate::config::DEFAULT_HB_TEMPLATE;
+use crate::config::DEFAULT_JS_TEMPLATE;
+use crate::Bibiography;
 use std::fs::File;
 use std::io::Write;
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
+#[cfg(test)]
+// use std::{println as info, println as warn};
 use tempfile::Builder as TempFileBuilder;
 
 use crate::PlaceholderType::Cite;
 use crate::{
     build_bibliography, extract_date, find_placeholders, load_bibliography,
-    replace_all_placeholders, BibItem, Bibiography, Config,
+    replace_all_placeholders, BibItem, Config,
 };
 use toml::value::Table;
 use toml::Value;
 
-use std::convert::TryFrom;
+static EXAMPLE_CSS_TEMPLATE: &str = include_str!("../manual/src/render/my_style.css");
+static EXAMPLE_HB_TEMPLATE: &str = include_str!("../manual/src/render/my_references.hbs");
 
 const DUMMY_BIB_SRC: &str = r#"
 @misc {fps,
@@ -87,12 +97,22 @@ fn bibliography_render_all_vs_cited() {
     let mut cited = HashSet::new();
     cited.insert("fps".to_string());
 
-    let html = Bibiography::generate_bibliography_html(&bibliography_loaded, &cited, false);
+    let html = Bibiography::generate_bibliography_html(
+        &bibliography_loaded,
+        &cited,
+        false,
+        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+    );
 
     assert!(html.contains("This is a bib entry!"));
     assert!(html.contains("The Rust Programming Language"));
 
-    let html = Bibiography::generate_bibliography_html(&bibliography_loaded, &cited, true);
+    let html = Bibiography::generate_bibliography_html(
+        &bibliography_loaded,
+        &cited,
+        true,
+        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+    );
 
     assert!(html.contains("This is a bib entry!"));
     assert!(!html.contains("The Rust Programming Language"));
@@ -113,8 +133,12 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
         "https://doc.rust-lang.org/book/"
     );
     // ...and is included in the render
-    let html =
-        Bibiography::generate_bibliography_html(&bibliography_loaded, &HashSet::new(), false);
+    let html = Bibiography::generate_bibliography_html(
+        &bibliography_loaded,
+        &HashSet::new(),
+        false,
+        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+    );
     assert!(html.contains("href=\"https://doc.rust-lang.org/book/\""));
 }
 
@@ -167,25 +191,33 @@ fn find_only_citation_placeholders() {
     }
     assert_eq!(items, 0);
 }
-
+use std::env;
 #[test]
 fn check_config_attributes() {
-    let mut t: Table = Table::new();
-
     // Check config with default values is returned when an empty config is passed in a toml table!!!
-    match Config::try_from(Some(&t)) {
+    let t: Table = Table::new();
+    match Config::build_from(Some(&t), PathBuf::new()) {
         Ok(config) => {
             println!("{:?}", config);
             assert_eq!(config.title, "Bibliography");
             assert_eq!(config.bibliography, None);
             assert_eq!(config.zotero_uid, None);
             assert!(config.cited_only);
+            let default_tpl = format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE);
+            assert_eq!(config.bib_hb_html, default_tpl);
+            let default_css = format!("<style>{}</style>\n\n", DEFAULT_CSS_TEMPLATE);
+            assert_eq!(config.css_html, default_css);
+            let default_js = format!(
+                "<script type=\"text/javascript\">\n{}\n</script>\n\n",
+                DEFAULT_JS_TEMPLATE
+            );
+            assert_eq!(config.js_html, default_js);
         }
         Err(_) => panic!("there's supposed to be always a config!!!"),
     }
 
     // Check config attributes are processed (those that are not specified are ignored)!!!
-    t.insert("title".to_string(), Value::String("References".to_string()));
+    let mut t: Table = Table::new();
 
     t.insert(
         "bibliography".to_string(),
@@ -195,12 +227,13 @@ fn check_config_attributes() {
         "zotero-uid".to_string(),
         Value::String("123456".to_string()),
     );
+    t.insert("title".to_string(), Value::String("References".to_string()));
     t.insert("render-bib".to_string(), Value::String("all".to_string()));
     t.insert(
         "not-specified-config-attr".to_string(),
         Value::String("uhg???".to_string()),
     );
-    match Config::try_from(Some(&t)) {
+    match Config::build_from(Some(&t), PathBuf::new()) {
         Ok(config) => {
             println!("{:?}", config);
             assert_eq!(config.title, "References");
@@ -212,13 +245,46 @@ fn check_config_attributes() {
     }
 
     // Intentionally add a failure specifying a non-existing value for render-bib
+    let mut t: Table = Table::new();
     t.insert(
         "render-bib".to_string(),
         Value::String("non-existent!".to_string()),
     );
-    match Config::try_from(Some(&t)) {
+    match Config::build_from(Some(&t), PathBuf::new()) {
         Ok(_) => panic!("there's supposed to be a failure in the config!!!"),
         Err(_) => println!("Yayyyyy! A failure that is supposed to happen!"),
+    }
+
+    // Test adhoc template and style!!! (We check the template and style provided for the project doc/manual)
+    let mut t: Table = Table::new();
+    t.insert(
+        "hb-tpl".to_string(),
+        Value::String("render/my_references.hbs".to_string()),
+    );
+    t.insert(
+        "css".to_string(),
+        Value::String("render/my_style.css".to_string()),
+    );
+    // TODO No adhoc js tested at this time. Add one if added in the future to the project manual.
+    let mut manual_src_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    manual_src_path.push("manual/src/");
+    match Config::build_from(Some(&t), manual_src_path) {
+        Ok(config) => {
+            println!("{:?}", config);
+            let adhoc_tpl = format!("\n\n{}\n\n", EXAMPLE_HB_TEMPLATE);
+            assert_eq!(config.bib_hb_html, adhoc_tpl);
+            let adhoc_css = format!("<style>{}</style>\n\n", EXAMPLE_CSS_TEMPLATE);
+            assert_eq!(config.css_html, adhoc_css);
+            let default_js = format!(
+                "<script type=\"text/javascript\">\n{}\n</script>\n\n",
+                DEFAULT_JS_TEMPLATE
+            );
+            assert_eq!(config.js_html, default_js);
+        }
+        Err(e) => panic!(
+            "there's supposed to be always a config!!!\n {:?}",
+            e.root_cause()
+        ),
     }
 }
 
