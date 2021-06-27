@@ -16,3 +16,5 @@ git-repository-icon = "fa-github"
 [preprocessor.bib]
 bibliography = "bibliography.bib"
 title="References" # Custom title
+hb-tpl = "render/my_references.hbs"
+css = "render/my_style.css"
