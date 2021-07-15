@@ -2,7 +2,7 @@
 
 **mdbook-bib** requires **mdbook** to be installed. Follow the instructions [here](https://github.com/rust-lang/mdBook#installation) to install **mdbook**.
 
-If you are a [Rustacean](https://www.rust-lang.org/) and you have `Rust/Cargo` installed, you can get it from [Crates](https://crates.io/crates/mdbook-bib) with:
+Once mdbook is installed, if you are a [Rustacean](https://www.rust-lang.org/) and you have `Rust/Cargo` installed, you can get **mdbook-bib** from [Crates](https://crates.io/crates/mdbook-bib) simply with:
 
 ```sh
 cargo install mdbook-bib
