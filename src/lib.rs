@@ -42,7 +42,8 @@ impl Bibiography {
         let bib_content = match &cfg.bibliography {
             Some(biblio_file) => {
                 info!("Bibliography file: {}", biblio_file);
-                let biblio_path = ctx.root.join(Path::new(&biblio_file));
+                let mut biblio_path = ctx.root.join(ctx.config.book.src.to_owned());
+                biblio_path = biblio_path.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
                     Err(anyhow!(format!(
                         "Bibliography file {:?} not found!",
@@ -101,6 +102,7 @@ impl Bibiography {
 
     fn expand_cite_references_in_book(
         book: &mut Book,
+        bib_as_html_filepath: PathBuf,
         bibliography: &HashMap<String, BibItem>,
     ) -> HashSet<String> {
         let mut cited = HashSet::new();
@@ -111,8 +113,12 @@ impl Bibiography {
                         "Replacing placeholders({{#cite ..}}) in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content =
-                        replace_all_placeholders(&ch.content, bibliography, &mut cited);
+                    let new_content = replace_all_placeholders(
+                        &ch.content,
+                        bib_as_html_filepath.to_owned(),
+                        bibliography,
+                        &mut cited,
+                    );
                     ch.content = new_content;
                 }
             }
@@ -357,7 +363,11 @@ impl Preprocessor for Bibiography {
 
         let bib = bibliography.unwrap();
 
-        let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
+        let mut bib_as_html_filepath = ctx.root.join(ctx.config.build.build_dir.to_owned());
+        bib_as_html_filepath = bib_as_html_filepath.join("bibliography.html");
+        debug!("Path to html bib file: {:?}", bib_as_html_filepath);
+        let cited =
+            Bibiography::expand_cite_references_in_book(&mut book, bib_as_html_filepath, &bib);
 
         let bib_content_html = Bibiography::generate_bibliography_html(
             &bib,
@@ -385,6 +395,7 @@ impl Preprocessor for Bibiography {
 
 fn replace_all_placeholders<'a>(
     s: &'a str,
+    bib_as_html_filepath: PathBuf,
     bibliography: &HashMap<String, BibItem>,
     cited: &mut HashSet<String>,
 ) -> String {
@@ -396,8 +407,8 @@ fn replace_all_placeholders<'a>(
 
     for placeholder in find_placeholders(s) {
         replaced.push_str(&s[previous_end_index..placeholder.start_index]);
-
-        replaced.push_str(&placeholder.render_with_path(bibliography));
+        replaced
+            .push_str(&placeholder.render_with_path(bib_as_html_filepath.to_owned(), bibliography));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -453,11 +464,20 @@ impl<'a> Placeholder<'a> {
         })
     }
 
-    fn render_with_path(&self, bibliography: &HashMap<String, BibItem>) -> String {
+    fn render_with_path(
+        &self,
+        bib_as_html_filepath: PathBuf,
+        bibliography: &HashMap<String, BibItem>,
+    ) -> String {
         match self.placeholder_type {
             PlaceholderType::Cite(ref cite) => {
                 if bibliography.contains_key(cite) {
-                    format!("\\[[{}](bibliography.html#{})\\]", cite, cite)
+                    format!(
+                        "\\[[{}]({}#{})\\]",
+                        cite,
+                        bib_as_html_filepath.into_os_string().into_string().unwrap(),
+                        cite
+                    )
                 } else {
                     format!("\\[Unknown bib ref: {}\\]", cite)
                 }

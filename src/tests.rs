@@ -152,6 +152,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     // Check valid references included in a dummy text
     let text_with_citations = replace_all_placeholders(
         DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS,
+        PathBuf::from("bibliography.html"),
         &bibliography,
         &mut cited,
     );
@@ -163,6 +164,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     // Check a mix of valid and invalid references included/not included in a dummy text
     let text_with_citations = replace_all_placeholders(
         DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS,
+        PathBuf::from("bibliography.html"),
         &bibliography,
         &mut cited,
     );
