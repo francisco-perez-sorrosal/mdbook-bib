@@ -23,7 +23,7 @@ See all options in the [Install section of the manual](https://francisco-perez-s
 
 ## Add a BibLaTex File and Cite your Bib Entries!
 
-Add a bibliography file in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to the root of your book and then add the following section to the mdbook's `.toml` config file:
+Add a bibliography file in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to the root of your mdbook (which is pointed by the `src` parameter in the `[book]` section of the `.toml` file) and then add the following section to the mdbook's `.toml` config file:
 
 ```toml
 [book]

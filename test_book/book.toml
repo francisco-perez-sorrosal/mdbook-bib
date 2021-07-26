@@ -1,0 +1,18 @@
+[book]
+authors = ["Francisco Perez-Sorrosal & Martin Lange"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Basic Test Book"
+
+[build]
+build-dir = "public"
+
+[output.html]
+default-theme = "theme"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title="References" # Custom title
+hb-tpl = "render/my_references.hbs"
+css = "render/my_style.css"

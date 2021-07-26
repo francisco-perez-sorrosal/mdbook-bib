@@ -14,13 +14,13 @@ my_book/
     └── SUMMARY.md
 ```
 
-1. just add your `.bib` file containing the bibliography items to the root of your mdbook...
+1. just add your `.bib` file containing the bibliography items to the root source of your mdbook (pointed by the `src` parameter in the `[book]` section of the `.toml` file)...
 
 ```
 my_book/
 ├── book.toml
-├── my_biblio.bib
 └── src
+    ├── my_biblio.bib
     ├── chapter_1.md
     └── SUMMARY.md
 ```
