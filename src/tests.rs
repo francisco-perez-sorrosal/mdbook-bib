@@ -2,8 +2,10 @@ use crate::config::DEFAULT_CSS_TEMPLATE;
 use crate::config::DEFAULT_HB_TEMPLATE;
 use crate::config::DEFAULT_JS_TEMPLATE;
 use crate::Bibiography;
+use mdbook::MDBook;
 use std::fs::File;
 use std::io::Write;
+
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -152,6 +154,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     // Check valid references included in a dummy text
     let text_with_citations = replace_all_placeholders(
         DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS,
+        PathBuf::from("bibliography.html"),
         &bibliography,
         &mut cited,
     );
@@ -163,6 +166,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     // Check a mix of valid and invalid references included/not included in a dummy text
     let text_with_citations = replace_all_placeholders(
         DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS,
+        PathBuf::from("bibliography.html"),
         &bibliography,
         &mut cited,
     );
@@ -339,4 +343,56 @@ fn check_date_extractions_from_biblatex() {
     let (year, month) = extract_date(&fake_bib_entry);
     assert_eq!(year, "2021");
     assert_eq!(month, "N/A");
+}
+
+pub struct NotFound;
+
+/// Check if a string is present in the file contents
+pub fn find_str_in_file(input: String, file: PathBuf) -> Result<(), NotFound> {
+    let text = std::fs::read_to_string(file).unwrap();
+
+    for line in text.lines() {
+        if line.contains(&input) {
+            return Ok(());
+        }
+    }
+    anyhow::private::Err(NotFound)
+}
+
+#[test]
+fn process_test_book() {
+    let mut manual_src_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    manual_src_path.push("test_book/");
+    let mut md = MDBook::load(manual_src_path).unwrap();
+    let mdbook_bib_prepro = Bibiography::default();
+    md.with_preprocessor(mdbook_bib_prepro);
+    md.build().unwrap();
+
+    // Check both, root level and nested html files get placeholders substitued with
+    // bib references with absolute paths
+    let mut book_dest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    book_dest_path.push("test_book/public");
+
+    let mut bibliography_html_path = book_dest_path.clone();
+    bibliography_html_path.push("bibliography.html");
+
+    let mut bib_reference: String = bibliography_html_path
+        .into_os_string()
+        .into_string()
+        .unwrap();
+    bib_reference.push_str("#mdBook");
+
+    let mut non_nested_html = book_dest_path.clone();
+    non_nested_html.push("intro.html");
+    match find_str_in_file(bib_reference.clone(), non_nested_html) {
+        Ok(_) => (),
+        Err(_) => panic!(),
+    }
+
+    let mut nested_html = book_dest_path.clone();
+    nested_html.push("chapter_1/intro.html");
+    match find_str_in_file(bib_reference.clone(), nested_html) {
+        Ok(_) => (),
+        Err(_) => panic!(),
+    }
 }

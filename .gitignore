@@ -12,6 +12,7 @@ Cargo.lock
 
 # Generated documentation location
 /manual/public
+/test_book/public
 
 # Intellij stuff
 .idea/
