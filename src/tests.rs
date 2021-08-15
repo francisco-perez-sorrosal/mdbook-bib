@@ -15,9 +15,9 @@ use std::{
 // use std::{println as info, println as warn};
 use tempfile::Builder as TempFileBuilder;
 
-use crate::PlaceholderType::Cite;
+use crate::PlaceholderType::{AtCite, Cite};
 use crate::{
-    build_bibliography, extract_date, find_placeholders, load_bibliography,
+    build_bibliography, extract_date, find_at_placeholders, find_placeholders, load_bibliography,
     replace_all_placeholders, BibItem, Config,
 };
 use toml::value::Table;
@@ -50,6 +50,10 @@ this is a dumb text that includes citations like {{ #cite fps }} and {{ #cite ru
 
 const DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS: &str = r#"
 this is a dumb text that includes valid and invalid citations like {{ #cite fps }} and {{ #cite im_not_there }}
+"#;
+
+const DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER: &str = r#"
+this is a dumb text that includes a valid citation with double @, as in @@fps.
 "#;
 
 const DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS: &str = r#"
@@ -183,6 +187,7 @@ fn find_only_citation_placeholders() {
     for plh in plhs {
         match plh.placeholder_type {
             Cite(_) => items += 1,
+            AtCite(_) => items += 1,
         };
     }
     assert_eq!(items, 2);
@@ -195,6 +200,22 @@ fn find_only_citation_placeholders() {
     }
     assert_eq!(items, 0);
 }
+
+#[test]
+fn find_only_at_citation_placeholders() {
+    // As long as placeholders are related to cites, they are found, independently of whether they
+    // are valid or not
+    let plhs = find_at_placeholders(DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER);
+    let mut items = 0;
+    for plh in plhs {
+        match plh.placeholder_type {
+            Cite(_) => items += 1,
+            AtCite(_) => items += 1,
+        };
+    }
+    assert_eq!(items, 1);
+}
+
 use std::env;
 #[test]
 fn check_config_attributes() {

@@ -110,7 +110,7 @@ impl Bibiography {
             if let BookItem::Chapter(ref mut ch) = *section {
                 if let Some(ref chapter_path) = ch.path {
                     info!(
-                        "Replacing placeholders({{#cite ..}}) in {}",
+                        "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
                     let new_content = replace_all_placeholders(
@@ -412,7 +412,20 @@ fn replace_all_placeholders<'a>(
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
-            PlaceholderType::Cite(ref cite) => {
+            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
+                cited.insert(cite.to_owned());
+            }
+        }
+    }
+    // TODO Maybe look how to combine two iterators to avoid the duplicated code below
+    for placeholder in find_at_placeholders(s) {
+        replaced.push_str(&s[previous_end_index..placeholder.start_index]);
+        replaced
+            .push_str(&placeholder.render_with_path(bib_as_html_filepath.to_owned(), bibliography));
+        previous_end_index = placeholder.end_index;
+
+        match placeholder.placeholder_type {
+            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
                 cited.insert(cite.to_owned());
             }
         }
@@ -426,9 +439,14 @@ fn parse_cite(cite: &str) -> PlaceholderType {
     PlaceholderType::Cite(cite.to_owned())
 }
 
+fn parse_at_cite(cite: &str) -> PlaceholderType {
+    PlaceholderType::AtCite(cite.to_owned())
+}
+
 #[derive(PartialEq, Debug, Clone)]
 enum PlaceholderType {
     Cite(String),
+    AtCite(String),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -448,6 +466,7 @@ impl<'a> Placeholder<'a> {
 
                 match (typ.as_str(), file_arg) {
                     ("cite", Some(cite)) => Some(parse_cite(cite)),
+                    ("@@", Some(cite)) => Some(parse_at_cite(cite)),
                     _ => None,
                 }
             }
@@ -470,7 +489,7 @@ impl<'a> Placeholder<'a> {
         bibliography: &HashMap<String, BibItem>,
     ) -> String {
         match self.placeholder_type {
-            PlaceholderType::Cite(ref cite) => {
+            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
                 if bibliography.contains_key(cite) {
                     format!(
                         "\\[[{}]({}#{})\\]",
@@ -518,6 +537,14 @@ fn find_placeholders(contents: &str) -> PlaceholderIter<'_> {
         .unwrap();
     }
     PlaceholderIter(RE.captures_iter(contents))
+}
+
+const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
+fn find_at_placeholders(contents: &str) -> PlaceholderIter<'_> {
+    lazy_static! {
+        static ref REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
+    }
+    PlaceholderIter(REF_REGEX.captures_iter(contents))
 }
 
 #[cfg(test)]
