@@ -61,12 +61,10 @@ Zotero account.
 
 ## Add References/Citations to the Bibliography
 
-In your markdown files, create references/citations to the citation-keys included in the `.bib` file with the 
-following syntax:
+In your markdown files, create references/citations to the citation-keys included in the `.bib` file with any of these two options:
 
-```handlebars
-{{#cite my-citation-key}}
-```
+1. Surround the citation key with the `{{#cite` and `}}` delimiters
+2. Prepend the citation key with two `@` characters
 
 ## Configure your own Style for Bibliography Entries
 

@@ -9,6 +9,12 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 [![Crate](https://img.shields.io/crates/v/mdbook-bib.svg)](https://crates.io/crates/mdbook-bib)
 ![Crates.io](https://img.shields.io/crates/d/mdbook-bib?style=social&link=https://crates.io/crates/mdbook-bib)
 
+## Features
+
+- Add citations from your BibLaText files
+- Automatically download your public bibliography from Zotero and cite it
+- Allows defining a template for the citations shown in the references page
+
 ## Basic Install
 
 If you have [mdbook](https://github.com/rust-lang/mdBook) installed just do:
@@ -38,6 +44,11 @@ Now you can add references/citations to the citation-keys appearing in the `.bib
 
 ```handlebars
 {{#cite my-citation-key}}
+```
+or simply with:
+
+```handlebars
+@@my-citation-key
 ```
 
 See other configuration options in the [Config section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/config.html).

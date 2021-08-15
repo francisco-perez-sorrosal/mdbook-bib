@@ -5,7 +5,7 @@
 [![Test status](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml/badge.svg)](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml)
 [![MPL-2.0 License](https://img.shields.io/github/license/francisco-perez-sorrosal/mdbook-bib)](https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE)
 
-**mdbook-bib** is a {{#cite mdBook}} plugin for creating a bibliography & reference its citations in your books.
+**mdbook-bib** is a {{#cite mdBook}} plugin for creating a bibliography & reference its citations in your books. mdBook is written in the Rust language @@Klabnik2018.
 
 ### GitHub project
 
