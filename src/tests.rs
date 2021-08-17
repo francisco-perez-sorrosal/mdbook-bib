@@ -23,6 +23,8 @@ use crate::{
 use toml::value::Table;
 use toml::Value;
 
+use mdbook::book::Chapter;
+
 static EXAMPLE_CSS_TEMPLATE: &str = include_str!("../manual/src/render/my_style.css");
 static EXAMPLE_HB_TEMPLATE: &str = include_str!("../manual/src/render/my_references.hbs");
 
@@ -156,26 +158,91 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     let mut cited: HashSet<String> = HashSet::new();
 
     // Check valid references included in a dummy text
-    let text_with_citations = replace_all_placeholders(
-        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS,
-        PathBuf::from("bibliography.html"),
-        &bibliography,
-        &mut cited,
+    let chapter = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        "source.md",
+        vec![],
     );
+    let text_with_citations = replace_all_placeholders(&chapter, &bibliography, &mut cited);
     // TODO: These asserts will probably fail if we allow users to specify the bibliography
     // chapter name as per issue #6
     assert!(text_with_citations.contains("[fps](bibliography.html#fps)"));
     assert!(text_with_citations.contains("[rust_book](bibliography.html#rust_book)"));
 
     // Check a mix of valid and invalid references included/not included in a dummy text
-    let text_with_citations = replace_all_placeholders(
-        DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS,
-        PathBuf::from("bibliography.html"),
-        &bibliography,
-        &mut cited,
+    let chapter = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS.into(),
+        "source.md",
+        vec![],
     );
+    let text_with_citations = replace_all_placeholders(&chapter, &bibliography, &mut cited);
     assert!(text_with_citations.contains("[fps]"));
     assert!(text_with_citations.contains("[Unknown bib ref:"));
+}
+
+#[test]
+fn citations_in_subfolders_link_properly() {
+    let bibliography: HashMap<String, BibItem> =
+        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+
+    // Check valid references included in a dummy text
+    let check_citations_for = |chapter: &Chapter, link: &str| {
+        let text_with_citations =
+            replace_all_placeholders(&chapter, &bibliography, &mut HashSet::new());
+
+        // TODO: These asserts will probably fail if we allow users to specify the bibliography
+        // chapter name as per issue #6
+        assert!(
+            text_with_citations.contains(&format!("[fps]({}#fps)", link)),
+            "Expecting link to '{}' in string '{}'",
+            link,
+            text_with_citations
+        );
+        assert!(
+            text_with_citations.contains(&format!("[rust_book]({}#rust_book)", link)),
+            "Expecting link to '{}' in string '{}'",
+            link,
+            text_with_citations
+        );
+    };
+
+    let mut draft_chapter = Chapter::new_draft("", vec![]);
+    draft_chapter.content = DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into();
+    check_citations_for(&draft_chapter, "bibliography.html");
+
+    let chapter_root = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        "source.md",
+        vec![],
+    );
+    check_citations_for(&chapter_root, "bibliography.html");
+
+    let chapter_1down = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        "dir1/source.md",
+        vec![],
+    );
+    check_citations_for(&chapter_1down, "../bibliography.html");
+
+    let chapter_2down = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        "dir1/dir2/source.md",
+        vec![],
+    );
+    check_citations_for(&chapter_2down, "../../bibliography.html");
+
+    let chapter_noncanon = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        "dir1/dir2/../source.md",
+        vec![],
+    );
+    check_citations_for(&chapter_noncanon, "../bibliography.html");
 }
 
 #[test]
@@ -369,11 +436,11 @@ fn check_date_extractions_from_biblatex() {
 pub struct NotFound;
 
 /// Check if a string is present in the file contents
-pub fn find_str_in_file(input: String, file: PathBuf) -> Result<(), NotFound> {
+pub fn find_str_in_file(input: &str, file: PathBuf) -> Result<(), NotFound> {
     let text = std::fs::read_to_string(file).unwrap();
 
     for line in text.lines() {
-        if line.contains(&input) {
+        if line.contains(input) {
             return Ok(());
         }
     }
@@ -390,29 +457,22 @@ fn process_test_book() {
     md.build().unwrap();
 
     // Check both, root level and nested html files get placeholders substitued with
-    // bib references with absolute paths
+    // bib references with relative paths
     let mut book_dest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     book_dest_path.push("test_book/public");
 
-    let mut bibliography_html_path = book_dest_path.clone();
-    bibliography_html_path.push("bibliography.html");
-
-    let mut bib_reference: String = bibliography_html_path
-        .into_os_string()
-        .into_string()
-        .unwrap();
-    bib_reference.push_str("#mdBook");
+    let bib_reference = "bibliography.html#mdBook";
 
     let mut non_nested_html = book_dest_path.clone();
     non_nested_html.push("intro.html");
-    match find_str_in_file(bib_reference.clone(), non_nested_html) {
+    match find_str_in_file(bib_reference, non_nested_html) {
         Ok(_) => (),
         Err(_) => panic!(),
     }
 
     let mut nested_html = book_dest_path.clone();
     nested_html.push("chapter_1/intro.html");
-    match find_str_in_file(bib_reference.clone(), nested_html) {
+    match find_str_in_file(bib_reference, nested_html) {
         Ok(_) => (),
         Err(_) => panic!(),
     }

@@ -4,8 +4,7 @@ extern crate lazy_static;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 use crate::config::Config;
 use anyhow::anyhow;
@@ -102,7 +101,6 @@ impl Bibiography {
 
     fn expand_cite_references_in_book(
         book: &mut Book,
-        bib_as_html_filepath: PathBuf,
         bibliography: &HashMap<String, BibItem>,
     ) -> HashSet<String> {
         let mut cited = HashSet::new();
@@ -113,12 +111,7 @@ impl Bibiography {
                         "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content = replace_all_placeholders(
-                        &ch.content,
-                        bib_as_html_filepath.to_owned(),
-                        bibliography,
-                        &mut cited,
-                    );
+                    let new_content = replace_all_placeholders(&ch, bibliography, &mut cited);
                     ch.content = new_content;
                 }
             }
@@ -362,12 +355,7 @@ impl Preprocessor for Bibiography {
         }
 
         let bib = bibliography.unwrap();
-
-        let mut bib_as_html_filepath = ctx.root.join(ctx.config.build.build_dir.to_owned());
-        bib_as_html_filepath = bib_as_html_filepath.join("bibliography.html");
-        debug!("Path to html bib file: {:?}", bib_as_html_filepath);
-        let cited =
-            Bibiography::expand_cite_references_in_book(&mut book, bib_as_html_filepath, &bib);
+        let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
 
         let bib_content_html = Bibiography::generate_bibliography_html(
             &bib,
@@ -394,8 +382,7 @@ impl Preprocessor for Bibiography {
 }
 
 fn replace_all_placeholders<'a>(
-    s: &'a str,
-    bib_as_html_filepath: PathBuf,
+    chapter: &Chapter,
     bibliography: &HashMap<String, BibItem>,
     cited: &mut HashSet<String>,
 ) -> String {
@@ -405,10 +392,15 @@ fn replace_all_placeholders<'a>(
     let mut previous_end_index = 0;
     let mut replaced = String::new();
 
-    for placeholder in find_placeholders(s) {
-        replaced.push_str(&s[previous_end_index..placeholder.start_index]);
-        replaced
-            .push_str(&placeholder.render_with_path(bib_as_html_filepath.to_owned(), bibliography));
+    let chapter_path = chapter
+        .path
+        .as_ref()
+        .map(|p| p.as_path())
+        .unwrap_or_else(|| std::path::Path::new(""));
+
+    for placeholder in find_placeholders(&chapter.content) {
+        replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
+        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -418,10 +410,9 @@ fn replace_all_placeholders<'a>(
         }
     }
     // TODO Maybe look how to combine two iterators to avoid the duplicated code below
-    for placeholder in find_at_placeholders(s) {
-        replaced.push_str(&s[previous_end_index..placeholder.start_index]);
-        replaced
-            .push_str(&placeholder.render_with_path(bib_as_html_filepath.to_owned(), bibliography));
+    for placeholder in find_at_placeholders(&chapter.content) {
+        replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
+        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -431,7 +422,7 @@ fn replace_all_placeholders<'a>(
         }
     }
 
-    replaced.push_str(&s[previous_end_index..]);
+    replaced.push_str(&chapter.content[previous_end_index..]);
     replaced
 }
 
@@ -485,17 +476,16 @@ impl<'a> Placeholder<'a> {
 
     fn render_with_path(
         &self,
-        bib_as_html_filepath: PathBuf,
+        source_file: &std::path::Path,
         bibliography: &HashMap<String, BibItem>,
     ) -> String {
         match self.placeholder_type {
             PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
                 if bibliography.contains_key(cite) {
+                    let path_to_root = breadcrumbs_up_to_root(source_file);
                     format!(
-                        "\\[[{}]({}#{})\\]",
-                        cite,
-                        bib_as_html_filepath.into_os_string().into_string().unwrap(),
-                        cite
+                        "\\[[{}]({}bibliography.html#{})\\]",
+                        cite, path_to_root, cite
                     )
                 } else {
                     format!("\\[Unknown bib ref: {}\\]", cite)
@@ -537,6 +527,28 @@ fn find_placeholders(contents: &str) -> PlaceholderIter<'_> {
         .unwrap();
     }
     PlaceholderIter(RE.captures_iter(contents))
+}
+
+fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
+    if source_file.as_os_str().is_empty() {
+        return "".into();
+    }
+
+    let components_count = source_file.components().fold(0, |acc, c| match c {
+        Component::Normal(_) => acc + 1,
+        Component::ParentDir => acc - 1,
+        Component::CurDir => acc,
+        Component::RootDir | Component::Prefix(_) => panic!(
+            "mdBook is not supposed to give us absolute paths, only relative from the book root."
+        ),
+    }) - 1;
+
+    let mut to_root = vec![".."; components_count].join("/");
+    if components_count > 0 {
+        to_root.push('/');
+    }
+
+    to_root
 }
 
 const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
