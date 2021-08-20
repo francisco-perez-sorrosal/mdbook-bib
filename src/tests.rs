@@ -190,7 +190,7 @@ fn citations_in_subfolders_link_properly() {
     // Check valid references included in a dummy text
     let check_citations_for = |chapter: &Chapter, link: &str| {
         let text_with_citations =
-            replace_all_placeholders(&chapter, &bibliography, &mut HashSet::new());
+            replace_all_placeholders(chapter, &bibliography, &mut HashSet::new());
 
         // TODO: These asserts will probably fail if we allow users to specify the bibliography
         // chapter name as per issue #6
