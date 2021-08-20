@@ -111,7 +111,7 @@ impl Bibiography {
                         "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content = replace_all_placeholders(&ch, bibliography, &mut cited);
+                    let new_content = replace_all_placeholders(ch, bibliography, &mut cited);
                     ch.content = new_content;
                 }
             }
@@ -381,7 +381,7 @@ impl Preprocessor for Bibiography {
     }
 }
 
-fn replace_all_placeholders<'a>(
+fn replace_all_placeholders(
     chapter: &Chapter,
     bibliography: &HashMap<String, BibItem>,
     cited: &mut HashSet<String>,
@@ -394,8 +394,7 @@ fn replace_all_placeholders<'a>(
 
     let chapter_path = chapter
         .path
-        .as_ref()
-        .map(|p| p.as_path())
+        .as_deref()
         .unwrap_or_else(|| std::path::Path::new(""));
 
     for placeholder in find_placeholders(&chapter.content) {
