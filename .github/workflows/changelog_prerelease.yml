@@ -38,3 +38,4 @@ jobs:
           branch: changelog-github
           commit_message: "Auto-update changelog!!!"
           file_pattern: "CHANGELOG.md"
+          skip_dirty_check: true
