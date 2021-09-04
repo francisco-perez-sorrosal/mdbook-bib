@@ -1,5 +1,35 @@
 #
 
+## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+
+**Fixed bugs:**
+
+- The @ symbol in the content of a reference is not properly parsed by nom-bibtex [\#25](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/25)
+- Citations from sub-directory link to wrong bibliography.html [\#24](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/24)
+- Link to bibliography from citations in subfolders [\#34](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/34) ([tchernobog](https://github.com/tchernobog))
+- Fix parsing of @ symbol in bibtex content [\#26](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/26) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+
+**Documentation:**
+
+- Add a Features section in the README.md [\#35](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/35)
+- Add and automate a Changelog [\#22](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/22)
+- Create a separated user guide describing the plugin configuration options [\#20](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/20)
+- Shorten README.md & reference the book for additional info [\#27](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/27) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+
+**Closed issues:**
+
+- Allow also citations with @ in the same way as yarner-lib [\#31](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/31)
+- Release v0.3.0 binaries [\#23](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/23)
+- Custom reference styles [\#15](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/15)
+- \[Feature\] Make title of bibliography configurable [\#6](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/6)
+
+**Merged pull requests:**
+
+- Allow citations with @@citation-key [\#33](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/33) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Fix location of .bib in book scaffold and fix \#24 [\#30](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/30) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Allow custom reference styles [\#29](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/29) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Consolidate config style with hyphens [\#19](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/19) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+
 ## [v0.0.3](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.3) (2021-04-04)
 
 **Documentation:**
@@ -18,8 +48,8 @@
 
 **Merged pull requests:**
 
+- Add bib title config param [\#28](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/28) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - \[\#8\] Extract url from bib entries and render a link on the title of t… [\#21](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/21) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
-- Consolidate config style with hyphens [\#19](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/19) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Parse fields `year` and `month` if `date` is not present [\#18](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/18) ([mlange-42](https://github.com/mlange-42))
 - More tests for critical functionality [\#17](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/17) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Publish to Releases [\#14](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/14) ([mlange-42](https://github.com/mlange-42))
