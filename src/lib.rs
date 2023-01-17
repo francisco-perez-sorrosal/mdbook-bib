@@ -41,7 +41,7 @@ impl Bibiography {
         let bib_content = match &cfg.bibliography {
             Some(biblio_file) => {
                 info!("Bibliography file: {}", biblio_file);
-                let mut biblio_path = ctx.root.join(ctx.config.book.src.to_owned());
+                let mut biblio_path = ctx.root.join(&ctx.config.book.src);
                 biblio_path = biblio_path.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
                     Err(anyhow!(format!(
@@ -62,7 +62,7 @@ impl Bibiography {
                         if !bib_str.is_empty() {
                             let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
                             info!("Saving Zotero bibliography to {:?}", biblio_path);
-                            let _ = fs::write(biblio_path, bib_str.to_owned());
+                            let _ = fs::write(biblio_path, &bib_str);
                             Ok(bib_str)
                         } else {
                             // warn!("Bib content retrieved from Zotero is empty!");
@@ -242,7 +242,7 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
     log::info!("Building bibliography...");
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
-    let mut biblatex_content = raw_content.replace("\"", "");
+    let mut biblatex_content = raw_content.replace('\"', "");
     // Expressions in the content such as R@10 are not parsed well
     let re = Regex::new(r" (?P<before>[A-Za-z])@(?P<after>\d+) ").unwrap();
     biblatex_content = re
@@ -322,7 +322,7 @@ impl Preprocessor for Bibiography {
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
-        let book_src_root = ctx.root.join(ctx.config.book.src.to_owned());
+        let book_src_root = ctx.root.join(&ctx.config.book.src);
         let table = ctx.config.get_preprocessor(self.name());
         let config = match Config::build_from(table, book_src_root) {
             Ok(config) => config,
