@@ -151,7 +151,7 @@ pub struct BibItem {
     /// The article's title.
     pub title: String,
     /// The article's author/s.
-    pub authors: String,
+    pub authors: Vec<Vec<String>>,
     /// Pub month.
     pub pub_month: String,
     /// Pub year.
@@ -167,7 +167,7 @@ impl BibItem {
     pub fn new(
         citation_key: &str,
         title: String,
-        authors: String,
+        authors: Vec<Vec<String>>,
         pub_month: String,
         pub_year: String,
         summary: String,
@@ -271,9 +271,9 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
             info!("{:?}", &tm);
             let (pub_year, pub_month) = extract_date(&tm);
 
-            let authors: Vec<String> = authors_str
+            let authors: Vec<Vec<String>> = authors_str
                 .split("and")
-                .map(|a| a.trim().to_string())
+                .map(|a| a.trim().split(',').map(|b| b.trim().to_string()).collect())
                 .collect();
             let url: Option<String> = tm.get("url").map(|u| (*u.to_owned()).parse().unwrap());
 
@@ -285,7 +285,7 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
                         .get("title")
                         .unwrap_or(&"Not Found".to_owned())
                         .to_string(),
-                    authors: authors.join(", "),
+                    authors,
                     pub_month,
                     pub_year,
                     summary: tm.get("abstract").unwrap_or(&"N/A".to_owned()).to_string(),
