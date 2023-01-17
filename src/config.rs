@@ -8,7 +8,7 @@ use toml::value::Table;
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
-pub static DEFAULT_CITE_HB_TEMPLATE: &str = include_str!("./render/cite_author_year.hbs");
+pub static DEFAULT_CITE_HB_TEMPLATE: &str = include_str!("./render/cite_key.hbs");
 
 #[derive(Debug)]
 pub struct Config<'a> {
@@ -88,12 +88,11 @@ impl<'a> Config<'a> {
                             "Using HB template for citations from {:?}...",
                             template_path_str
                         );
-                        let template_content = fs::read_to_string(template_path_str)?;
-                        format!("\n\n{}\n\n", template_content)
+                        fs::read_to_string(template_path_str)?
                     }
                     None => {
                         info!("Using default citation HB template...");
-                        format!("\n\n{}\n\n", DEFAULT_CITE_HB_TEMPLATE)
+                        DEFAULT_CITE_HB_TEMPLATE.to_string()
                     }
                 },
 
