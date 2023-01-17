@@ -1,6 +1,6 @@
-use crate::config::DEFAULT_CSS_TEMPLATE;
 use crate::config::DEFAULT_HB_TEMPLATE;
 use crate::config::DEFAULT_JS_TEMPLATE;
+use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
 use crate::Bibiography;
 use mdbook::MDBook;
 use std::fs::File;
@@ -164,7 +164,12 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         "source.md",
         vec![],
     );
-    let text_with_citations = replace_all_placeholders(&chapter, &bibliography, &mut cited);
+    let text_with_citations = replace_all_placeholders(
+        &chapter,
+        &bibliography,
+        &mut cited,
+        DEFAULT_CITE_HB_TEMPLATE,
+    );
     // TODO: These asserts will probably fail if we allow users to specify the bibliography
     // chapter name as per issue #6
     assert!(text_with_citations.contains("[fps](bibliography.html#fps)"));
@@ -177,7 +182,12 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         "source.md",
         vec![],
     );
-    let text_with_citations = replace_all_placeholders(&chapter, &bibliography, &mut cited);
+    let text_with_citations = replace_all_placeholders(
+        &chapter,
+        &bibliography,
+        &mut cited,
+        DEFAULT_CITE_HB_TEMPLATE,
+    );
     assert!(text_with_citations.contains("[fps]"));
     assert!(text_with_citations.contains("[Unknown bib ref:"));
 }
@@ -189,8 +199,12 @@ fn citations_in_subfolders_link_properly() {
 
     // Check valid references included in a dummy text
     let check_citations_for = |chapter: &Chapter, link: &str| {
-        let text_with_citations =
-            replace_all_placeholders(chapter, &bibliography, &mut HashSet::new());
+        let text_with_citations = replace_all_placeholders(
+            chapter,
+            &bibliography,
+            &mut HashSet::new(),
+            DEFAULT_CITE_HB_TEMPLATE,
+        );
 
         // TODO: These asserts will probably fail if we allow users to specify the bibliography
         // chapter name as per issue #6
@@ -456,7 +470,7 @@ fn process_test_book() {
     md.with_preprocessor(mdbook_bib_prepro);
     md.build().unwrap();
 
-    // Check both, root level and nested html files get placeholders substitued with
+    // Check both, root level and nested html files get placeholders substituted with
     // bib references with relative paths
     let mut book_dest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     book_dest_path.push("test_book/public");

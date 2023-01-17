@@ -8,6 +8,7 @@ use toml::value::Table;
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
+pub static DEFAULT_CITE_HB_TEMPLATE: &str = include_str!("./render/cite_key.hbs");
 
 #[derive(Debug)]
 pub struct Config<'a> {
@@ -21,6 +22,8 @@ pub struct Config<'a> {
     pub cited_only: bool,
     /// HTML content of the Handlebars render template for references
     pub bib_hb_html: String,
+    /// HTML content of the Handlebars render template for inline citations
+    pub cite_hb_html: String,
     /// Extra CSS style content for the ad-hoc Handlebars template
     pub css_html: String,
     /// Extra Javascript functions for the ad-hoc Handlebars template
@@ -72,6 +75,25 @@ impl<'a> Config<'a> {
                     None => {
                         info!("Using default HB template...");
                         format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE)
+                    }
+                },
+
+                cite_hb_html: match table.get("cite-hb-tpl") {
+                    Some(template) => {
+                        let template_path =
+                            book_src_path.join(Path::new(&template.as_str().unwrap().to_string()));
+                        let template_path_str =
+                            template_path.into_os_string().into_string().unwrap();
+                        info!(
+                            "Using HB template for citations from {:?}...",
+                            template_path_str
+                        );
+                        let template_content = fs::read_to_string(template_path_str)?;
+                        format!("\n\n{}\n\n", template_content)
+                    }
+                    None => {
+                        info!("Using default citation HB template...");
+                        format!("\n\n{}\n\n", DEFAULT_CITE_HB_TEMPLATE)
                     }
                 },
 

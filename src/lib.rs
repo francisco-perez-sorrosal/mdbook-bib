@@ -102,6 +102,7 @@ impl Bibiography {
     fn expand_cite_references_in_book(
         book: &mut Book,
         bibliography: &HashMap<String, BibItem>,
+        citation_tpl: &str,
     ) -> HashSet<String> {
         let mut cited = HashSet::new();
         book.for_each_mut(|section: &mut BookItem| {
@@ -111,7 +112,8 @@ impl Bibiography {
                         "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content = replace_all_placeholders(ch, bibliography, &mut cited);
+                    let new_content =
+                        replace_all_placeholders(ch, bibliography, &mut cited, citation_tpl);
                     ch.content = new_content;
                 }
             }
@@ -181,6 +183,12 @@ impl BibItem {
             url,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Citation {
+    pub item: BibItem,
+    pub path: String,
 }
 
 /// Load bibliography from file
@@ -355,7 +363,8 @@ impl Preprocessor for Bibiography {
         }
 
         let bib = bibliography.unwrap();
-        let cited = Bibiography::expand_cite_references_in_book(&mut book, &bib);
+        let cited =
+            Bibiography::expand_cite_references_in_book(&mut book, &bib, &config.cite_hb_html);
 
         let bib_content_html = Bibiography::generate_bibliography_html(
             &bib,
@@ -385,7 +394,13 @@ fn replace_all_placeholders(
     chapter: &Chapter,
     bibliography: &HashMap<String, BibItem>,
     cited: &mut HashSet<String>,
+    citation_tpl: &str,
 ) -> String {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_string("citation", citation_tpl)
+        .unwrap();
+    debug!("Handlebars content: {:?}", handlebars);
     // When replacing one thing in a string by something with a different length,
     // the indices after that will not correspond,
     // we therefore have to store the difference to correct this
@@ -399,7 +414,7 @@ fn replace_all_placeholders(
 
     for placeholder in find_placeholders(&chapter.content) {
         replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography));
+        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography, &handlebars));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -411,7 +426,7 @@ fn replace_all_placeholders(
     // TODO Maybe look how to combine two iterators to avoid the duplicated code below
     for placeholder in find_at_placeholders(&chapter.content) {
         replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography));
+        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography, &handlebars));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -477,15 +492,21 @@ impl<'a> Placeholder<'a> {
         &self,
         source_file: &std::path::Path,
         bibliography: &HashMap<String, BibItem>,
+        handlebars: &Handlebars,
     ) -> String {
         match self.placeholder_type {
             PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
                 if bibliography.contains_key(cite) {
                     let path_to_root = breadcrumbs_up_to_root(source_file);
-                    format!(
-                        "\\[[{}]({}bibliography.html#{})\\]",
-                        cite, path_to_root, cite
-                    )
+                    let citation = Citation {
+                        item: bibliography.get(cite).unwrap().to_owned(),
+                        path: path_to_root,
+                    };
+                    handlebars
+                        .render("citation", &citation)
+                        .unwrap()
+                        .as_str()
+                        .to_string()
                 } else {
                     format!("\\[Unknown bib ref: {}\\]", cite)
                 }
