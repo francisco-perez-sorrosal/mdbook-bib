@@ -7,7 +7,7 @@ keywords = ["mdbook", "bibliography", "bib", "plugin", "preprocessor"]
 license = "MPL-2.0"
 readme = "README.md"
 repository = "https://github.com/francisco-perez-sorrosal/mdbook-bib"
-edition = "2018"
+edition = "2021"
 exclude = [
     ".github/*",
 ]
@@ -17,9 +17,9 @@ exclude = [
 [dependencies]
 anyhow = "1.0.28"
 chrono = "0.4"
-clap = "2.24"
-env_logger = "0.8.2"
-handlebars = { version = "3.5.2", features = ["dir_source"] }
+clap = { version = "4.1", features = ["help", "usage", "error-context"] }
+env_logger = "0.10.0"
+handlebars = { version = "4.3.6", features = ["dir_source"] }
 lazy_static = "1.0"
 lexical-core = ">=0.7.5"
 log = "0.4"

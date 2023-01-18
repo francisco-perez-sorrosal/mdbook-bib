@@ -469,7 +469,7 @@ pub fn find_str_in_file(input: &str, file: PathBuf) -> Result<(), NotFound> {
             return Ok(());
         }
     }
-    anyhow::private::Err(NotFound)
+    Err(NotFound)
 }
 
 #[test]
