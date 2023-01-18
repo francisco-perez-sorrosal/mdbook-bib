@@ -34,7 +34,7 @@ fn main() {
     if let Some(sub_args) = matches.subcommand_matches("supports") {
         handle_supports(&preprocessor, sub_args);
     } else if let Err(e) = handle_preprocessing(&preprocessor) {
-        eprintln!("Errors: {}", e);
+        eprintln!("Errors: {e}");
         process::exit(1);
     }
 }
