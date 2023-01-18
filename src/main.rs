@@ -5,21 +5,21 @@ use std::io;
 use std::process;
 
 use chrono::Local;
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgMatches, Command};
 use env_logger::Builder;
 use log::LevelFilter;
 use mdbook::errors::Error;
 use mdbook::preprocess::{CmdPreprocessor, Preprocessor};
 
-pub fn make_app() -> App<'static, 'static> {
-    App::new("bib")
+pub fn make_app() -> Command {
+    Command::new("bib")
         .about(
             "A mdbook plugin (preprocessor) which loads/presents/allows citation of \
         bibliography entries in a .bib format",
         )
         .subcommand(
-            SubCommand::with_name("supports")
-                .arg(Arg::with_name("renderer").required(true))
+            Command::new("supports")
+                .arg(Arg::new("renderer").required(true))
                 .about("Check whether a renderer is supported by this preprocessor"),
         )
 }
@@ -84,7 +84,9 @@ fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
 }
 
 fn handle_supports(pre: &dyn Preprocessor, sub_args: &ArgMatches) -> ! {
-    let renderer = sub_args.value_of("renderer").expect("Required argument");
+    let renderer = sub_args
+        .get_one::<String>("renderer")
+        .expect("Required argument");
     let supported = pre.supports_renderer(renderer);
 
     // Signal whether the renderer is supported by exiting with 1 or 0.
