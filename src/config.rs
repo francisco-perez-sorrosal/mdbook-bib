@@ -44,8 +44,7 @@ impl FromStr for SortOrder {
             "author" => Ok(SortOrder::Author),
             "index" => Ok(SortOrder::Index),
             _ => Err(ParseEnumError(format!(
-                "Unknown option '{}' for bibliograph order. Must be one of [none key author index]",
-                input,
+                "Unknown option '{input}' for bibliograph order. Must be one of [none key author index]",
             ))),
         }
     }
@@ -111,11 +110,11 @@ impl<'a> Config<'a> {
                             template_path_str
                         );
                         let template_content = fs::read_to_string(template_path_str)?;
-                        format!("\n\n{}\n\n", template_content)
+                        format!("\n\n{template_content}\n\n")
                     }
                     None => {
                         info!("Using default HB template...");
-                        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE)
+                        format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n")
                     }
                 },
 
@@ -147,11 +146,11 @@ impl<'a> Config<'a> {
                             css_path_str
                         );
                         let css_content = fs::read_to_string(css_path_str)?;
-                        format!("<style>{}</style>\n\n", css_content)
+                        format!("<style>{css_content}</style>\n\n")
                     }
                     None => {
                         info!("Using default CSS template...");
-                        format!("<style>{}</style>\n\n", DEFAULT_CSS_TEMPLATE) // Add the style css for the biblio
+                        format!("<style>{DEFAULT_CSS_TEMPLATE}</style>\n\n") // Add the style css for the biblio
                     }
                 },
 
@@ -165,25 +164,16 @@ impl<'a> Config<'a> {
                             js_path_str
                         );
                         let js_content = fs::read_to_string(js_path_str)?;
-                        format!(
-                            "<script type=\"text/javascript\">\n{}\n</script>\n\n",
-                            js_content
-                        )
+                        format!("<script type=\"text/javascript\">\n{js_content}\n</script>\n\n")
                     }
                     None => {
                         info!("Using default JS template...");
-                        format!(
-                            "<script type=\"text/javascript\">\n{}\n</script>\n\n",
-                            DEFAULT_JS_TEMPLATE
-                        )
+                        format!("<script type=\"text/javascript\">\n{DEFAULT_JS_TEMPLATE}\n</script>\n\n")
                     }
                 },
 
                 order: match table.get("order") {
-                    Some(order) => {
-                        let order = SortOrder::from_str(order.as_str().unwrap())?;
-                        order
-                    }
+                    Some(order) => SortOrder::from_str(order.as_str().unwrap())?,
                     None => SortOrder::None,
                 },
             })

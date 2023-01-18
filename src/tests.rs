@@ -110,7 +110,7 @@ fn bibliography_render_all_vs_cited() {
         &bibliography_loaded,
         &cited,
         false,
-        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n"),
         SortOrder::None,
     );
 
@@ -121,7 +121,7 @@ fn bibliography_render_all_vs_cited() {
         &bibliography_loaded,
         &cited,
         true,
-        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n"),
         SortOrder::None,
     );
 
@@ -148,7 +148,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
         &bibliography_loaded,
         &HashSet::new(),
         false,
-        format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n"),
         SortOrder::None,
     );
     assert!(html.contains("href=\"https://doc.rust-lang.org/book/\""));
@@ -220,16 +220,12 @@ fn citations_in_subfolders_link_properly() {
         // TODO: These asserts will probably fail if we allow users to specify the bibliography
         // chapter name as per issue #6
         assert!(
-            text_with_citations.contains(&format!("[fps]({}#fps)", link)),
-            "Expecting link to '{}' in string '{}'",
-            link,
-            text_with_citations
+            text_with_citations.contains(&format!("[fps]({link}#fps)")),
+            "Expecting link to '{link}' in string '{text_with_citations}'",
         );
         assert!(
-            text_with_citations.contains(&format!("[rust_book]({}#rust_book)", link)),
-            "Expecting link to '{}' in string '{}'",
-            link,
-            text_with_citations
+            text_with_citations.contains(&format!("[rust_book]({link}#rust_book)")),
+            "Expecting link to '{link}' in string '{text_with_citations}'",
         );
     };
 
@@ -315,19 +311,17 @@ fn check_config_attributes() {
     let t: Table = Table::new();
     match Config::build_from(Some(&t), PathBuf::new()) {
         Ok(config) => {
-            println!("{:?}", config);
+            println!("{config:?}");
             assert_eq!(config.title, "Bibliography");
             assert_eq!(config.bibliography, None);
             assert_eq!(config.zotero_uid, None);
             assert!(config.cited_only);
-            let default_tpl = format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE);
+            let default_tpl = format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n");
             assert_eq!(config.bib_hb_html, default_tpl);
-            let default_css = format!("<style>{}</style>\n\n", DEFAULT_CSS_TEMPLATE);
+            let default_css = format!("<style>{DEFAULT_CSS_TEMPLATE}</style>\n\n");
             assert_eq!(config.css_html, default_css);
-            let default_js = format!(
-                "<script type=\"text/javascript\">\n{}\n</script>\n\n",
-                DEFAULT_JS_TEMPLATE
-            );
+            let default_js =
+                format!("<script type=\"text/javascript\">\n{DEFAULT_JS_TEMPLATE}\n</script>\n\n",);
             assert_eq!(config.js_html, default_js);
         }
         Err(_) => panic!("there's supposed to be always a config!!!"),
@@ -352,7 +346,7 @@ fn check_config_attributes() {
     );
     match Config::build_from(Some(&t), PathBuf::new()) {
         Ok(config) => {
-            println!("{:?}", config);
+            println!("{config:?}");
             assert_eq!(config.title, "References");
             assert_eq!(config.bibliography, Some("biblio.bib"));
             assert_eq!(config.zotero_uid, Some("123456"));
@@ -387,15 +381,13 @@ fn check_config_attributes() {
     manual_src_path.push("manual/src/");
     match Config::build_from(Some(&t), manual_src_path) {
         Ok(config) => {
-            println!("{:?}", config);
-            let adhoc_tpl = format!("\n\n{}\n\n", EXAMPLE_HB_TEMPLATE);
+            println!("{config:?}");
+            let adhoc_tpl = format!("\n\n{EXAMPLE_HB_TEMPLATE}\n\n");
             assert_eq!(config.bib_hb_html, adhoc_tpl);
-            let adhoc_css = format!("<style>{}</style>\n\n", EXAMPLE_CSS_TEMPLATE);
+            let adhoc_css = format!("<style>{EXAMPLE_CSS_TEMPLATE}</style>\n\n");
             assert_eq!(config.css_html, adhoc_css);
-            let default_js = format!(
-                "<script type=\"text/javascript\">\n{}\n</script>\n\n",
-                DEFAULT_JS_TEMPLATE
-            );
+            let default_js =
+                format!("<script type=\"text/javascript\">\n{DEFAULT_JS_TEMPLATE}\n</script>\n\n",);
             assert_eq!(config.js_html, default_js);
         }
         Err(e) => panic!(

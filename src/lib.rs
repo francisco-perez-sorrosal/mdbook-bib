@@ -46,8 +46,7 @@ impl Bibiography {
                 biblio_path = biblio_path.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
                     Err(anyhow!(format!(
-                        "Bibliography file {:?} not found!",
-                        biblio_path
+                        "Bibliography file {biblio_path:?} not found!",
                     )))
                 } else {
                     info!("Bibliography path: {}", biblio_path.display());
@@ -166,7 +165,7 @@ impl Bibiography {
         css_html_part: String,
         biblio_html_part: String,
     ) -> Chapter {
-        let html_content = format!("{}\n{}\n{}", js_html_part, css_html_part, biblio_html_part);
+        let html_content = format!("{js_html_part}\n{css_html_part}\n{biblio_html_part}");
         debug!(
             "Creating new Bibliography chapter (with title: \"{}\") with content: {:?}",
             title, html_content
@@ -174,7 +173,7 @@ impl Bibiography {
 
         Chapter::new(
             &title,
-            format!("# {}\n{}", title, html_content),
+            format!("# {title}\n{html_content}"),
             PathBuf::from("bibliography.md"),
             Vec::new(),
         )
@@ -260,8 +259,8 @@ fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
 
 /// Download bibliography from Zotero
 pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Error> {
-    let mut url = format!("https://api.zotero.org/users/{}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3", user_id);
-    info!("Zotero's URL biblio source:\n{:?}", url);
+    let mut url = format!("https://api.zotero.org/users/{user_id}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3");
+    info!("Zotero's URL biblio source:\n{url:?}");
     let mut res = reqwest::blocking::get(&url)?;
     if res.status().is_client_error() || res.status().is_client_error() {
         Err(anyhow!(format!(
@@ -571,7 +570,7 @@ impl<'a> Placeholder<'a> {
                         .as_str()
                         .to_string()
                 } else {
-                    format!("\\[Unknown bib ref: {}\\]", cite)
+                    format!("\\[Unknown bib ref: {cite}\\]")
                 }
             }
         }
