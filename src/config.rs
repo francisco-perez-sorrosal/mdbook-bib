@@ -1,14 +1,55 @@
 use anyhow::anyhow;
 use log::info;
+use std::error::Error as StdError;
+use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 use toml::value::Table;
 
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
 pub static DEFAULT_CITE_HB_TEMPLATE: &str = include_str!("./render/cite_key.hbs");
+
+type Error = anyhow::Error;
+
+/// Error type for failed parsing of `String`s to `enum`s.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseEnumError(String);
+
+impl Display for ParseEnumError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl StdError for ParseEnumError {}
+
+#[derive(Debug, PartialEq)]
+pub enum SortOrder {
+    None,
+    Key,
+    Author,
+    Index,
+}
+
+impl FromStr for SortOrder {
+    type Err = ParseEnumError;
+    fn from_str(input: &str) -> Result<SortOrder, Self::Err> {
+        match input {
+            "none" => Ok(SortOrder::None),
+            "key" => Ok(SortOrder::Key),
+            "author" => Ok(SortOrder::Author),
+            "index" => Ok(SortOrder::Index),
+            _ => Err(ParseEnumError(format!(
+                "Unknown option '{}' for bibliograph order. Must be one of [none key author index]",
+                input,
+            ))),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Config<'a> {
@@ -28,9 +69,9 @@ pub struct Config<'a> {
     pub css_html: String,
     /// Extra Javascript functions for the ad-hoc Handlebars template
     pub js_html: String,
+    /// Sort order in bibliography output
+    pub order: SortOrder,
 }
-
-type Error = anyhow::Error;
 
 impl<'a> Config<'a> {
     pub fn build_from(table: Option<&'a Table>, book_src_path: PathBuf) -> Result<Self, Error> {
@@ -136,6 +177,14 @@ impl<'a> Config<'a> {
                             DEFAULT_JS_TEMPLATE
                         )
                     }
+                },
+
+                order: match table.get("order") {
+                    Some(order) => {
+                        let order = SortOrder::from_str(order.as_str().unwrap())?;
+                        order
+                    }
+                    None => SortOrder::None,
                 },
             })
         } else {

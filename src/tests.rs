@@ -1,7 +1,8 @@
-use crate::config::DEFAULT_HB_TEMPLATE;
 use crate::config::DEFAULT_JS_TEMPLATE;
+use crate::config::{SortOrder, DEFAULT_HB_TEMPLATE};
 use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
 use crate::Bibiography;
+use indexmap::IndexMap;
 use mdbook::MDBook;
 use std::fs::File;
 use std::io::Write;
@@ -91,7 +92,7 @@ fn cant_load_bib_bibliography_from_file() {
 
 #[test]
 fn bibliography_builder_returns_a_bibliography() {
-    let bibliography_loaded: HashMap<String, BibItem> =
+    let bibliography_loaded: IndexMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
     assert_eq!(bibliography_loaded.len(), 2);
     assert_eq!(bibliography_loaded.get("fps").unwrap().citation_key, "fps");
@@ -99,7 +100,7 @@ fn bibliography_builder_returns_a_bibliography() {
 
 #[test]
 fn bibliography_render_all_vs_cited() {
-    let bibliography_loaded: HashMap<String, BibItem> =
+    let bibliography_loaded: IndexMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     let mut cited = HashSet::new();
@@ -110,6 +111,7 @@ fn bibliography_render_all_vs_cited() {
         &cited,
         false,
         format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        SortOrder::None,
     );
 
     assert!(html.contains("This is a bib entry!"));
@@ -120,6 +122,7 @@ fn bibliography_render_all_vs_cited() {
         &cited,
         true,
         format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        SortOrder::None,
     );
 
     assert!(html.contains("This is a bib entry!"));
@@ -128,7 +131,7 @@ fn bibliography_render_all_vs_cited() {
 
 #[test]
 fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
-    let bibliography_loaded: HashMap<String, BibItem> =
+    let bibliography_loaded: IndexMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     // fps dummy book does not include a url for in the BibItem
@@ -146,13 +149,14 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
         &HashSet::new(),
         false,
         format!("\n\n{}\n\n", DEFAULT_HB_TEMPLATE),
+        SortOrder::None,
     );
     assert!(html.contains("href=\"https://doc.rust-lang.org/book/\""));
 }
 
 #[test]
 fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
-    let bibliography: HashMap<String, BibItem> =
+    let mut bibliography: IndexMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     let mut cited: HashSet<String> = HashSet::new();
@@ -164,11 +168,14 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         "source.md",
         vec![],
     );
+
+    let mut last_index = 0;
     let text_with_citations = replace_all_placeholders(
         &chapter,
-        &bibliography,
+        &mut bibliography,
         &mut cited,
         DEFAULT_CITE_HB_TEMPLATE,
+        &mut last_index,
     );
     // TODO: These asserts will probably fail if we allow users to specify the bibliography
     // chapter name as per issue #6
@@ -182,11 +189,13 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         "source.md",
         vec![],
     );
+    let mut last_index = 0;
     let text_with_citations = replace_all_placeholders(
         &chapter,
-        &bibliography,
+        &mut bibliography,
         &mut cited,
         DEFAULT_CITE_HB_TEMPLATE,
+        &mut last_index,
     );
     assert!(text_with_citations.contains("[fps]"));
     assert!(text_with_citations.contains("[Unknown bib ref:"));
@@ -194,16 +203,18 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
 
 #[test]
 fn citations_in_subfolders_link_properly() {
-    let bibliography: HashMap<String, BibItem> =
+    let mut bibliography: IndexMap<String, BibItem> =
         build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     // Check valid references included in a dummy text
-    let check_citations_for = |chapter: &Chapter, link: &str| {
+    let mut check_citations_for = |chapter: &Chapter, link: &str| {
+        let mut last_index = 0;
         let text_with_citations = replace_all_placeholders(
             chapter,
-            &bibliography,
+            &mut bibliography,
             &mut HashSet::new(),
             DEFAULT_CITE_HB_TEMPLATE,
+            &mut last_index,
         );
 
         // TODO: These asserts will probably fail if we allow users to specify the bibliography

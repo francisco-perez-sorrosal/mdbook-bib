@@ -6,9 +6,10 @@ use std::fs;
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
-use crate::config::Config;
+use crate::config::{Config, SortOrder};
 use anyhow::anyhow;
 use handlebars::Handlebars;
+use indexmap::IndexMap;
 use log::{debug, info, warn};
 use mdbook::book::{Book, BookItem, Chapter};
 use mdbook::errors::{Error, Result as MdResult};
@@ -77,10 +78,11 @@ impl Bibiography {
     }
 
     fn generate_bibliography_html(
-        bibliography: &HashMap<String, BibItem>,
+        bibliography: &IndexMap<String, BibItem>,
         cited: &HashSet<String>,
         cited_only: bool,
         references_tpl: String,
+        order: SortOrder,
     ) -> String {
         let mut handlebars = Handlebars::new();
         handlebars
@@ -88,8 +90,39 @@ impl Bibiography {
             .unwrap();
         debug!("Handlebars content: {:?}", handlebars);
 
+        let sorted: Vec<(&str, &BibItem)> = match order {
+            SortOrder::None => bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect(),
+            SortOrder::Key => {
+                let mut v: Vec<(&str, &BibItem)> =
+                    bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect();
+                v.sort_by_key(|item| item.0);
+                v
+            }
+            SortOrder::Author => {
+                let empty = "!".to_string();
+                let mut v: Vec<(&str, &BibItem)> =
+                    bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect();
+                v.sort_by_cached_key(|item| {
+                    let val: &str = item
+                        .1
+                        .authors
+                        .get(0)
+                        .map(|vec| vec.get(0).unwrap_or(&empty))
+                        .unwrap_or(&empty);
+                    val
+                });
+                v
+            }
+            SortOrder::Index => {
+                let mut v: Vec<(&str, &BibItem)> =
+                    bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect();
+                v.sort_by_key(|item| item.1.index);
+                v
+            }
+        };
+
         let mut content: String = String::from("");
-        for (key, value) in bibliography {
+        for (key, value) in sorted {
             if !cited_only || cited.contains(key) {
                 content.push_str(handlebars.render("references", &value).unwrap().as_str());
             }
@@ -101,10 +134,11 @@ impl Bibiography {
 
     fn expand_cite_references_in_book(
         book: &mut Book,
-        bibliography: &HashMap<String, BibItem>,
+        bibliography: &mut IndexMap<String, BibItem>,
         citation_tpl: &str,
     ) -> HashSet<String> {
         let mut cited = HashSet::new();
+        let mut last_index = 0;
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
                 if let Some(ref chapter_path) = ch.path {
@@ -112,8 +146,13 @@ impl Bibiography {
                         "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
-                    let new_content =
-                        replace_all_placeholders(ch, bibliography, &mut cited, citation_tpl);
+                    let new_content = replace_all_placeholders(
+                        ch,
+                        bibliography,
+                        &mut cited,
+                        citation_tpl,
+                        &mut last_index,
+                    );
                     ch.content = new_content;
                 }
             }
@@ -160,6 +199,8 @@ pub struct BibItem {
     pub summary: String,
     /// The article's url.
     pub url: Option<String>,
+    /// The item's index for first citation in the book.
+    pub index: Option<u32>,
 }
 
 impl BibItem {
@@ -181,6 +222,7 @@ impl BibItem {
             pub_year,
             summary,
             url,
+            index: None,
         }
     }
 }
@@ -246,7 +288,9 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
 }
 
 /// Gets the references and info created from bibliography.
-pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String, BibItem>, Error> {
+pub(crate) fn build_bibliography(
+    raw_content: String,
+) -> MdResult<IndexMap<String, BibItem>, Error> {
     log::info!("Building bibliography...");
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
@@ -261,7 +305,7 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
     let biblio = bib.bibliographies();
     info!("{} bibliography items read", biblio.len());
 
-    let bibliography: HashMap<String, BibItem> = biblio
+    let bibliography: IndexMap<String, BibItem> = biblio
         .iter()
         .map(|bib| {
             let tm: HashMap<String, String> = bib.tags().iter().cloned().collect();
@@ -290,6 +334,7 @@ pub(crate) fn build_bibliography(raw_content: String) -> MdResult<HashMap<String
                     pub_year,
                     summary: tm.get("abstract").unwrap_or(&"N/A".to_owned()).to_string(),
                     url,
+                    index: None,
                 },
             )
         })
@@ -362,15 +407,16 @@ impl Preprocessor for Bibiography {
             return Ok(book);
         }
 
-        let bib = bibliography.unwrap();
+        let mut bib = bibliography.unwrap();
         let cited =
-            Bibiography::expand_cite_references_in_book(&mut book, &bib, &config.cite_hb_html);
+            Bibiography::expand_cite_references_in_book(&mut book, &mut bib, &config.cite_hb_html);
 
         let bib_content_html = Bibiography::generate_bibliography_html(
             &bib,
             &cited,
             config.cited_only,
             config.bib_hb_html,
+            config.order,
         );
 
         let bib_chapter = Bibiography::create_bibliography_chapter(
@@ -392,9 +438,10 @@ impl Preprocessor for Bibiography {
 
 fn replace_all_placeholders(
     chapter: &Chapter,
-    bibliography: &HashMap<String, BibItem>,
+    bibliography: &mut IndexMap<String, BibItem>,
     cited: &mut HashSet<String>,
     citation_tpl: &str,
+    last_index: &mut u32,
 ) -> String {
     let mut handlebars = Handlebars::new();
     handlebars
@@ -414,7 +461,12 @@ fn replace_all_placeholders(
 
     for placeholder in find_placeholders(&chapter.content) {
         replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography, &handlebars));
+        replaced.push_str(&placeholder.render_with_path(
+            chapter_path,
+            bibliography,
+            &handlebars,
+            last_index,
+        ));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -426,7 +478,12 @@ fn replace_all_placeholders(
     // TODO Maybe look how to combine two iterators to avoid the duplicated code below
     for placeholder in find_at_placeholders(&chapter.content) {
         replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(chapter_path, bibliography, &handlebars));
+        replaced.push_str(&placeholder.render_with_path(
+            chapter_path,
+            bibliography,
+            &handlebars,
+            last_index,
+        ));
         previous_end_index = placeholder.end_index;
 
         match placeholder.placeholder_type {
@@ -491,15 +548,21 @@ impl<'a> Placeholder<'a> {
     fn render_with_path(
         &self,
         source_file: &std::path::Path,
-        bibliography: &HashMap<String, BibItem>,
+        bibliography: &mut IndexMap<String, BibItem>,
         handlebars: &Handlebars,
+        last_index: &mut u32,
     ) -> String {
         match self.placeholder_type {
             PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
                 if bibliography.contains_key(cite) {
                     let path_to_root = breadcrumbs_up_to_root(source_file);
+                    let item = bibliography.get_mut(cite).unwrap();
+                    if item.index.is_none() {
+                        *last_index += 1;
+                        item.index = Some(*last_index);
+                    }
                     let citation = Citation {
-                        item: bibliography.get(cite).unwrap().to_owned(),
+                        item: item.to_owned(),
                         path: path_to_root,
                     };
                     handlebars
