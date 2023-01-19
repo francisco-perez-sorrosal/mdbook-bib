@@ -23,6 +23,7 @@ mod config;
 mod file_utils;
 
 static NAME: &str = "bib";
+static BIB_OUT_FILE: &str = "bibliography";
 
 pub struct Bibiography;
 
@@ -174,7 +175,7 @@ impl Bibiography {
         Chapter::new(
             &title,
             format!("# {title}\n{html_content}"),
-            PathBuf::from("bibliography.md"),
+            PathBuf::from(format!("{BIB_OUT_FILE}.md")),
             Vec::new(),
         )
     }
@@ -562,7 +563,7 @@ impl<'a> Placeholder<'a> {
                     }
                     let citation = Citation {
                         item: item.to_owned(),
-                        path: path_to_root,
+                        path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
                     };
                     handlebars
                         .render("citation", &citation)
