@@ -68,33 +68,58 @@ In your markdown files, create references/citations to the citation-keys include
 
 ## Configure your own Style for Bibliography Entries
 
-You can override the default biblio style provided for the biliography entries by specifying an ad-hoc Handlebars template and style. In order to do so, the `hb-tpl`, `css`, and `js` parameters are provided as configuration options. `hb-tpl` allows to point to a `.hbs` file that includes the Handlebars style. For example:
-
-```handlebars
-{{#include render/my_references.hbs}}
-```
+You can override the default biblio style provided for the bibliography entries by specifying an ad-hoc Handlebars template and style.
+In order to do so, the `hb-tpl`, `css`, and `js` parameters are provided as configuration options.
+`hb-tpl` allows to point to a `.hbs` file that includes the Handlebars style.
+For examples, see the provided [templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual).
 
 The available placeholders that can be used in the handlebars template for now are:
 
-* citation_key
-* authors
-* title
-* url
-* pub_year
+* `citation_key`
+* `authors`
+* `title`
+* `url`
+* `pub_year`
 
 Also, with the parameters `css` and `js`, you can point to files that provide your own css style and/or Javascript functions used in the rendering of the Handlebars template entries (e.g. for the `bib_div` class above). For more details, check the [structure of the manual](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual) of this project.
 
+Handlebars files for different reference styles are provided in the folder
+[templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual)
+in the [GitHub repository](https://github.com/francisco-perez-sorrosal/mdbook-bib/).
+
+## Configure your own Style for Citations
+
+You can override the default inline citation style by specifying a Handlebars template
+using the `cite-hb-tpl` config option. This works in the same way as for [bibliography styles](#configure-your-own-style-for-bibliography-entries)
+
+The available placeholders that can be used in the handlebars template for now are:
+
+* `path` -- the path to the bibliography file in the output HTML
+* `item.citation_key`
+* `item.authors`
+* `item.title`
+* `item.url`
+* `item.pub_year`
+
+Handlebars files for different citation styles are provided in the folder
+[templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual)
+in the [GitHub repository](https://github.com/francisco-perez-sorrosal/mdbook-bib/).
+
+## Sort order references
+
 ## Configuration Parameters
 
-| Option           | Description                                                             | Default |
-|------------------|-------------------------------------------------------------------------|---------|
-| `bibliography`   | `.bib` file to use.                                                     | -       |
-| `zotero-uid`     | Zotero user ID, alternative to bib file.                                | -       |
-| `title`          | Title for the Bibliography section of the book                          | `Bibliography` |
-| `render-bib`     | Render the entire bibliography (`all`), or only cited entries (`cited`) | `cited` |
-| `hb-tpl`         | Ad-hoc Handlebars template file used to render the bibliography. Overwrites the default style.                                                                                       | -       |
-| `css`            | Extra CSS file with the style used when rendering the ad-hoc biblio.    | -       |
-| `js`             | Extra JS file with code used when rendering the ad-hoc biblio.          | -       |
+| Option         | Description                                                                                    | Default |
+|----------------|------------------------------------------------------------------------------------------------|---------|
+| `bibliography` | `.bib` file to use.                                                                            | -       |
+| `zotero-uid`   | Zotero user ID, alternative to bib file.                                                       | -       |
+| `title`        | Title for the Bibliography section of the book                                                 | `Bibliography` |
+| `render-bib`   | Render the entire bibliography (`all`), or only cited entries (`cited`)                        | `cited` |
+| `hb-tpl`       | Ad-hoc Handlebars template file used to render the bibliography. Overwrites the default style. | -       |
+| `cite-hb-tpl`  | Ad-hoc Handlebars template file used to render inline citations. Overwrites the default style. | -       |
+| `css`          | Extra CSS file with the style used when rendering the ad-hoc biblio.                           | -       |
+| `js`           | Extra JS file with code used when rendering the ad-hoc biblio.                                 | -       |
+| `order`        | Sort order for references. One of `none`, `key`, `author`, `index`.                            | -       |
 
 A complete `preprocessor.bib` section example, which reads the bibliography from a local file and only shows the cited entries of the bibliography:
 
