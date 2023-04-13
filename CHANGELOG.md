@@ -5,11 +5,6 @@
 **Closed issues:**
 
 - Inline citation styles [\#40](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/40)
-
-## [master](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master) (2023-01-20)
-
-**Closed issues:**
-
 - Does not work for nested paths [\#37](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/37)
 
 **Merged pull requests:**
