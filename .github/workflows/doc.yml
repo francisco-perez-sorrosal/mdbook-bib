@@ -12,7 +12,7 @@ jobs:
     name: Publish mdbook-bib Manual
     env:
       MDBOOK_VERSION: 0.4.10
-      MDBOOK_BIB_VERSION: 0.0.4
+      MDBOOK_BIB_VERSION: 0.0.5
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

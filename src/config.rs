@@ -27,7 +27,7 @@ impl Display for ParseEnumError {
 
 impl StdError for ParseEnumError {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SortOrder {
     None,
     Key,

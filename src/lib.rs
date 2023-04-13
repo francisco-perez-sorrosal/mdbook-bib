@@ -183,7 +183,7 @@ impl Bibiography {
 
 /// Bibliography item representation.
 /// TODO: Complete with more fields when necessary
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BibItem {
     /// The citation key.
     pub citation_key: String,
