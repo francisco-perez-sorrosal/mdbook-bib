@@ -1,6 +1,6 @@
 #
 
-## [v0.0.5](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.5) (2023-04-13)
+## [master](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master) (2023-04-13)
 
 **Closed issues:**
 
