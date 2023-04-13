@@ -3,9 +3,9 @@ name: Release
 on:
   workflow_run:
     workflows: ["Publish"]
-    branches: [master]
-    types:
-      - completed
+    types: [ completed ]
+    branches:
+      - v0.0.*
 
 # Uncomment this just in case we have to manually do the release
 # on:
