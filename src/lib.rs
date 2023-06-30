@@ -314,11 +314,12 @@ pub(crate) fn build_bibliography(
 
             info!("{:?}", &tm);
             let (pub_year, pub_month) = extract_date(&tm);
-
-            let authors: Vec<Vec<String>> = authors_str
-                .split("and")
+            let and_split = Regex::new(r"\band\b").expect("Broken regex");
+            let splits = and_split.split(&authors_str);
+            let authors: Vec<Vec<String>> = splits
                 .map(|a| a.trim().split(',').map(|b| b.trim().to_string()).collect())
                 .collect();
+
             let url: Option<String> = tm.get("url").map(|u| (*u.to_owned()).parse().unwrap());
 
             (
