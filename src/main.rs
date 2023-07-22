@@ -29,7 +29,7 @@ fn main() {
     let matches = make_app().get_matches();
 
     // Users will want to construct their own preprocessor here
-    let preprocessor = mdbook_bib::Bibiography::default(); // Explicit Bibliography processor ref in lib.rs
+    let preprocessor = mdbook_bib::Bibiography; // Explicit Bibliography processor ref in lib.rs
 
     if let Some(sub_args) = matches.subcommand_matches("supports") {
         handle_supports(&preprocessor, sub_args);
