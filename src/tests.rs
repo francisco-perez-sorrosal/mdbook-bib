@@ -469,7 +469,7 @@ fn process_test_book() {
     let mut manual_src_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manual_src_path.push("test_book/");
     let mut md = MDBook::load(manual_src_path).unwrap();
-    let mdbook_bib_prepro = Bibiography::default();
+    let mdbook_bib_prepro = Bibiography;
     md.with_preprocessor(mdbook_bib_prepro);
     md.build().unwrap();
 
