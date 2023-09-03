@@ -414,6 +414,16 @@ impl Preprocessor for Bibiography {
         }
 
         let mut bib = bibliography.unwrap();
+
+        if config.add_bib_in_each_chapter {
+            add_bib_at_end_of_chapters(
+                &mut book,
+                &mut bib,
+                &config.bib_hb_html,
+                config.order.to_owned(),
+            );
+        }
+
         let cited =
             Bibiography::expand_cite_references_in_book(&mut book, &mut bib, &config.cite_hb_html);
 
@@ -440,6 +450,61 @@ impl Preprocessor for Bibiography {
     fn supports_renderer(&self, renderer: &str) -> bool {
         renderer != "not-supported"
     }
+}
+
+fn add_bib_at_end_of_chapters(
+    book: &mut Book,
+    bibliography: &mut IndexMap<String, BibItem>,
+    references_tpl: &String,
+    order: SortOrder,
+) {
+    book.for_each_mut(|section: &mut BookItem| {
+        if let BookItem::Chapter(ref mut ch) = *section {
+            if let Some(ref chapter_path) = ch.path {
+                info!(
+                    "Adding bibliography at the end of chapter {}",
+                    chapter_path.as_path().display()
+                );
+
+                let mut cited = HashSet::new();
+                for placeholder in find_placeholders(&ch.content) {
+                    match placeholder.placeholder_type {
+                        PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
+                            cited.insert(cite.to_owned());
+                        }
+                    }
+                }
+                info!("Refs cited in this chapter: {:?}", cited);
+
+                let mut handlebars = Handlebars::new();
+                handlebars
+                    .register_template_string(
+                        "chapter_refs",
+                        config::DEFAULT_CHAPTER_REFS_FOOTER_HB_TEMPLATE,
+                    )
+                    .unwrap();
+
+                let ch_bib_header_html = handlebars
+                    .render("chapter_refs", &String::new())
+                    .unwrap()
+                    .as_str()
+                    .to_string();
+
+                let ch_bib_content_html = Bibiography::generate_bibliography_html(
+                    bibliography,
+                    &cited,
+                    true,
+                    references_tpl.to_string(),
+                    order.clone(),
+                );
+
+                let new_content = String::from(ch.content.as_str())
+                    + ch_bib_header_html.as_str()
+                    + ch_bib_content_html.as_str();
+                ch.content = new_content;
+            }
+        }
+    });
 }
 
 fn replace_all_placeholders(
