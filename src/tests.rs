@@ -18,7 +18,7 @@ use tempfile::Builder as TempFileBuilder;
 
 use crate::PlaceholderType::{AtCite, Cite};
 use crate::{
-    build_bibliography, extract_date, find_at_placeholders, find_placeholders, load_bibliography,
+    build_bibliography, extract_date, find_placeholders, load_bibliography,
     replace_all_placeholders, BibItem, Config,
 };
 use toml::value::Table;
@@ -287,14 +287,9 @@ fn find_only_citation_placeholders() {
         panic!("Only Cite should be recognized as placeholder type!!!");
     }
     assert_eq!(items, 0);
-}
 
-#[test]
-fn find_only_at_citation_placeholders() {
-    // As long as placeholders are related to cites, they are found, independently of whether they
-    // are valid or not
-    let plhs = find_at_placeholders(DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER);
-    let mut items = 0;
+    let plhs = find_placeholders(DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER);
+    items = 0;
     for plh in plhs {
         match plh.placeholder_type {
             Cite(_) => items += 1,

@@ -476,23 +476,6 @@ fn replace_all_placeholders(
             }
         }
     }
-    // TODO Maybe look how to combine two iterators to avoid the duplicated code below
-    for placeholder in find_at_placeholders(&chapter.content) {
-        replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(
-            chapter_path,
-            bibliography,
-            &handlebars,
-            last_index,
-        ));
-        previous_end_index = placeholder.end_index;
-
-        match placeholder.placeholder_type {
-            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
-                cited.insert(cite.to_owned());
-            }
-        }
-    }
 
     replaced.push_str(&chapter.content[previous_end_index..]);
     replaced
@@ -594,23 +577,26 @@ impl<'a> Iterator for PlaceholderIter<'a> {
     }
 }
 
-fn find_placeholders(contents: &str) -> PlaceholderIter<'_> {
-    // lazily compute following regex
-    // r"\\\{\{#.*\}\}|\{\{#([a-zA-Z0-9]+)\s*([a-zA-Z0-9_.\-:/\\\s]+)\}\}")?;
+// lazily compute following regex
+// r"\\\{\{#.*\}\}|\{\{#([a-zA-Z0-9]+)\s*([a-zA-Z0-9_.\-:/\\\s]+)\}\}")?;
+const REF_PATTERN: &str = r"
+(?x)                       # insignificant whitespace mode
+\\\{\{\#.*\}\}               # match escaped placeholder
+|                            # or
+\{\{\s*                      # placeholder opening parens and whitespace
+\#([a-zA-Z0-9_]+)            # placeholder type
+\s+                          # separating whitespace
+([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
+\s*\}\}                      # whitespace and placeholder closing parens";
+const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
+fn find_placeholders(contents: &str) -> Vec<Placeholder> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(
-            r"(?x)                       # insignificant whitespace mode
-            \\\{\{\#.*\}\}               # match escaped placeholder
-            |                            # or
-            \{\{\s*                      # placeholder opening parens and whitespace
-            \#([a-zA-Z0-9_]+)            # placeholder type
-            \s+                          # separating whitespace
-            ([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
-            \s*\}\}                      # whitespace and placeholder closing parens"
-        )
-        .unwrap();
+        static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap(); // Cite placeholders of type {{ cite }}
+        static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap(); // Cite placeholders of type @@cite
     }
-    PlaceholderIter(RE.captures_iter(contents))
+    PlaceholderIter(REF_REGEX.captures_iter(contents))
+        .chain(PlaceholderIter(AT_REF_REGEX.captures_iter(contents)))
+        .collect()
 }
 
 fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
@@ -633,14 +619,6 @@ fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
     }
 
     to_root
-}
-
-const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
-fn find_at_placeholders(contents: &str) -> PlaceholderIter<'_> {
-    lazy_static! {
-        static ref REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
-    }
-    PlaceholderIter(REF_REGEX.captures_iter(contents))
 }
 
 #[cfg(test)]
