@@ -12,6 +12,8 @@ pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js"
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
 pub static DEFAULT_CITE_HB_TEMPLATE: &str = include_str!("./render/cite_key.hbs");
+pub static DEFAULT_CHAPTER_REFS_FOOTER_HB_TEMPLATE: &str =
+    include_str!("./render/chapter_refs_header.hbs");
 
 type Error = anyhow::Error;
 
@@ -27,7 +29,7 @@ impl Display for ParseEnumError {
 
 impl StdError for ParseEnumError {}
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SortOrder {
     None,
     Key,
@@ -56,6 +58,8 @@ pub struct Config<'a> {
     pub title: String,
     /// Path to Bibtex file
     pub bibliography: Option<&'a str>,
+    /// Whether to add or not the bibliography at the end of each chapter too
+    pub add_bib_in_each_chapter: bool,
     /// Zotero user ID, as alternative to Bibtex file
     pub zotero_uid: Option<&'a str>,
     /// List only cited references, instead of all from bibliography
@@ -82,6 +86,12 @@ impl<'a> Config<'a> {
                 },
 
                 bibliography: table.get("bibliography").map(|v| v.as_str().unwrap()),
+
+                add_bib_in_each_chapter: match table.get("add-bib-in-chapters") {
+                    None => false,
+                    Some(option) => option.as_bool().unwrap(),
+                },
+
                 zotero_uid: table.get("zotero-uid").map(|v| v.as_str().unwrap()),
 
                 cited_only: match table.get("render-bib") {
