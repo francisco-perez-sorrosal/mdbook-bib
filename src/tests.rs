@@ -16,10 +16,8 @@ use std::{
 // use std::{println as info, println as warn};
 use tempfile::Builder as TempFileBuilder;
 
-use crate::PlaceholderType::{AtCite, Cite};
 use crate::{
-    build_bibliography, extract_date, find_placeholders, load_bibliography,
-    replace_all_placeholders, BibItem, Config,
+    build_bibliography, extract_date, load_bibliography, replace_all_placeholders, BibItem, Config,
 };
 use toml::value::Table;
 use toml::Value;
@@ -53,14 +51,6 @@ this is a dumb text that includes citations like {{ #cite fps }} and {{ #cite ru
 
 const DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS: &str = r#"
 this is a dumb text that includes valid and invalid citations like {{ #cite fps }} and {{ #cite im_not_there }}
-"#;
-
-const DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER: &str = r#"
-this is a dumb text that includes a valid citation with double @, as in @@fps.
-"#;
-
-const DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS: &str = r#"
-this is a dumb text that includes invalid placeholders like {{ #zoto uhmmmm }} and {{ #peto ahhhhmmm }}
 "#;
 
 #[test]
@@ -267,36 +257,81 @@ fn citations_in_subfolders_link_properly() {
 }
 
 #[test]
-fn find_only_citation_placeholders() {
-    // As long as placeholders are related to cites, they are found, independently of whether they
-    // are valid or not
-    let plhs = find_placeholders(DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS);
-    let mut items = 0;
-    for plh in plhs {
-        match plh.placeholder_type {
-            Cite(_) => items += 1,
-            AtCite(_) => items += 1,
-        };
-    }
-    assert_eq!(items, 2);
+fn debug_replace_all_placeholders() {
+    use crate::{replace_all_placeholders, BibItem};
+    use indexmap::IndexMap;
+    use mdbook::book::Chapter;
+    use std::collections::HashSet;
 
-    // When no recognized placeholders are found, they are ignored
-    let plhs = find_placeholders(DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS);
-    items = 0;
-    if plhs.into_iter().next().is_some() {
-        panic!("Only Cite should be recognized as placeholder type!!!");
-    }
-    assert_eq!(items, 0);
+    let content = r#"
+This is a reference {{#cite mdBook}} that has to be resolved to the right bibliography file.
+This is a reference to a non-existing book that reports a bug @@mdBookWithAuthorsWithANDInTheirName that was resolved.
+This is a reference to {{#cite DUMMY:1}}
+"#;
 
-    let plhs = find_placeholders(DUMMY_TEXT_WITH_A_VALID_AT_CITE_PLACEHOLDER);
-    items = 0;
-    for plh in plhs {
-        match plh.placeholder_type {
-            Cite(_) => items += 1,
-            AtCite(_) => items += 1,
-        };
-    }
-    assert_eq!(items, 1);
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "mdBook".to_string(),
+        BibItem {
+            citation_key: "mdBook".to_string(),
+            title: "mdBook Documentation".to_string(),
+            authors: vec![vec!["Various Contributors".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2015".to_string(),
+            summary: "mdBook is a command line tool.".to_string(),
+            url: Some("https://rust-lang.github.io/mdBook/".to_string()),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "mdBookWithAuthorsWithANDInTheirName".to_string(),
+        BibItem {
+            citation_key: "mdBookWithAuthorsWithANDInTheirName".to_string(),
+            title: "Bug when rendering authors that include the `and` substring in their names"
+                .to_string(),
+            authors: vec![vec![
+                "Jane A. Doeander".to_string(),
+                "John B. Doeanderson".to_string(),
+            ]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "What a book about nothing...".to_string(),
+            url: Some(
+                "https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/44".to_string(),
+            ),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "DUMMY:1".to_string(),
+        BibItem {
+            citation_key: "DUMMY:1".to_string(),
+            title: "The Book without Title".to_string(),
+            authors: vec![vec!["John".to_string(), "Doe".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2100".to_string(),
+            summary: "N/A".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let citation_tpl = "{{item.citation_key}}";
+    let mut last_index = 0;
+    let _ = replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        citation_tpl,
+        &mut last_index,
+    );
 }
 
 use std::env;
@@ -487,5 +522,46 @@ fn process_test_book() {
     match find_str_in_file(bib_reference, nested_html) {
         Ok(_) => (),
         Err(_) => panic!(),
+    }
+}
+
+#[test]
+fn test_regex_pattern() {
+    use regex::Regex;
+
+    let pattern = r"
+(?x)                       # insignificant whitespace mode
+\\\{\{\#.*\}\}               # match escaped placeholder
+|                            # or
+\{\{\s*                      # placeholder opening parens and whitespace
+\#([a-zA-Z0-9_]+)            # placeholder type
+\s+                          # separating whitespace
+([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
+\s*\}\}                      # whitespace and placeholder closing parens";
+
+    let re = Regex::new(pattern).unwrap();
+
+    let test_cases = vec![
+        "{{#cite mdBook}}",
+        "{{#cite DUMMY:1}}",
+        "{{#cite test-key}}",
+        "{{#cite test_key}}",
+    ];
+
+    for test_case in test_cases {
+        println!("Testing: '{test_case}'");
+        if let Some(captures) = re.captures(test_case) {
+            println!("  Match found!");
+            println!("  Full match: '{}'", captures.get(0).unwrap().as_str());
+            if let Some(typ) = captures.get(1) {
+                println!("  Type: '{}'", typ.as_str());
+            }
+            if let Some(rest) = captures.get(2) {
+                println!("  Rest: '{}'", rest.as_str());
+            }
+        } else {
+            println!("  No match!");
+        }
+        println!();
     }
 }

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
@@ -15,7 +16,7 @@ use mdbook::book::{Book, BookItem, Chapter};
 use mdbook::errors::{Error, Result as MdResult};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use nom_bibtex::*;
-use regex::{CaptureMatches, Captures, Regex};
+use regex::Regex;
 use reqwest::blocking::Response;
 use serde::{Deserialize, Serialize};
 
@@ -453,136 +454,80 @@ fn replace_all_placeholders(
         .register_template_string("citation", citation_tpl)
         .unwrap();
     debug!("Handlebars content: {:?}", handlebars);
-    // When replacing one thing in a string by something with a different length,
-    // the indices after that will not correspond,
-    // we therefore have to store the difference to correct this
-    let mut previous_end_index = 0;
-    let mut replaced = String::new();
 
     let chapter_path = chapter
         .path
         .as_deref()
         .unwrap_or_else(|| std::path::Path::new(""));
 
-    for placeholder in find_placeholders(&chapter.content) {
-        replaced.push_str(&chapter.content[previous_end_index..placeholder.start_index]);
-        replaced.push_str(&placeholder.render_with_path(
-            chapter_path,
-            bibliography,
-            &handlebars,
-            last_index,
-        ));
-        previous_end_index = placeholder.end_index;
+    lazy_static! {
+        static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap();
+        static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
+    }
 
-        match placeholder.placeholder_type {
-            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
-                cited.insert(cite.to_owned());
+    // Wrap mutable state in RefCell for interior mutability
+    let bib = RefCell::new(bibliography);
+    let cited_set = RefCell::new(cited);
+    let idx = RefCell::new(last_index);
+
+    // First replace all {{#cite ...}}
+    let replaced = REF_REGEX.replace_all(&chapter.content, |caps: &regex::Captures| {
+        let cite = caps.get(2).map(|m| m.as_str().trim()).unwrap_or("");
+        cited_set.borrow_mut().insert(cite.to_owned());
+        let mut bib_mut = bib.borrow_mut();
+        let mut idx_mut = idx.borrow_mut();
+        if bib_mut.contains_key(cite) {
+            let path_to_root = breadcrumbs_up_to_root(chapter_path);
+            let item = bib_mut.get_mut(cite).unwrap();
+            if item.index.is_none() {
+                **idx_mut += 1;
+                item.index = Some(**idx_mut);
             }
+            let citation = Citation {
+                item: item.to_owned(),
+                path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+            };
+            handlebars
+                .render("citation", &citation)
+                .unwrap()
+                .as_str()
+                .to_string()
+        } else {
+            format!("\\[Unknown bib ref: {cite}\\]")
         }
-    }
+    });
 
-    replaced.push_str(&chapter.content[previous_end_index..]);
-    replaced
-}
-
-fn parse_cite(cite: &str) -> PlaceholderType {
-    PlaceholderType::Cite(cite.to_owned())
-}
-
-fn parse_at_cite(cite: &str) -> PlaceholderType {
-    PlaceholderType::AtCite(cite.to_owned())
-}
-
-#[derive(PartialEq, Debug, Clone)]
-enum PlaceholderType {
-    Cite(String),
-    AtCite(String),
-}
-
-#[derive(PartialEq, Debug, Clone)]
-struct Placeholder<'a> {
-    start_index: usize,
-    end_index: usize,
-    placeholder_type: PlaceholderType,
-    placeholder_text: &'a str,
-}
-
-impl<'a> Placeholder<'a> {
-    fn from_capture(cap: Captures<'a>) -> Option<Placeholder<'a>> {
-        let placeholder_type = match (cap.get(0), cap.get(1), cap.get(2)) {
-            (_, Some(typ), Some(rest)) => {
-                let mut path_props = rest.as_str().split_whitespace();
-                let file_arg = path_props.next();
-
-                match (typ.as_str(), file_arg) {
-                    ("cite", Some(cite)) => Some(parse_cite(cite)),
-                    ("@@", Some(cite)) => Some(parse_at_cite(cite)),
-                    _ => None,
-                }
+    // Then replace all @@cite
+    let replaced = AT_REF_REGEX.replace_all(&replaced, |caps: &regex::Captures| {
+        let cite = caps.get(2).map(|m| m.as_str().trim()).unwrap_or("");
+        cited_set.borrow_mut().insert(cite.to_owned());
+        let mut bib_mut = bib.borrow_mut();
+        let mut idx_mut = idx.borrow_mut();
+        if bib_mut.contains_key(cite) {
+            let path_to_root = breadcrumbs_up_to_root(chapter_path);
+            let item = bib_mut.get_mut(cite).unwrap();
+            if item.index.is_none() {
+                **idx_mut += 1;
+                item.index = Some(**idx_mut);
             }
-            _ => None,
-        };
-
-        placeholder_type.and_then(|plh_type| {
-            cap.get(0).map(|mat| Placeholder {
-                start_index: mat.start(),
-                end_index: mat.end(),
-                placeholder_type: plh_type,
-                placeholder_text: mat.as_str(),
-            })
-        })
-    }
-
-    fn render_with_path(
-        &self,
-        source_file: &std::path::Path,
-        bibliography: &mut IndexMap<String, BibItem>,
-        handlebars: &Handlebars,
-        last_index: &mut u32,
-    ) -> String {
-        match self.placeholder_type {
-            PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
-                if bibliography.contains_key(cite) {
-                    let path_to_root = breadcrumbs_up_to_root(source_file);
-                    let item = bibliography.get_mut(cite).unwrap();
-                    if item.index.is_none() {
-                        *last_index += 1;
-                        item.index = Some(*last_index);
-                    }
-                    let citation = Citation {
-                        item: item.to_owned(),
-                        path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
-                    };
-                    handlebars
-                        .render("citation", &citation)
-                        .unwrap()
-                        .as_str()
-                        .to_string()
-                } else {
-                    format!("\\[Unknown bib ref: {cite}\\]")
-                }
-            }
+            let citation = Citation {
+                item: item.to_owned(),
+                path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+            };
+            handlebars
+                .render("citation", &citation)
+                .unwrap()
+                .as_str()
+                .to_string()
+        } else {
+            format!("\\[Unknown bib ref: {cite}\\]")
         }
-    }
+    });
+
+    replaced.into_owned()
 }
 
-struct PlaceholderIter<'a>(CaptureMatches<'a, 'a>);
-
-impl<'a> Iterator for PlaceholderIter<'a> {
-    type Item = Placeholder<'a>;
-    fn next(&mut self) -> Option<Placeholder<'a>> {
-        for cap in &mut self.0 {
-            if let Some(plh) = Placeholder::from_capture(cap) {
-                debug!("Placeholder found: {:?}", plh);
-                return Some(plh);
-            }
-        }
-        None
-    }
-}
-
-// lazily compute following regex
-// r"\\\{\{#.*\}\}|\{\{#([a-zA-Z0-9]+)\s*([a-zA-Z0-9_.\-:/\\\s]+)\}\}")?;
+// Regex patterns for citation placeholders
 const REF_PATTERN: &str = r"
 (?x)                       # insignificant whitespace mode
 \\\{\{\#.*\}\}               # match escaped placeholder
@@ -592,16 +537,8 @@ const REF_PATTERN: &str = r"
 \s+                          # separating whitespace
 ([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
 \s*\}\}                      # whitespace and placeholder closing parens";
+
 const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
-fn find_placeholders(contents: &str) -> Vec<Placeholder<'_>> {
-    lazy_static! {
-        static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap(); // Cite placeholders of type {{ cite }}
-        static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap(); // Cite placeholders of type @@cite
-    }
-    PlaceholderIter(REF_REGEX.captures_iter(contents))
-        .chain(PlaceholderIter(AT_REF_REGEX.captures_iter(contents)))
-        .collect()
-}
 
 fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
     if source_file.as_os_str().is_empty() {
