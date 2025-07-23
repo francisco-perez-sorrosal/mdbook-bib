@@ -62,7 +62,6 @@
 - Fix location of .bib in book scaffold and fix \#24 [\#30](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/30) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Allow custom reference styles [\#29](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/29) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Add bib title config param [\#28](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/28) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
-- Allow to copy citations to clipboard from Bibliography [\#10](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/10) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 
 ## [v0.0.3](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.3) (2021-04-04)
 
@@ -88,6 +87,7 @@
 - More tests for critical functionality [\#17](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/17) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Publish to Releases [\#14](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/14) ([mlange-42](https://github.com/mlange-42))
 - Parse toml config table into struct [\#11](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/11) ([mlange-42](https://github.com/mlange-42))
+- Allow to copy citations to clipboard from Bibliography [\#10](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/10) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - List cited refs only [\#9](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/9) ([mlange-42](https://github.com/mlange-42))
 - Linters: rustfmt + clippy in CI, fix all warnings, cleanup dependencies [\#3](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/3) ([mlange-42](https://github.com/mlange-42))
 
