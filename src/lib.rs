@@ -593,7 +593,7 @@ const REF_PATTERN: &str = r"
 ([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
 \s*\}\}                      # whitespace and placeholder closing parens";
 const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
-fn find_placeholders(contents: &str) -> Vec<Placeholder> {
+fn find_placeholders(contents: &str) -> Vec<Placeholder<'_>> {
     lazy_static! {
         static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap(); // Cite placeholders of type {{ cite }}
         static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap(); // Cite placeholders of type @@cite
