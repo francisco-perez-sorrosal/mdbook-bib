@@ -283,7 +283,7 @@ fn find_only_citation_placeholders() {
     // When no recognized placeholders are found, they are ignored
     let plhs = find_placeholders(DUMMY_TEXT_WITH_2_UNKNOWN_PLACEHOLDERS);
     items = 0;
-    for _ in plhs {
+    if plhs.into_iter().next().is_some() {
         panic!("Only Cite should be recognized as placeholder type!!!");
     }
     assert_eq!(items, 0);

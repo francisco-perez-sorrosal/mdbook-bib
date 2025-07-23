@@ -106,8 +106,8 @@ impl Bibiography {
                     let val: &str = item
                         .1
                         .authors
-                        .get(0)
-                        .map(|vec| vec.get(0).unwrap_or(&empty))
+                        .first()
+                        .map(|vec| vec.first().unwrap_or(&empty))
                         .unwrap_or(&empty);
                     val
                 });
@@ -308,7 +308,11 @@ pub(crate) fn build_bibliography(
     let bibliography: IndexMap<String, BibItem> = biblio
         .iter()
         .map(|bib| {
-            let tm: HashMap<String, String> = bib.tags().iter().cloned().collect();
+            let tm: HashMap<String, String> = bib
+                .tags()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
             let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
             authors_str.retain(|c| c != '\n');
 
