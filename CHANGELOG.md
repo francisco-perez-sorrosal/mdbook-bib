@@ -1,6 +1,6 @@
 #
 
-## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+## [v0.0.7](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.7) (2025-07-24)
 
 **Closed issues:**
 
