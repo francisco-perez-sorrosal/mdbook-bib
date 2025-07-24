@@ -6,8 +6,11 @@ This is a reference {{#cite mdBook}} that has to be resolved to the right biblio
 
 This is a reference to a non-existing book that reports a bug @@mdBookWithAuthorsWithANDInTheirName that was resolved. See details in the reference. The rendered reference should NOT show the bug anymore.
 
-This is a reference to {{#cite DUMMY:1}}
-This is the same reference as above but with @@DUMMY:1
+This is a reference to a bib entry {{#cite DUMMY:1}} which was reported as an issue in [#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
+This is the same reference to a bib entry as above but with @@DUMMY:1 which was reported as an issue in [#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
+
+This is a reference to another bib entry {{#cite 10.1145/3508461}} which was also reported as an issue in [#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
+Same for the @@10.1145/3508461 version
 
 ### License
 

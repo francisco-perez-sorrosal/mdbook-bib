@@ -538,7 +538,7 @@ const REF_PATTERN: &str = r"
 ([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
 \s*\}\}                      # whitespace and placeholder closing parens";
 
-const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s\.,;"#'()={}%]+)"##;
+const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s,;"#'()={}%]+)"##;
 
 fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
     if source_file.as_os_str().is_empty() {

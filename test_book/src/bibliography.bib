@@ -26,3 +26,23 @@
 	publisher = {Dummy Publisher},
 	year = {2100},
 }
+
+@article{10.1145/3508461,
+	author = {Ma, Karima and Gharbi, Michael and Adams, Andrew and Kamil, Shoaib and Li, Tzu-Mao and Barnes, Connelly and Ragan-Kelley, Jonathan},
+	title = {Searching for Fast Demosaicking Algorithms},
+	year = {2022},
+	issue_date = {October 2022},
+	publisher = {Association for Computing Machinery},
+	address = {New York, NY, USA},
+	volume = {41},
+	number = {5},
+	issn = {0730-0301},
+	url = {https://doi.org/10.1145/3508461},
+	doi = {10.1145/3508461},
+	abstract = {We present a method to automatically synthesize efficient, high-quality demosaicking algorithms, across a range of computational budgets, given a loss function and training data. It performs a multi-objective, discrete-continuous optimization which simultaneously solves for the program structure and parameters that best tradeoff computational cost and image quality. We design the method to exploit domain-specific structure for search efficiency. We apply it to several tasks, including demosaicking both Bayer and Fuji X-Trans color filter patterns, as well as joint demosaicking and super-resolution. In a few days on 8 GPUs, it produces a family of algorithms that significantly improves image quality relative to the prior state-of-the-art across a range of computational budgets from 10 s to 1000&nbsp;s of operations per pixel (1 dB–3 dB higher quality at the same cost, or 8.5–200\texttimes{} higher throughput at same or better quality). The resulting programs combine features of both classical and deep learning-based demosaicking algorithms into more efficient hybrid combinations, which are bandwidth-efficient and vectorizable by construction. Finally, our method automatically schedules and compiles all generated programs into optimized SIMD code for modern processors.},
+	journal = {ACM Trans. Graph.},
+	month = may,
+	articleno = {172},
+	numpages = {18},
+	keywords = {data driven methods, neural architecture search, differentiable programming, domain specific programming, super-resolution, Demosaicking}
+}

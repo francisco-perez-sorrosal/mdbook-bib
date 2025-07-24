@@ -334,6 +334,75 @@ This is a reference to {{#cite DUMMY:1}}
     );
 }
 
+#[test]
+fn test_citation_with_dots_replacement() {
+    use crate::{replace_all_placeholders, BibItem};
+    use indexmap::IndexMap;
+    use mdbook::book::Chapter;
+    use std::collections::HashSet;
+
+    let content = r#"
+This is a reference to a paper with DOI @@10.1145/3508461 that should be properly resolved.
+This is another reference @@simple_key that should also work.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "10.1145/3508461".to_string(),
+        BibItem {
+            citation_key: "10.1145/3508461".to_string(),
+            title: "Some Paper with DOI".to_string(),
+            authors: vec![vec!["Author Name".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "A paper with a DOI citation key".to_string(),
+            url: Some("https://doi.org/10.1145/3508461".to_string()),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "simple_key".to_string(),
+        BibItem {
+            citation_key: "simple_key".to_string(),
+            title: "Simple Paper".to_string(),
+            authors: vec![vec!["Another Author".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "A paper with a simple citation key".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let citation_tpl = "{{item.citation_key}}";
+    let mut last_index = 0;
+
+    let result = replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        citation_tpl,
+        &mut last_index,
+    );
+
+    // Check that both citations were found and added to cited set
+    assert!(cited.contains("10.1145/3508461"));
+    assert!(cited.contains("simple_key"));
+
+    // Check that the replacements were made correctly
+    assert!(result.contains("10.1145/3508461")); // The citation key should appear in the result
+    assert!(result.contains("simple_key")); // The simple key should also appear
+    assert!(!result.contains("@@10.1145/3508461")); // The original @@ pattern should be gone
+    assert!(!result.contains("@@simple_key")); // The original @@ pattern should be gone
+}
+
 use std::env;
 #[test]
 fn check_config_attributes() {
@@ -563,5 +632,35 @@ fn test_regex_pattern() {
             println!("  No match!");
         }
         println!();
+    }
+}
+
+#[test]
+fn test_at_ref_pattern_with_dots() {
+    use regex::Regex;
+
+    // Test the AT_REF_PATTERN specifically
+    let at_pattern = r##"(@@)([^\[\]\s,;"#'()={}%]+)"##;
+    let re = Regex::new(at_pattern).unwrap();
+
+    let test_cases = vec![
+        "@@10.1145/3508461",
+        "@@simple_key",
+        "@@key.with.dots",
+        "@@key-with-dashes",
+        "@@key_with_underscores",
+    ];
+
+    for test_case in test_cases {
+        if let Some(captures) = re.captures(test_case) {
+            if let Some(cite_key) = captures.get(2) {
+                // Verify that citation keys with dots are captured correctly
+                if test_case.contains("10.1145/3508461") {
+                    assert_eq!(cite_key.as_str(), "10.1145/3508461");
+                }
+            }
+        } else {
+            panic!("No match found for test case: {test_case}");
+        }
     }
 }
