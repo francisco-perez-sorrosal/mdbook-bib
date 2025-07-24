@@ -4,6 +4,7 @@
 
 **Closed issues:**
 
+- Bump nom\_bibtex to 0.5.0 [\#48](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/48)
 - Remove duplicate code for finding cite placeholders in text [\#46](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/46)
 
 ## [v0.0.6](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.6) (2023-09-02)
