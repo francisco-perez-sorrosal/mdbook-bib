@@ -458,6 +458,15 @@ fn add_bib_at_end_of_chapters(
     references_tpl: &String,
     order: SortOrder,
 ) {
+    use regex::Regex;
+
+    use std::collections::HashSet;
+
+    lazy_static! {
+        static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap();
+        static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
+    }
+
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
             if let Some(ref chapter_path) = ch.path {
@@ -467,11 +476,16 @@ fn add_bib_at_end_of_chapters(
                 );
 
                 let mut cited = HashSet::new();
-                for placeholder in find_placeholders(&ch.content) {
-                    match placeholder.placeholder_type {
-                        PlaceholderType::Cite(ref cite) | PlaceholderType::AtCite(ref cite) => {
-                            cited.insert(cite.to_owned());
-                        }
+                // Find all {{#cite ...}} keys
+                for caps in REF_REGEX.captures_iter(&ch.content) {
+                    if let Some(cite) = caps.get(2) {
+                        cited.insert(cite.as_str().trim().to_owned());
+                    }
+                }
+                // Find all @@... keys
+                for caps in AT_REF_REGEX.captures_iter(&ch.content) {
+                    if let Some(cite) = caps.get(2) {
+                        cited.insert(cite.as_str().trim().to_owned());
                     }
                 }
                 info!("Refs cited in this chapter: {:?}", cited);
