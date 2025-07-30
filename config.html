@@ -1,0 +1,302 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js theme">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Configuration - mdbook-bib Manual</title>
+                
+
+        <!-- Custom HTML head -->
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+                <link rel="icon" href="favicon.svg">
+                        <link rel="shortcut icon" href="favicon.png">
+                <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+                <link rel="stylesheet" href="css/print.css" media="print">
+        
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+                <link rel="stylesheet" href="fonts/fonts.css">
+        
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+            </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "theme";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('theme')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">mdbook-bib</a></li><li class="chapter-item expanded "><a href="install.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="config.html" class="active"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contrib.html"><strong aria-hidden="true">3.</strong> Contribute</a></li><li class="chapter-item expanded affix "><a href="bibliography.html">References</a></li></ol>            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                                                <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                                            </div>
+
+                    <h1 class="menu-title">mdbook-bib Manual</h1>
+
+                    <div class="right-buttons">
+                                                <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                                                                        <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                                                
+                    </div>
+                </div>
+
+                                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<h2 id="adding-a-biblatex-format-bibliography"><a class="header" href="#adding-a-biblatex-format-bibliography">Adding a BibLaTex-format Bibliography</a></h2>
+<p><strong>mdbook-bib</strong> allows adding a bibliography in <a href="https://www.ctan.org/pkg/biblatex">BibLaTex format</a> to your book. </p>
+<p>Assuming that your directory structure for your book looks like this:</p>
+<pre><code>my_book/
+├── book.toml
+└── src
+    ├── chapter_1.md
+    └── SUMMARY.md
+</code></pre>
+<ol>
+<li>just add your <code>.bib</code> file containing the bibliography items to the root source of your mdbook (pointed by the <code>src</code> parameter in the <code>[book]</code> section of the <code>.toml</code> file)...</li>
+</ol>
+<pre><code>my_book/
+├── book.toml
+└── src
+    ├── my_biblio.bib
+    ├── chapter_1.md
+    └── SUMMARY.md
+</code></pre>
+<ol start="2">
+<li>...and then add the following configuration to the <code>.toml</code> config file:</li>
+</ol>
+<pre><code class="language-toml">[book]
+#...
+[preprocessor.bib]
+bibliography = &quot;my_biblio.bib&quot;
+</code></pre>
+<p>The bibliography will appear as a separate section in your book ToC. </p>
+<h2 id="adding-a-biblatex-format-bibliography-from-a-hrefhttpswwwzoteroorgzoteroa"><a class="header" href="#adding-a-biblatex-format-bibliography-from-a-hrefhttpswwwzoteroorgzoteroa">Adding a BibLaTex-format Bibliography from <a href="https://www.zotero.org/">Zotero</a></a></h2>
+<p>Alternatively, you can use any publicly available library in BibLaTex format from Zotero.
+In order to do so, just specify the <code>Zotero UserId</code> of the public bibliography you want to access in the preprocessor section:</p>
+<pre><code class="language-toml">[book]
+#...
+[preprocessor.bib]
+zotero-uid = &quot;&lt;a_Zotero_userID&gt;&quot;
+</code></pre>
+<p>The <code>Zotero UserId</code> is the number that appears following the <code>users</code> resource in a public bibliography URL. e.g. in the 
+example below, the <code>Zotero UserId</code> is 475425:</p>
+<pre><code class="language-shell">https://api.zotero.org/users/475425/items?format=atom&amp;v=3
+</code></pre>
+<p>If you have a Zotero account, you can make your library public marking the checkbox in the <a href="https://www.zotero.org/settings/privacy">Zotero Privacy Settings page</a>.</p>
+<p>You can find your <code>Zotero userID</code> in the <a href="https://www.zotero.org/settings/keys">Zotero Feeds/API</a> section of your 
+Zotero account.</p>
+<h2 id="add-referencescitations-to-the-bibliography"><a class="header" href="#add-referencescitations-to-the-bibliography">Add References/Citations to the Bibliography</a></h2>
+<p>In your markdown files, create references/citations to the citation-keys included in the <code>.bib</code> file with any of these two options:</p>
+<ol>
+<li>Surround the citation key with the <code>{{#cite</code> and <code>}}</code> delimiters</li>
+<li>Prepend the citation key with two <code>@</code> characters</li>
+</ol>
+<h2 id="configure-your-own-style-for-bibliography-entries"><a class="header" href="#configure-your-own-style-for-bibliography-entries">Configure your own Style for Bibliography Entries</a></h2>
+<p>You can override the default biblio style provided for the bibliography entries by specifying an ad-hoc Handlebars template and style.
+In order to do so, the <code>hb-tpl</code>, <code>css</code>, and <code>js</code> parameters are provided as configuration options.
+<code>hb-tpl</code> allows to point to a <code>.hbs</code> file that includes the Handlebars style.
+For examples, see the provided <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual">templates</a>.</p>
+<p>The available placeholders that can be used in the handlebars template for now are:</p>
+<ul>
+<li><code>citation_key</code></li>
+<li><code>authors</code></li>
+<li><code>title</code></li>
+<li><code>url</code></li>
+<li><code>pub_year</code></li>
+</ul>
+<p>Also, with the parameters <code>css</code> and <code>js</code>, you can point to files that provide your own css style and/or Javascript functions used in the rendering of the Handlebars template entries (e.g. for the <code>bib_div</code> class above). For more details, check the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual">structure of the manual</a> of this project.</p>
+<p>Handlebars files for different reference styles are provided in the folder
+<a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual">templates</a>
+in the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/">GitHub repository</a>.</p>
+<h2 id="configure-your-own-style-for-citations"><a class="header" href="#configure-your-own-style-for-citations">Configure your own Style for Citations</a></h2>
+<p>You can override the default inline citation style by specifying a Handlebars template
+using the <code>cite-hb-tpl</code> config option. This works in the same way as for <a href="#configure-your-own-style-for-bibliography-entries">bibliography styles</a></p>
+<p>The available placeholders that can be used in the handlebars template for now are:</p>
+<ul>
+<li><code>path</code> -- the path to the bibliography file in the output HTML</li>
+<li><code>item.citation_key</code></li>
+<li><code>item.authors</code></li>
+<li><code>item.title</code></li>
+<li><code>item.url</code></li>
+<li><code>item.pub_year</code></li>
+</ul>
+<p>Handlebars files for different citation styles are provided in the folder
+<a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual">templates</a>
+in the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/">GitHub repository</a>.</p>
+<h2 id="sort-order-references"><a class="header" href="#sort-order-references">Sort order references</a></h2>
+<h2 id="configuration-parameters"><a class="header" href="#configuration-parameters">Configuration Parameters</a></h2>
+<table><thead><tr><th>Option</th><th>Description</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>bibliography</code></td><td><code>.bib</code> file to use.</td><td>-</td></tr>
+<tr><td><code>zotero-uid</code></td><td>Zotero user ID, alternative to bib file.</td><td>-</td></tr>
+<tr><td><code>title</code></td><td>Title for the Bibliography section of the book</td><td><code>Bibliography</code></td></tr>
+<tr><td><code>render-bib</code></td><td>Render the entire bibliography (<code>all</code>), or only cited entries (<code>cited</code>)</td><td><code>cited</code></td></tr>
+<tr><td><code>hb-tpl</code></td><td>Ad-hoc Handlebars template file used to render the bibliography. Overwrites the default style.</td><td>-</td></tr>
+<tr><td><code>cite-hb-tpl</code></td><td>Ad-hoc Handlebars template file used to render inline citations. Overwrites the default style.</td><td>-</td></tr>
+<tr><td><code>css</code></td><td>Extra CSS file with the style used when rendering the ad-hoc biblio.</td><td>-</td></tr>
+<tr><td><code>js</code></td><td>Extra JS file with code used when rendering the ad-hoc biblio.</td><td>-</td></tr>
+<tr><td><code>order</code></td><td>Sort order for references. One of <code>none</code>, <code>key</code>, <code>author</code>, <code>index</code>.</td><td>-</td></tr>
+</tbody></table>
+<p>A complete <code>preprocessor.bib</code> section example, which reads the bibliography from a local file and only shows the cited entries of the bibliography:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+title = &quot;My Biblio!&quot;
+bibliography = &quot;my_biblio.bib&quot;
+render-bib = &quot;cited&quot;
+hb-tpl = &quot;render/my_references.hbs&quot;
+css = &quot;render/my_style.css&quot;
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                                                    <a rel="prev" href="install.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+                                                    <a rel="next" href="contrib.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                                    <a rel="prev" href="install.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+                                    <a rel="next" href="contrib.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                            </nav>
+
+        </div>
+
+        
+        
+        
+                <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+        
+                <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        
+    </body>
+</html>
