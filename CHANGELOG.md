@@ -1,5 +1,11 @@
 #
 
+## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+
+**Fixed bugs:**
+
+- encountered fatal runtime error: stack overflow when trying to build mdbook [\#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
+
 ## [v0.0.7](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.7) (2025-07-24)
 
 **Closed issues:**
