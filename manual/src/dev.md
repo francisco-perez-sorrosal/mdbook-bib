@@ -1,5 +1,11 @@
 # Dev
 
+## Debug
+
+```sh
+RUST_LOG=mdbook_bib=debug mdbook build
+```
+
 ## Commits
 
 Before submitting the commit, format code with:

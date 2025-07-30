@@ -11,7 +11,7 @@ use crate::config::{Config, SortOrder};
 use anyhow::anyhow;
 use handlebars::Handlebars;
 use indexmap::IndexMap;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use mdbook::book::{Book, BookItem, Chapter};
 use mdbook::errors::{Error, Result as MdResult};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
@@ -301,7 +301,19 @@ pub(crate) fn build_bibliography(
     biblatex_content = re
         .replace_all(&biblatex_content, " ${before}_at_${after} ")
         .into_owned();
-    let bib = Bibtex::parse(&biblatex_content)?;
+
+    info!("Attempting to parse BibTeX content...");
+    let bib = match Bibtex::parse(&biblatex_content) {
+        Ok(bib) => {
+            info!("Successfully parsed BibTeX content");
+            bib
+        }
+        Err(e) => {
+            error!("Failed to parse BibTeX content: {}", e);
+            error!("This might be due to malformed BibTeX syntax, missing braces, or invalid characters");
+            return Err(anyhow!("BibTeX parsing failed: {}", e));
+        }
+    };
 
     let biblio = bib.bibliographies();
     info!("{} bibliography items read", biblio.len());
@@ -309,36 +321,116 @@ pub(crate) fn build_bibliography(
     let bibliography: IndexMap<String, BibItem> = biblio
         .iter()
         .map(|bib| {
+            let citation_key = bib.citation_key().to_string();
+            info!("Processing bibliography entry: {}", citation_key);
+
             let tm: HashMap<String, String> = bib
                 .tags()
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
-            let mut authors_str = tm.get("author").unwrap_or(&"N/A".to_owned()).to_string();
-            authors_str.retain(|c| c != '\n');
 
-            info!("{:?}", &tm);
+            // Process authors with explicit error handling
+            let authors_str = match tm.get("author") {
+                Some(author) => {
+                    let mut clean_author = author.to_string();
+                    clean_author.retain(|c| c != '\n');
+                    debug!("Entry {}: author field = '{}'", citation_key, clean_author);
+                    clean_author
+                }
+                None => {
+                    warn!("Entry {}: missing author field, using 'N/A'", citation_key);
+                    "N/A".to_string()
+                }
+            };
+
+            // Process title with explicit error handling
+            let title = match tm.get("title") {
+                Some(title_val) => {
+                    debug!("Entry {}: title field = '{}'", citation_key, title_val);
+                    title_val.to_string()
+                }
+                None => {
+                    warn!(
+                        "Entry {}: missing title field, using 'Not Found'",
+                        citation_key
+                    );
+                    "Not Found".to_string()
+                }
+            };
+
+            // Process abstract/summary with explicit error handling
+            let summary = match tm.get("abstract") {
+                Some(abstract_val) => {
+                    debug!(
+                        "Entry {}: abstract field = '{}'",
+                        citation_key, abstract_val
+                    );
+                    abstract_val.to_string()
+                }
+                None => {
+                    debug!(
+                        "Entry {}: missing abstract field, using 'N/A'",
+                        citation_key
+                    );
+                    "N/A".to_string()
+                }
+            };
+
+            // Process URL with explicit error handling
+            let url: Option<String> = match tm.get("url") {
+                Some(url_val) => match url_val.parse::<String>() {
+                    Ok(parsed_url) => {
+                        debug!("Entry {}: url field = '{}'", citation_key, parsed_url);
+                        Some(parsed_url)
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Entry {}: failed to parse URL '{}': {}",
+                            citation_key, url_val, e
+                        );
+                        None
+                    }
+                },
+                None => {
+                    debug!("Entry {}: missing url field", citation_key);
+                    None
+                }
+            };
+
+            // Process date with explicit error handling
             let (pub_year, pub_month) = extract_date(&tm);
+            debug!(
+                "Entry {}: date fields = year='{}', month='{}'",
+                citation_key, pub_year, pub_month
+            );
+
+            // Process authors list with explicit error handling
             let and_split = Regex::new(r"\band\b").expect("Broken regex");
             let splits = and_split.split(&authors_str);
             let authors: Vec<Vec<String>> = splits
-                .map(|a| a.trim().split(',').map(|b| b.trim().to_string()).collect())
+                .map(|a| {
+                    let author_parts: Vec<String> =
+                        a.trim().split(',').map(|b| b.trim().to_string()).collect();
+                    debug!("Entry {}: author part = '{:?}'", citation_key, author_parts);
+                    author_parts
+                })
                 .collect();
 
-            let url: Option<String> = tm.get("url").map(|u| (*u.to_owned()).parse().unwrap());
+            debug!(
+                "Entry {}: final authors list = '{:?}'",
+                citation_key, authors
+            );
 
             (
-                bib.citation_key().to_string(),
+                citation_key.clone(),
                 BibItem {
-                    citation_key: bib.citation_key().to_string(),
-                    title: tm
-                        .get("title")
-                        .unwrap_or(&"Not Found".to_owned())
-                        .to_string(),
+                    citation_key,
+                    title,
                     authors,
                     pub_month,
                     pub_year,
-                    summary: tm.get("abstract").unwrap_or(&"N/A".to_owned()).to_string(),
+                    summary,
                     url,
                     index: None,
                 },
@@ -352,14 +444,20 @@ pub(crate) fn build_bibliography(
 
 fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
     if let Some(date_str) = tm.get("date") {
+        debug!("Processing date field: '{}'", date_str);
         let mut date = date_str.split('-');
         let year = date.next().unwrap_or("N/A").to_string();
         let month = date
             .next()
             .unwrap_or_else(|| tm.get("month").map(|s| s.as_str()).unwrap_or("N/A"))
             .to_string();
+        debug!(
+            "Extracted from date field: year='{}', month='{}'",
+            year, month
+        );
         (year, month)
     } else {
+        debug!("No date field found, looking for separate year/month fields");
         let year = tm
             .get("year")
             .map(|s| s.as_str())
@@ -370,6 +468,10 @@ fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
             .map(|s| s.as_str())
             .unwrap_or("N/A")
             .to_string();
+        debug!(
+            "Extracted from separate fields: year='{}', month='{}'",
+            year, month
+        );
         (year, month)
     }
 }

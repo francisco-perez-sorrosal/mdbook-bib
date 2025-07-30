@@ -34,7 +34,9 @@ my_book/
 bibliography = "my_biblio.bib"
 ```
 
-The bibliography will appear as a separate section in your book ToC. 
+The bibliography will appear as a separate section in your book ToC.
+
+**Note**: You can debug your book builds with `RUST_LOG=mdbook_bib=debug mdbook build` for troubleshooting/help.
 
 ## Adding a BibLaTex-format Bibliography from [Zotero](https://www.zotero.org/)
 
