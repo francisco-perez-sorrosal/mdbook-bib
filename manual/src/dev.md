@@ -21,7 +21,7 @@ After successful test pass, the `CHANGELOG.md` is updated.
 
 ## Release
 
-The release process is:
+The release process can be triggered with the make command `make release VERSION=0.0.7` and it's composed by:
 
 - Update new version (e.g. 0.0.7) in `Cargo.toml`, and `doc.yml` in the manual
 - Do a commit with those changes with a message like `Prepare for release v0.0.7`
@@ -30,7 +30,7 @@ The release process is:
   - Pushing the tag to github: `git push origin v0.0.7`
 - The release will exercise the github workflows:
   - `publish.yml` - Publish the release
-  - `releaese.yml` - Create the binary packages to release in [here](https://github.com/francisco-perez-sorrosal/)mdbook-bib/releases)
+  - `releaese.yml` - Create the binary packages to release in [here](https://github.com/francisco-perez-sorrosal/mdbook-bib/releases)
   - `doc.yml`  - Will publish the book with this instructions [here](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
 
 ## ToDo
