@@ -33,7 +33,6 @@ mdbook-preprocessor = "0.5.1"
 
 [dev-dependencies]
 tempfile = "^3.0"
-rusty-hook = "^0.11"
 mdbook-driver = "0.5.1"
 
 [badges]
