@@ -23,18 +23,18 @@ use serde::{Deserialize, Serialize};
 mod config;
 mod file_utils;
 
-static NAME: &str = "bib";
+static NAME: &str = "preprocessor.bib";
 static BIB_OUT_FILE: &str = "bibliography";
 
-pub struct Bibiography;
+pub struct Bibliography;
 
-impl Default for Bibiography {
-    fn default() -> Bibiography {
-        Bibiography
+impl Default for Bibliography {
+    fn default() -> Bibliography {
+        Bibliography
     }
 }
 
-impl Bibiography {
+impl Bibliography {
     // Get references and info from the bibliography file specified in the config
     // arg "bibliography" or in Zotero
     fn retrieve_bibliography_content(
@@ -476,7 +476,7 @@ fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
     }
 }
 
-impl Preprocessor for Bibiography {
+impl Preprocessor for Bibliography {
     fn name(&self) -> &str {
         NAME
     }
@@ -496,7 +496,7 @@ impl Preprocessor for Bibiography {
             }
         };
 
-        let bib_content = Bibiography::retrieve_bibliography_content(ctx, &config);
+        let bib_content = Bibliography::retrieve_bibliography_content(ctx, &config);
 
         if bib_content.is_err() {
             warn!(
@@ -527,9 +527,9 @@ impl Preprocessor for Bibiography {
         }
 
         let cited =
-            Bibiography::expand_cite_references_in_book(&mut book, &mut bib, &config.cite_hb_html);
+            Bibliography::expand_cite_references_in_book(&mut book, &mut bib, &config.cite_hb_html);
 
-        let bib_content_html = Bibiography::generate_bibliography_html(
+        let bib_content_html = Bibliography::generate_bibliography_html(
             &bib,
             &cited,
             config.cited_only,
@@ -537,7 +537,7 @@ impl Preprocessor for Bibiography {
             config.order,
         );
 
-        let bib_chapter = Bibiography::create_bibliography_chapter(
+        let bib_chapter = Bibliography::create_bibliography_chapter(
             config.title,
             config.js_html,
             config.css_html,
@@ -606,7 +606,7 @@ fn add_bib_at_end_of_chapters(
                     .as_str()
                     .to_string();
 
-                let ch_bib_content_html = Bibiography::generate_bibliography_html(
+                let ch_bib_content_html = Bibliography::generate_bibliography_html(
                     bibliography,
                     &cited,
                     true,
