@@ -8,8 +8,8 @@ use chrono::Local;
 use clap::{Arg, ArgMatches, Command};
 use env_logger::Builder;
 use log::LevelFilter;
-use mdbook::errors::Error;
-use mdbook::preprocess::{CmdPreprocessor, Preprocessor};
+use mdbook_preprocessor::errors::Error;
+use mdbook_preprocessor::{parse_input, Preprocessor};
 
 pub fn make_app() -> Command {
     Command::new("bib")
@@ -64,15 +64,15 @@ fn logging_initialization() {
 }
 
 fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
-    let (ctx, book) = CmdPreprocessor::parse_input(io::stdin())?;
-    if ctx.mdbook_version != mdbook::MDBOOK_VERSION {
+    let (ctx, book) = parse_input(io::stdin())?;
+    if ctx.mdbook_version != mdbook_preprocessor::MDBOOK_VERSION {
         // We should probably use the `semver` crate to check compatibility
         // here...
         eprintln!(
             "Warning: The {} plugin was built against version {} of mdbook, \
              but we're being called from version {}",
             pre.name(),
-            mdbook::MDBOOK_VERSION,
+            mdbook_preprocessor::MDBOOK_VERSION,
             ctx.mdbook_version
         );
     }
@@ -87,7 +87,7 @@ fn handle_supports(pre: &dyn Preprocessor, sub_args: &ArgMatches) -> ! {
     let renderer = sub_args
         .get_one::<String>("renderer")
         .expect("Required argument");
-    let supported = pre.supports_renderer(renderer);
+    let supported = pre.supports_renderer(renderer).unwrap_or(false);
 
     // Signal whether the renderer is supported by exiting with 1 or 0.
     if supported {

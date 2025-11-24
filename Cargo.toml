@@ -23,7 +23,6 @@ handlebars = { version = "4.3.6", features = ["dir_source"] }
 lazy_static = "1.0"
 lexical-core = ">=0.7.5"
 log = "0.4"
-mdbook = { version = "0.4", default-features = false }
 nom-bibtex = "0.5.0"
 regex = "1.0.0"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
@@ -31,10 +30,12 @@ serde = { version = "1.0.121", features = ["derive"] }
 serde_json = "1.0"
 toml = ">=0.5.8,<0.6"
 indexmap = "1.9.2"
+mdbook-preprocessor = "0.5.1"
 
 [dev-dependencies]
 tempfile = "^3.0"
 rusty-hook = "^0.11"
+mdbook-driver = "0.5.1"
 
 [badges]
 is-it-maintained-issue-resolution = { repository = "https://github.com/francisco-perez-sorrosal/mdbook-bib" }
