@@ -570,7 +570,10 @@ fn process_test_book() {
     let mut md = MDBook::load(manual_src_path).unwrap();
     let mdbook_bib_prepro = Bibliography;
     md.with_preprocessor(mdbook_bib_prepro);
-    md.build().unwrap();
+    match md.build() {
+        Ok(_) => (),
+        Err(err) => panic!("there was an error building the book: {:?}", err),
+    }
 
     // Check both, root level and nested html files get placeholders substituted with
     // bib references with relative paths
