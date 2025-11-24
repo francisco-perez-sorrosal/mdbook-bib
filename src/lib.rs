@@ -12,9 +12,9 @@ use anyhow::anyhow;
 use handlebars::Handlebars;
 use indexmap::IndexMap;
 use log::{debug, error, info, warn};
-use mdbook::book::{Book, BookItem, Chapter};
-use mdbook::errors::{Error, Result as MdResult};
-use mdbook::preprocess::{Preprocessor, PreprocessorContext};
+use mdbook_preprocessor::book::{Book, BookItem, Chapter};
+use mdbook_preprocessor::errors::{Error, Result as MdResult};
+use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 use nom_bibtex::*;
 use regex::Regex;
 use reqwest::blocking::Response;
@@ -484,8 +484,8 @@ impl Preprocessor for Bibiography {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
         let book_src_root = ctx.root.join(&ctx.config.book.src);
-        let table = ctx.config.get_preprocessor(self.name());
-        let config = match Config::build_from(table, book_src_root) {
+        let table = ctx.config.get::<toml::value::Table>(self.name()).unwrap();
+        let config = match Config::build_from(table.as_ref(), book_src_root) {
             Ok(config) => config,
             Err(err) => {
                 warn!(
@@ -549,8 +549,8 @@ impl Preprocessor for Bibiography {
         Ok(book)
     }
 
-    fn supports_renderer(&self, renderer: &str) -> bool {
-        renderer != "not-supported"
+    fn supports_renderer(&self, renderer: &str) -> Result<bool, anyhow::Error> {
+        Ok(renderer != "not-supported")
     }
 }
 

@@ -3,7 +3,7 @@ use crate::config::{SortOrder, DEFAULT_HB_TEMPLATE};
 use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
 use crate::Bibiography;
 use indexmap::IndexMap;
-use mdbook::MDBook;
+use mdbook_driver::MDBook;
 use std::fs::File;
 use std::io::Write;
 
@@ -22,7 +22,7 @@ use crate::{
 use toml::value::Table;
 use toml::Value;
 
-use mdbook::book::Chapter;
+use mdbook_preprocessor::book::Chapter;
 
 static EXAMPLE_CSS_TEMPLATE: &str = include_str!("../manual/src/render/my_style.css");
 static EXAMPLE_HB_TEMPLATE: &str = include_str!("../manual/src/render/my_references.hbs");
@@ -260,7 +260,7 @@ fn citations_in_subfolders_link_properly() {
 fn debug_replace_all_placeholders() {
     use crate::{replace_all_placeholders, BibItem};
     use indexmap::IndexMap;
-    use mdbook::book::Chapter;
+    use mdbook_preprocessor::book::Chapter;
     use std::collections::HashSet;
 
     let content = r#"
@@ -338,7 +338,7 @@ This is a reference to {{#cite DUMMY:1}}
 fn test_citation_with_dots_replacement() {
     use crate::{replace_all_placeholders, BibItem};
     use indexmap::IndexMap;
-    use mdbook::book::Chapter;
+    use mdbook_preprocessor::book::Chapter;
     use std::collections::HashSet;
 
     let content = r#"
