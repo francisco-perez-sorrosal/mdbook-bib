@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 mod config;
 mod file_utils;
 
-static NAME: &str = "preprocessor.bib";
+static NAME: &str = "bib";
 static BIB_OUT_FILE: &str = "bibliography";
 
 pub struct Bibliography;
@@ -484,7 +484,10 @@ impl Preprocessor for Bibliography {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
         let book_src_root = ctx.root.join(&ctx.config.book.src);
-        let table = ctx.config.get::<toml::value::Table>(self.name()).unwrap();
+        let table = ctx
+            .config
+            .get::<toml::value::Table>("preprocessor.bib")
+            .unwrap();
         let config = match Config::build_from(table.as_ref(), book_src_root) {
             Ok(config) => config,
             Err(err) => {
