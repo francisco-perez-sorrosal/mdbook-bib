@@ -2,6 +2,9 @@
 
 ## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
 
+**Breaking changes:**
+- Upgraded to mdbook 0.5.X branch
+
 **Fixed bugs:**
 
 - encountered fatal runtime error: stack overflow when trying to build mdbook [\#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)

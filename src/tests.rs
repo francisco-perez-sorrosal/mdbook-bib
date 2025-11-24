@@ -1,7 +1,7 @@
 use crate::config::DEFAULT_JS_TEMPLATE;
 use crate::config::{SortOrder, DEFAULT_HB_TEMPLATE};
 use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
-use crate::Bibiography;
+use crate::Bibliography;
 use indexmap::IndexMap;
 use mdbook_driver::MDBook;
 use std::fs::File;
@@ -96,7 +96,7 @@ fn bibliography_render_all_vs_cited() {
     let mut cited = HashSet::new();
     cited.insert("fps".to_string());
 
-    let html = Bibiography::generate_bibliography_html(
+    let html = Bibliography::generate_bibliography_html(
         &bibliography_loaded,
         &cited,
         false,
@@ -107,7 +107,7 @@ fn bibliography_render_all_vs_cited() {
     assert!(html.contains("This is a bib entry!"));
     assert!(html.contains("The Rust Programming Language"));
 
-    let html = Bibiography::generate_bibliography_html(
+    let html = Bibliography::generate_bibliography_html(
         &bibliography_loaded,
         &cited,
         true,
@@ -134,7 +134,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
         "https://doc.rust-lang.org/book/"
     );
     // ...and is included in the render
-    let html = Bibiography::generate_bibliography_html(
+    let html = Bibliography::generate_bibliography_html(
         &bibliography_loaded,
         &HashSet::new(),
         false,
@@ -568,7 +568,7 @@ fn process_test_book() {
     let mut manual_src_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manual_src_path.push("test_book/");
     let mut md = MDBook::load(manual_src_path).unwrap();
-    let mdbook_bib_prepro = Bibiography;
+    let mdbook_bib_prepro = Bibliography;
     md.with_preprocessor(mdbook_bib_prepro);
     md.build().unwrap();
 
