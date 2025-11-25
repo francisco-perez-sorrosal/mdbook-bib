@@ -1,13 +1,7 @@
-extern crate log;
-
-use std::env;
 use std::io;
 use std::process;
 
-use chrono::Local;
 use clap::{Arg, ArgMatches, Command};
-use env_logger::Builder;
-use log::LevelFilter;
 use mdbook_preprocessor::errors::Error;
 use mdbook_preprocessor::{parse_input, Preprocessor};
 
@@ -40,27 +34,36 @@ fn main() {
 }
 
 fn logging_initialization() {
-    use std::io::Write;
-    let mut builder = Builder::new();
+    let filter = tracing_subscriber::EnvFilter::builder()
+        .with_env_var("MDBOOK_LOG")
+        .with_default_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
+        .from_env_lossy();
+    let log_env = std::env::var("MDBOOK_LOG");
+    // Silence some particularly noisy dependencies unless the user
+    // specifically asks for them.
+    let silence_unless_specified = |filter: tracing_subscriber::EnvFilter, target| {
+        if !log_env
+            .as_ref()
+            .is_ok_and(|s| s.split(',').any(|directive| directive.starts_with(target)))
+        {
+            filter.add_directive(format!("{target}=warn").parse().unwrap())
+        } else {
+            filter
+        }
+    };
+    let filter = silence_unless_specified(filter, "handlebars");
+    let filter = silence_unless_specified(filter, "html5ever");
 
-    builder.format(|formatter, record| {
-        writeln!(
-            formatter,
-            "{} [{}] ({}): {}",
-            Local::now().format("%Y-%m-%d %H:%M:%S"),
-            record.level(),
-            record.target(),
-            record.args()
-        )
-    });
+    // Don't show the target by default, since it generally isn't useful
+    // unless you are overriding the level.
+    let with_target = log_env.is_ok();
 
-    if let Ok(var) = env::var("RUST_LOG") {
-        builder.parse_filters(&var);
-    } else {
-        builder.filter(None, LevelFilter::Info); // Default to Info
-    }
-
-    builder.init();
+    tracing_subscriber::fmt()
+        .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stderr()))
+        .with_writer(std::io::stderr)
+        .with_env_filter(filter)
+        .with_target(with_target)
+        .init();
 }
 
 fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
