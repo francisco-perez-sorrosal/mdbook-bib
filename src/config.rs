@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use log::info;
 use std::error::Error as StdError;
 use std::fmt::{Display, Formatter};
 use std::fs;
@@ -7,6 +6,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 use toml::value::Table;
+use tracing::info;
 
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");

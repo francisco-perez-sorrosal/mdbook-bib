@@ -11,7 +11,6 @@ use crate::config::{Config, SortOrder};
 use anyhow::anyhow;
 use handlebars::Handlebars;
 use indexmap::IndexMap;
-use log::{debug, error, info, warn};
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
 use mdbook_preprocessor::errors::{Error, Result as MdResult};
 use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
@@ -43,7 +42,7 @@ impl Bibliography {
     ) -> Result<String, Error> {
         let bib_content = match &cfg.bibliography {
             Some(biblio_file) => {
-                info!("Bibliography file: {biblio_file}");
+                tracing::info!("Bibliography file: {}", biblio_file);
                 let mut biblio_path = ctx.root.join(&ctx.config.book.src);
                 biblio_path = biblio_path.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
@@ -51,19 +50,19 @@ impl Bibliography {
                         "Bibliography file {biblio_path:?} not found!",
                     )))
                 } else {
-                    info!("Bibliography path: {}", biblio_path.display());
+                    tracing::info!("Bibliography path: {}", biblio_path.display());
                     load_bibliography(biblio_path)
                 }
             }
             _ => {
-                warn!("Bibliography file not specified. Trying download from Zotero");
+                tracing::warn!("Bibliography file not specified. Trying download from Zotero");
                 match &cfg.zotero_uid {
                     Some(uid) => {
                         let user_id = uid.to_string();
                         let bib_str = download_bib_from_zotero(user_id).unwrap_or_default();
                         if !bib_str.is_empty() {
                             let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
-                            info!("Saving Zotero bibliography to {biblio_path:?}");
+                            tracing::info!("Saving Zotero bibliography to {:?}", biblio_path);
                             let _ = fs::write(biblio_path, &bib_str);
                             Ok(bib_str)
                         } else {
@@ -89,7 +88,7 @@ impl Bibliography {
         handlebars
             .register_template_string("references", references_tpl)
             .unwrap();
-        debug!("Handlebars content: {handlebars:?}");
+        tracing::debug!("Handlebars content: {:?}", handlebars);
 
         let sorted: Vec<(&str, &BibItem)> = match order {
             SortOrder::None => bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect(),
@@ -129,7 +128,7 @@ impl Bibliography {
             }
         }
 
-        debug!("Generated Bib Content: {content:?}");
+        tracing::debug!("Generated Bib Content: {:?}", content);
         content
     }
 
@@ -143,7 +142,7 @@ impl Bibliography {
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
                 if let Some(ref chapter_path) = ch.path {
-                    info!(
+                    tracing::info!(
                         "Replacing placeholders: {{#cite ...}} and @@citation in {}",
                         chapter_path.as_path().display()
                     );
@@ -168,8 +167,10 @@ impl Bibliography {
         biblio_html_part: String,
     ) -> Chapter {
         let html_content = format!("{js_html_part}\n{css_html_part}\n{biblio_html_part}");
-        debug!(
-            "Creating new Bibliography chapter (with title: \"{title}\") with content: {html_content:?}"
+        tracing::debug!(
+            "Creating new Bibliography chapter (with title: \"{}\") with content: {:?}",
+            title,
+            html_content
         );
 
         Chapter::new(
@@ -235,11 +236,11 @@ struct Citation {
 
 /// Load bibliography from file
 pub(crate) fn load_bibliography<P: AsRef<Path>>(biblio_file: P) -> MdResult<String> {
-    log::info!("Loading bibliography from {:?}...", biblio_file.as_ref());
+    tracing::info!("Loading bibliography from {:?}...", biblio_file.as_ref());
 
     let biblio_file_ext = file_utils::get_filename_extension(biblio_file.as_ref());
     if biblio_file_ext.unwrap_or_default().to_lowercase() != "bib" {
-        warn!(
+        tracing::warn!(
             "Only biblatex-based bibliography is supported for now! Yours: {:?}",
             biblio_file.as_ref()
         );
@@ -252,7 +253,7 @@ fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
     let mut biblio_chunk = String::new();
     let _ = res.read_to_string(&mut biblio_chunk);
     let link_info_in_header = res.headers().get("link");
-    debug!("Header Link content: {link_info_in_header:?}");
+    tracing::debug!("Header Link content: {:?}", link_info_in_header);
     let link_info_as_str = link_info_in_header.unwrap().to_str();
 
     (link_info_as_str.unwrap().to_string(), biblio_chunk)
@@ -261,7 +262,7 @@ fn extract_biblio_data_and_link_info(res: &mut Response) -> (String, String) {
 /// Download bibliography from Zotero
 pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Error> {
     let mut url = format!("https://api.zotero.org/users/{user_id}/items?format=biblatex&style=biblatex&limit=100&sort=creator&v=3");
-    info!("Zotero's URL biblio source:\n{url:?}");
+    tracing::info!("Zotero's URL biblio source:\n{url:?}");
     let mut res = reqwest::blocking::get(&url)?;
     if res.status().is_client_error() || res.status().is_client_error() {
         Err(anyhow!(format!(
@@ -277,7 +278,7 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
             let slice = &link_str[..end_bytes];
             let start_bytes = slice.rfind('<').unwrap_or(0);
             url = link_str[(start_bytes + 1)..end_bytes].to_string();
-            info!("Next biblio chunk URL:\n{url:?}");
+            tracing::info!("Next biblio chunk URL:\n{:?}", url);
             res = reqwest::blocking::get(&url)?;
             let (new_link_str, new_bib_part) = extract_biblio_data_and_link_info(&mut res);
             link_str = new_link_str;
@@ -291,7 +292,7 @@ pub(crate) fn download_bib_from_zotero(user_id: String) -> MdResult<String, Erro
 pub(crate) fn build_bibliography(
     raw_content: String,
 ) -> MdResult<IndexMap<String, BibItem>, Error> {
-    log::info!("Building bibliography...");
+    tracing::info!("Building bibliography...");
 
     // Filter quotes (") that may appear in abstracts, etc. and that Bibtex parser doesn't like
     let mut biblatex_content = raw_content.replace('\"', "");
@@ -301,27 +302,27 @@ pub(crate) fn build_bibliography(
         .replace_all(&biblatex_content, " ${before}_at_${after} ")
         .into_owned();
 
-    info!("Attempting to parse BibTeX content...");
+    tracing::info!("Attempting to parse BibTeX content...");
     let bib = match Bibtex::parse(&biblatex_content) {
         Ok(bib) => {
-            info!("Successfully parsed BibTeX content");
+            tracing::info!("Successfully parsed BibTeX content");
             bib
         }
         Err(e) => {
-            error!("Failed to parse BibTeX content: {e}");
-            error!("This might be due to malformed BibTeX syntax, missing braces, or invalid characters");
-            return Err(anyhow!("BibTeX parsing failed: {e}"));
+            tracing::error!("Failed to parse BibTeX content: {}", e);
+            tracing::error!("This might be due to malformed BibTeX syntax, missing braces, or invalid characters");
+            return Err(anyhow!("BibTeX parsing failed: {}", e));
         }
     };
 
     let biblio = bib.bibliographies();
-    info!("{} bibliography items read", biblio.len());
+    tracing::info!("{} bibliography items read", biblio.len());
 
     let bibliography: IndexMap<String, BibItem> = biblio
         .iter()
         .map(|bib| {
             let citation_key = bib.citation_key().to_string();
-            info!("Processing bibliography entry: {citation_key}");
+            tracing::info!("Processing bibliography entry: {}", citation_key);
 
             let tm: HashMap<String, String> = bib
                 .tags()
@@ -334,11 +335,11 @@ pub(crate) fn build_bibliography(
                 Some(author) => {
                     let mut clean_author = author.to_string();
                     clean_author.retain(|c| c != '\n');
-                    debug!("Entry {citation_key}: author field = '{clean_author}'");
+                    tracing::debug!("Entry {}: author field = '{}'", citation_key, clean_author);
                     clean_author
                 }
                 None => {
-                    warn!("Entry {citation_key}: missing author field, using 'N/A'");
+                    tracing::warn!("Entry {}: missing author field, using 'N/A'", citation_key);
                     "N/A".to_string()
                 }
             };
@@ -346,11 +347,14 @@ pub(crate) fn build_bibliography(
             // Process title with explicit error handling
             let title = match tm.get("title") {
                 Some(title_val) => {
-                    debug!("Entry {citation_key}: title field = '{title_val}'");
+                    tracing::debug!("Entry {}: title field = '{}'", citation_key, title_val);
                     title_val.to_string()
                 }
                 None => {
-                    warn!("Entry {citation_key}: missing title field, using 'Not Found'");
+                    tracing::warn!(
+                        "Entry {}: missing title field, using 'Not Found'",
+                        citation_key
+                    );
                     "Not Found".to_string()
                 }
             };
@@ -358,11 +362,18 @@ pub(crate) fn build_bibliography(
             // Process abstract/summary with explicit error handling
             let summary = match tm.get("abstract") {
                 Some(abstract_val) => {
-                    debug!("Entry {citation_key}: abstract field = '{abstract_val}'");
+                    tracing::debug!(
+                        "Entry {}: abstract field = '{}'",
+                        citation_key,
+                        abstract_val
+                    );
                     abstract_val.to_string()
                 }
                 None => {
-                    debug!("Entry {citation_key}: missing abstract field, using 'N/A'");
+                    tracing::debug!(
+                        "Entry {}: missing abstract field, using 'N/A'",
+                        citation_key
+                    );
                     "N/A".to_string()
                 }
             };
@@ -371,23 +382,33 @@ pub(crate) fn build_bibliography(
             let url: Option<String> = match tm.get("url") {
                 Some(url_val) => match url_val.parse::<String>() {
                     Ok(parsed_url) => {
-                        debug!("Entry {citation_key}: url field = '{parsed_url}'");
+                        tracing::debug!("Entry {}: url field = '{}'", citation_key, parsed_url);
                         Some(parsed_url)
                     }
                     Err(e) => {
-                        warn!("Entry {citation_key}: failed to parse URL '{url_val}': {e}");
+                        tracing::warn!(
+                            "Entry {}: failed to parse URL '{}': {}",
+                            citation_key,
+                            url_val,
+                            e
+                        );
                         None
                     }
                 },
                 None => {
-                    debug!("Entry {citation_key}: missing url field");
+                    tracing::debug!("Entry {}: missing url field", citation_key);
                     None
                 }
             };
 
             // Process date with explicit error handling
             let (pub_year, pub_month) = extract_date(&tm);
-            debug!("Entry {citation_key}: date fields = year='{pub_year}', month='{pub_month}'");
+            tracing::debug!(
+                "Entry {}: date fields = year='{}', month='{}'",
+                citation_key,
+                pub_year,
+                pub_month
+            );
 
             // Process authors list with explicit error handling
             let and_split = Regex::new(r"\band\b").expect("Broken regex");
@@ -396,12 +417,16 @@ pub(crate) fn build_bibliography(
                 .map(|a| {
                     let author_parts: Vec<String> =
                         a.trim().split(',').map(|b| b.trim().to_string()).collect();
-                    debug!("Entry {citation_key}: author part = '{author_parts:?}'");
+                    tracing::debug!("Entry {}: author part = '{:?}'", citation_key, author_parts);
                     author_parts
                 })
                 .collect();
 
-            debug!("Entry {citation_key}: final authors list = '{authors:?}'");
+            tracing::debug!(
+                "Entry {}: final authors list = '{:?}'",
+                citation_key,
+                authors
+            );
 
             (
                 citation_key.clone(),
@@ -418,24 +443,28 @@ pub(crate) fn build_bibliography(
             )
         })
         .collect();
-    debug!("Bibiography content:\n{bibliography:?}");
+    tracing::debug!("Bibiography content:\n{:?}", bibliography);
 
     Ok(bibliography)
 }
 
 fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
     if let Some(date_str) = tm.get("date") {
-        debug!("Processing date field: '{date_str}'");
+        tracing::debug!("Processing date field: '{}'", date_str);
         let mut date = date_str.split('-');
         let year = date.next().unwrap_or("N/A").to_string();
         let month = date
             .next()
             .unwrap_or_else(|| tm.get("month").map(|s| s.as_str()).unwrap_or("N/A"))
             .to_string();
-        debug!("Extracted from date field: year='{year}', month='{month}'");
+        tracing::debug!(
+            "Extracted from date field: year='{}', month='{}'",
+            year,
+            month
+        );
         (year, month)
     } else {
-        debug!("No date field found, looking for separate year/month fields");
+        tracing::debug!("No date field found, looking for separate year/month fields");
         let year = tm
             .get("year")
             .map(|s| s.as_str())
@@ -446,7 +475,11 @@ fn extract_date(tm: &HashMap<String, String>) -> (String, String) {
             .map(|s| s.as_str())
             .unwrap_or("N/A")
             .to_string();
-        debug!("Extracted from separate fields: year='{year}', month='{month}'");
+        tracing::debug!(
+            "Extracted from separate fields: year='{}', month='{}'",
+            year,
+            month
+        );
         (year, month)
     }
 }
@@ -457,23 +490,26 @@ impl Preprocessor for Bibliography {
     }
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
-        info!("Processor Name: {}", self.name());
+        tracing::info!("Processor Name: {}", self.name());
         let book_src_root = ctx.root.join(&ctx.config.book.src);
         let table = match ctx.config.get::<toml::value::Table>("preprocessor.bib") {
             Ok(Some(table)) => Some(table),
             Ok(None) => {
-                warn!("No [preprocessor.bib] section found. Skipping processing.");
+                tracing::warn!("No [preprocessor.bib] section found. Skipping processing.");
                 return Ok(book);
             }
             Err(err) => {
-                warn!("Error reading configuration. Skipping processing: {err:?}");
+                tracing::warn!("Error reading configuration. Skipping processing: {err:?}");
                 return Ok(book);
             }
         };
         let config = match Config::build_from(table.as_ref(), book_src_root) {
             Ok(config) => config,
             Err(err) => {
-                warn!("Error reading configuration. Skipping processing: {err:?}");
+                tracing::warn!(
+                    "Error reading configuration. Skipping processing: {:?}",
+                    err
+                );
                 return Ok(book);
             }
         };
@@ -481,7 +517,7 @@ impl Preprocessor for Bibliography {
         let bib_content = Bibliography::retrieve_bibliography_content(ctx, &config);
 
         if bib_content.is_err() {
-            warn!(
+            tracing::warn!(
                 "Raw Bibliography content couldn't be retrieved. Skipping processing: {:?}",
                 bib_content.err()
             );
@@ -490,7 +526,7 @@ impl Preprocessor for Bibliography {
 
         let bibliography = build_bibliography(bib_content?);
         if bibliography.is_err() {
-            warn!(
+            tracing::warn!(
                 "Error building Bibliography from raw content. Skipping render: {:?}",
                 bibliography.err()
             );
@@ -554,7 +590,7 @@ fn add_bib_at_end_of_chapters(
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
             if let Some(ref chapter_path) = ch.path {
-                info!(
+                tracing::info!(
                     "Adding bibliography at the end of chapter {}",
                     chapter_path.as_path().display()
                 );
@@ -572,7 +608,7 @@ fn add_bib_at_end_of_chapters(
                         cited.insert(cite.as_str().trim().to_owned());
                     }
                 }
-                info!("Refs cited in this chapter: {cited:?}");
+                tracing::info!("Refs cited in this chapter: {:?}", cited);
 
                 let mut handlebars = Handlebars::new();
                 handlebars
@@ -616,7 +652,7 @@ fn replace_all_placeholders(
     handlebars
         .register_template_string("citation", citation_tpl)
         .unwrap();
-    debug!("Handlebars content: {handlebars:?}");
+    tracing::debug!("Handlebars content: {:?}", handlebars);
 
     let chapter_path = chapter
         .path
