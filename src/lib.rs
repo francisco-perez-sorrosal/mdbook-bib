@@ -459,10 +459,17 @@ impl Preprocessor for Bibliography {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
         info!("Processor Name: {}", self.name());
         let book_src_root = ctx.root.join(&ctx.config.book.src);
-        let table = ctx
-            .config
-            .get::<toml::value::Table>("preprocessor.bib")
-            .unwrap();
+        let table = match ctx.config.get::<toml::value::Table>("preprocessor.bib") {
+            Ok(Some(table)) => Some(table),
+            Ok(None) => {
+                warn!("No [preprocessor.bib] section found. Skipping processing.");
+                return Ok(book);
+            }
+            Err(err) => {
+                warn!("Error reading configuration. Skipping processing: {err:?}");
+                return Ok(book);
+            }
+        };
         let config = match Config::build_from(table.as_ref(), book_src_root) {
             Ok(config) => config,
             Err(err) => {
