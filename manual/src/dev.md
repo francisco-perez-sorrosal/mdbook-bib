@@ -43,11 +43,15 @@ When committing to the `master` branch, the github workflow `test.yml` will be e
 
 After successful test pass, the `CHANGELOG.md` is updated.
 
+## Versioning
+
+**From version 0.5.0, moving the minor version of mdbook-bib to match the minor version of the mdbook project.**
+
 ## Release
 
 The release process can be triggered with the make command `make release VERSION=0.0.7` and it's composed by:
 
-- Update new version (e.g. 0.0.7) in `Cargo.toml`, and `doc.yml` in the manual
+- Update new version (e.g. 0.0.7) in `Cargo.toml`, and `doc.yml` in the github workflows
 - Do a commit with those changes with a message like `Prepare for release v0.0.7`
 - The release will be triggered by:
   - Creating a new tag in github: `git tag -a v0.0.7 -m "Version v0.0.7"`

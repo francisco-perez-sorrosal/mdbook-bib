@@ -12,8 +12,8 @@ jobs:
   publish:
     name: Publish mdbook-bib Manual
     env:
-      MDBOOK_VERSION: 0.4.10
-      MDBOOK_BIB_VERSION: 0.0.7
+      MDBOOK_VERSION: 0.5.1
+      MDBOOK_BIB_VERSION: 0.5.0
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
