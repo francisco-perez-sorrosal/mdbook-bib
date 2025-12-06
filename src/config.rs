@@ -101,9 +101,8 @@ impl<'a> Config<'a> {
                         "all" => false,
                         other => {
                             return Err(anyhow!(
-                                "Unknown value '{}' for option 'render-bib'. \
-                                Use one of [cited, all]. Skipping bibliography.",
-                                other
+                                "Unknown value '{other}' for option 'render-bib'. \
+                                Use one of [cited, all]. Skipping bibliography."
                             ));
                         }
                     },
@@ -115,10 +114,7 @@ impl<'a> Config<'a> {
                             book_src_path.join(Path::new(&template.as_str().unwrap().to_string()));
                         let template_path_str =
                             template_path.into_os_string().into_string().unwrap();
-                        info!(
-                            "Using HB template for bibliography from {:?}...",
-                            template_path_str
-                        );
+                        info!("Using HB template for bibliography from {template_path_str:?}...");
                         let template_content = fs::read_to_string(template_path_str)?;
                         format!("\n\n{template_content}\n\n")
                     }
@@ -134,10 +130,7 @@ impl<'a> Config<'a> {
                             book_src_path.join(Path::new(&template.as_str().unwrap().to_string()));
                         let template_path_str =
                             template_path.into_os_string().into_string().unwrap();
-                        info!(
-                            "Using HB template for citations from {:?}...",
-                            template_path_str
-                        );
+                        info!("Using HB template for citations from {template_path_str:?}...");
                         fs::read_to_string(template_path_str)?
                     }
                     None => {
@@ -151,10 +144,7 @@ impl<'a> Config<'a> {
                         let css_path =
                             book_src_path.join(Path::new(&css.as_str().unwrap().to_string()));
                         let css_path_str = css_path.into_os_string().into_string().unwrap();
-                        info!(
-                            "Using CSS style for bibliography from {:?}...",
-                            css_path_str
-                        );
+                        info!("Using CSS style for bibliography from {css_path_str:?}...");
                         let css_content = fs::read_to_string(css_path_str)?;
                         format!("<style>{css_content}</style>\n\n")
                     }
@@ -169,10 +159,7 @@ impl<'a> Config<'a> {
                         let js_path =
                             book_src_path.join(Path::new(&css.as_str().unwrap().to_string()));
                         let js_path_str = js_path.into_os_string().into_string().unwrap();
-                        info!(
-                            "Using JS template for bibliography from {:?}...",
-                            js_path_str
-                        );
+                        info!("Using JS template for bibliography from {js_path_str:?}...");
                         let js_content = fs::read_to_string(js_path_str)?;
                         format!("<script type=\"text/javascript\">\n{js_content}\n</script>\n\n")
                     }
