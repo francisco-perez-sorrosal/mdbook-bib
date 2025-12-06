@@ -2,9 +2,27 @@
 
 ## Debug
 
+The preprocessor uses the `tracing` library for logging. To enable debug output, use the `MDBOOK_LOG` environment variable:
+
 ```sh
-RUST_LOG=mdbook_bib=debug mdbook build
+MDBOOK_LOG=mdbook_bib=debug mdbook build
 ```
+
+### Examples
+
+```sh
+MDBOOK_LOG=debug mdbook build # **Set globally for all targets**
+```
+
+```sh
+MDBOOK_LOG=mdbook_bib=debug,handlebars=warn mdbook build # Debug specific modules like ours (mdbook_bib)
+```
+
+### Tips
+
+- The default log level is `info` if `MDBOOK_LOG` is not set
+- Noisy dependencies (`handlebars`, `html5ever`) are automatically silenced to `warn` unless explicitly specified
+- Module paths (targets) are only displayed when `MDBOOK_LOG` is set
 
 ## Commits
 

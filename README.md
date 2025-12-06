@@ -54,7 +54,7 @@ or simply with:
 See other configuration options in the [Config section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/config.html).
 
 
-**Note**: You can debug your book builds with `RUST_LOG=mdbook_bib=debug mdbook build` for troubleshooting/help.
+**Note**: You can debug your book builds with `MDBOOK_LOG=mdbook_bib=debug mdbook build` for troubleshooting/help.
 
 ## Contribute
 

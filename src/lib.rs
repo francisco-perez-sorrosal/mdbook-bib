@@ -311,7 +311,7 @@ pub(crate) fn build_bibliography(
         Err(e) => {
             tracing::error!("Failed to parse BibTeX content: {}", e);
             tracing::error!("This might be due to malformed BibTeX syntax, missing braces, or invalid characters");
-            return Err(anyhow!("BibTeX parsing failed: {}", e));
+            return Err(anyhow!("BibTeX parsing failed: {e}"));
         }
     };
 
