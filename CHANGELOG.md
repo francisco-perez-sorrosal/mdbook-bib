@@ -8,11 +8,15 @@
 
 **Closed issues:**
 
+- Switch log for tracing to match mdbook project logging/tracing features [\#57](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/57)
 - Build fails with mdbook 0.5.0 [\#53](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/53)
 - Interoperability with pandoc [\#51](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/51)
+- Make more explicit logging for nom\_bibtex attribute parsing [\#50](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/50)
+- Allow to create a bibliography on a page of all citations on that page [\#38](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/38)
 
 **Merged pull requests:**
 
+- replace log with tracing [\#55](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/55) ([tompkins-ct](https://github.com/tompkins-ct))
 - \[Breaking / deps\] Update mdbook v0.5.1 [\#54](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/54) ([tompkins-ct](https://github.com/tompkins-ct))
 
 ## [v0.0.7](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.7) (2025-07-24)
