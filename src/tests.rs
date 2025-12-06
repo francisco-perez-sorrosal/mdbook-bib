@@ -572,7 +572,7 @@ fn process_test_book() {
     md.with_preprocessor(mdbook_bib_prepro);
     match md.build() {
         Ok(_) => (),
-        Err(err) => panic!("there was an error building the book: {:?}", err),
+        Err(err) => panic!("there was an error building the book: {err:?}"),
     }
 
     // Check both, root level and nested html files get placeholders substituted with
