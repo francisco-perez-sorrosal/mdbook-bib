@@ -2,12 +2,18 @@
 
 ## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
 
-**Breaking changes:**
-- Upgraded to mdbook 0.5.X branch
-
 **Fixed bugs:**
 
 - encountered fatal runtime error: stack overflow when trying to build mdbook [\#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
+
+**Closed issues:**
+
+- Build fails with mdbook 0.5.0 [\#53](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/53)
+- Interoperability with pandoc [\#51](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/51)
+
+**Merged pull requests:**
+
+- \[Breaking / deps\] Update mdbook v0.5.1 [\#54](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/54) ([tompkins-ct](https://github.com/tompkins-ct))
 
 ## [v0.0.7](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.7) (2025-07-24)
 
