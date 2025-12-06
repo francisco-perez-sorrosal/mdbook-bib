@@ -2,8 +2,6 @@
 
 ## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
 
-**Note: Moving the minor version of mdbook-bib to match the minor version of the mdbook project from now on.**
-
 **Fixed bugs:**
 
 - encountered fatal runtime error: stack overflow when trying to build mdbook [\#39](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/39)
