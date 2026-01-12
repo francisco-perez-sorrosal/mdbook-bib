@@ -625,11 +625,8 @@ fn test_regex_pattern() {
         if let Some(captures) = re.captures(test_case) {
             println!("  Match found!");
             println!("  Full match: '{}'", captures.get(0).unwrap().as_str());
-            if let Some(typ) = captures.get(1) {
-                println!("  Type: '{}'", typ.as_str());
-            }
-            if let Some(rest) = captures.get(2) {
-                println!("  Rest: '{}'", rest.as_str());
+            if let Some(cite_key) = captures.get(1) {
+                println!("  Citation key: '{}'", cite_key.as_str());
             }
         } else {
             println!("  No match!");
@@ -664,6 +661,54 @@ fn test_at_ref_pattern_with_dots() {
             }
         } else {
             panic!("No match found for test case: {test_case}");
+        }
+    }
+}
+
+#[test]
+fn test_ref_pattern_excludes_mdbook_expressions() {
+    use crate::REF_PATTERN;
+    use regex::Regex;
+
+    let re = Regex::new(REF_PATTERN).unwrap();
+
+    // These should NOT match (mdBook expressions)
+    let should_not_match = vec![
+        "{{#include file.rs}}",
+        "{{#title My Custom Title}}",
+        "{{#playground example.rs}}",
+        "{{#rustdoc_include file.rs:2}}",
+        "{{#include file.rs:2:10}}",
+    ];
+
+    for test_case in should_not_match {
+        assert!(
+            !re.is_match(test_case),
+            "Pattern should NOT match mdBook expression: {test_case}"
+        );
+    }
+
+    // These SHOULD match (citation expressions)
+    let should_match = vec![
+        ("{{#cite mdBook}}", "mdBook"),
+        ("{{#cite DUMMY:1}}", "DUMMY:1"),
+        ("{{#cite test-key}}", "test-key"),
+        ("{{#cite 10.1145/3508461}}", "10.1145/3508461"),
+    ];
+
+    for (test_case, expected_key) in should_match {
+        if let Some(captures) = re.captures(test_case) {
+            if let Some(cite_key) = captures.get(1) {
+                assert_eq!(
+                    cite_key.as_str().trim(),
+                    expected_key,
+                    "Citation key should match for: {test_case}"
+                );
+            } else {
+                panic!("No citation key captured for: {test_case}");
+            }
+        } else {
+            panic!("Pattern should match citation: {test_case}");
         }
     }
 }
