@@ -2,8 +2,13 @@
 
 ## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
 
+**Closed issues:**
+
+- This preprocessor overrides mdBook's default built-in `{{\#...}}` preprocessor expressions [\#52](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/52)
+
 **Merged pull requests:**
 
+- Fix override of mdBook's default built-in {{\#...}} expressions [\#59](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/59) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Add Claude Code GitHub Workflow [\#58](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/58) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 
 ## [v0.5.0](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.0) (2025-12-06)
