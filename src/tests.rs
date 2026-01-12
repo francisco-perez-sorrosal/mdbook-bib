@@ -675,6 +675,8 @@ Another citation at end of sentence @@fps!
 What about questions @@simple_key?
 Or maybe colons @@another_key: it should work.
 We reference this paper @@10.1145/3508461.
+See @@ref1, @@ref2, and @@ref3.
+Citations in parentheses (see @@Jones2019).
 "#;
 
     let mut bibliography = IndexMap::new();
@@ -743,6 +745,58 @@ We reference this paper @@10.1145/3508461.
             index: None,
         },
     );
+    bibliography.insert(
+        "ref1".to_string(),
+        BibItem {
+            citation_key: "ref1".to_string(),
+            title: "First Reference".to_string(),
+            authors: vec![vec!["Author1".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2020".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "ref2".to_string(),
+        BibItem {
+            citation_key: "ref2".to_string(),
+            title: "Second Reference".to_string(),
+            authors: vec![vec!["Author2".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2021".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "ref3".to_string(),
+        BibItem {
+            citation_key: "ref3".to_string(),
+            title: "Third Reference".to_string(),
+            authors: vec![vec!["Author3".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2022".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "Jones2019".to_string(),
+        BibItem {
+            citation_key: "Jones2019".to_string(),
+            title: "Jones Paper".to_string(),
+            authors: vec![vec!["Jones".to_string(), "J.".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2019".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
 
     let chapter = Chapter::new(
         "Test",
@@ -768,6 +822,10 @@ We reference this paper @@10.1145/3508461.
     assert!(cited.contains("simple_key"));
     assert!(cited.contains("another_key"));
     assert!(cited.contains("10.1145/3508461"));
+    assert!(cited.contains("ref1"));
+    assert!(cited.contains("ref2"));
+    assert!(cited.contains("ref3"));
+    assert!(cited.contains("Jones2019"));
 
     // Check that the replacements were made correctly
     assert!(result.contains("Klabnik2018"));
@@ -775,6 +833,10 @@ We reference this paper @@10.1145/3508461.
     assert!(result.contains("simple_key"));
     assert!(result.contains("another_key"));
     assert!(result.contains("10.1145/3508461"));
+    assert!(result.contains("ref1"));
+    assert!(result.contains("ref2"));
+    assert!(result.contains("ref3"));
+    assert!(result.contains("Jones2019"));
 
     // Check that original @@ patterns are gone
     assert!(!result.contains("@@Klabnik2018"));
@@ -782,6 +844,10 @@ We reference this paper @@10.1145/3508461.
     assert!(!result.contains("@@simple_key"));
     assert!(!result.contains("@@another_key"));
     assert!(!result.contains("@@10.1145/3508461"));
+    assert!(!result.contains("@@ref1"));
+    assert!(!result.contains("@@ref2"));
+    assert!(!result.contains("@@ref3"));
+    assert!(!result.contains("@@Jones2019"));
 
     // Check that punctuation is preserved after the citation
     assert!(result.contains("Klabnik2018."));
@@ -789,6 +855,14 @@ We reference this paper @@10.1145/3508461.
     assert!(result.contains("simple_key?"));
     assert!(result.contains("another_key:"));
     assert!(result.contains("10.1145/3508461."));
+
+    // Check multiple citations with commas are handled correctly
+    assert!(result.contains("ref1,"));
+    assert!(result.contains("ref2,"));
+    assert!(result.contains("ref3."));
+
+    // Check citation in parentheses is handled correctly
+    assert!(result.contains("Jones2019)"));
 }
 
 #[test]
