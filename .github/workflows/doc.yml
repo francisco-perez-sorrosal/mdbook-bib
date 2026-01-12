@@ -1,9 +1,10 @@
 name: Documentation
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Release"]
-    branches: 
+    branches:
       - v0.5.*
     types:
       - completed
