@@ -599,37 +599,35 @@ fn process_test_book() {
 
 #[test]
 fn test_regex_pattern() {
+    use crate::REF_PATTERN;
     use regex::Regex;
 
-    let pattern = r"
-(?x)                       # insignificant whitespace mode
-\\\{\{\#.*\}\}               # match escaped placeholder
-|                            # or
-\{\{\s*                      # placeholder opening parens and whitespace
-\#([a-zA-Z0-9_]+)            # placeholder type
-\s+                          # separating whitespace
-([a-zA-Z0-9\s_.\-:/\\\+]+)   # placeholder target path and space separated properties
-\s*\}\}                      # whitespace and placeholder closing parens";
-
-    let re = Regex::new(pattern).unwrap();
+    let re = Regex::new(REF_PATTERN).unwrap();
 
     let test_cases = vec![
-        "{{#cite mdBook}}",
-        "{{#cite DUMMY:1}}",
-        "{{#cite test-key}}",
-        "{{#cite test_key}}",
+        ("{{#cite mdBook}}", "mdBook"),
+        ("{{#cite DUMMY:1}}", "DUMMY:1"),
+        ("{{#cite test-key}}", "test-key"),
+        ("{{#cite test_key}}", "test_key"),
     ];
 
-    for test_case in test_cases {
+    for (test_case, expected_key) in test_cases {
         println!("Testing: '{test_case}'");
         if let Some(captures) = re.captures(test_case) {
             println!("  Match found!");
             println!("  Full match: '{}'", captures.get(0).unwrap().as_str());
             if let Some(cite_key) = captures.get(1) {
-                println!("  Citation key: '{}'", cite_key.as_str());
+                let key = cite_key.as_str().trim();
+                println!("  Citation key: '{key}'");
+                assert_eq!(
+                    key, expected_key,
+                    "Citation key should match for: {test_case}"
+                );
+            } else {
+                panic!("No citation key captured for: {test_case}");
             }
         } else {
-            println!("  No match!");
+            panic!("Pattern should match citation: {test_case}");
         }
         println!();
     }
