@@ -866,6 +866,147 @@ Citations in parentheses (see @@Jones2019).
 }
 
 #[test]
+fn test_biblatex_compliant_citation_keys() {
+    use crate::{replace_all_placeholders, BibItem, AT_REF_PATTERN, REF_PATTERN};
+    use indexmap::IndexMap;
+    use mdbook_preprocessor::book::Chapter;
+    use regex::Regex;
+    use std::collections::HashSet;
+
+    // Test that both patterns support BibLaTeX-compliant characters
+    let ref_re = Regex::new(REF_PATTERN).unwrap();
+    let at_re = Regex::new(AT_REF_PATTERN).unwrap();
+
+    // BibLaTeX-compliant citation keys with various safe characters
+    let keys = vec![
+        "Klabnik2018",
+        "10.1145/3508461",           // DOI with dots and slash
+        "doi:10.5555/12345",         // DOI with colon prefix
+        "arXiv:2301.12345",          // arXiv with colon
+        "key_with_underscores",      // underscores
+        "key-with-hyphens",          // hyphens
+        "user@domain",               // at symbol
+        "mixed:key_2023.1-final@v2", // combination
+    ];
+
+    // Test REF_PATTERN ({{#cite key}})
+    for key in &keys {
+        let text = format!("{{{{#cite {key}}}}}");
+        assert!(
+            ref_re.is_match(&text),
+            "REF_PATTERN should match BibLaTeX-compliant key: {key}"
+        );
+        if let Some(caps) = ref_re.captures(&text) {
+            if let Some(captured) = caps.get(1) {
+                assert_eq!(
+                    captured.as_str(),
+                    *key,
+                    "REF_PATTERN should capture the full key"
+                );
+            }
+        }
+    }
+
+    // Test AT_REF_PATTERN (@@ syntax) with trailing punctuation
+    for key in &keys {
+        let text = format!("See @@{key}.");
+        assert!(
+            at_re.is_match(&text),
+            "AT_REF_PATTERN should match BibLaTeX-compliant key: {key}"
+        );
+        if let Some(caps) = at_re.captures(&text) {
+            if let Some(captured) = caps.get(2) {
+                assert_eq!(
+                    captured.as_str(),
+                    *key,
+                    "AT_REF_PATTERN should capture the full key without trailing punctuation"
+                );
+            }
+        }
+    }
+
+    // Test with actual replacement to ensure keys work end-to-end
+    let content = r#"
+Test {{#cite doi:10.5555/12345}} and @@arXiv:2301.12345.
+User citation @@user@domain is valid.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "doi:10.5555/12345".to_string(),
+        BibItem {
+            citation_key: "doi:10.5555/12345".to_string(),
+            title: "DOI Paper".to_string(),
+            authors: vec![vec!["Author".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "Test".to_string(),
+            url: Some("https://doi.org/10.5555/12345".to_string()),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "arXiv:2301.12345".to_string(),
+        BibItem {
+            citation_key: "arXiv:2301.12345".to_string(),
+            title: "arXiv Paper".to_string(),
+            authors: vec![vec!["Researcher".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "Test".to_string(),
+            url: Some("https://arxiv.org/abs/2301.12345".to_string()),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "user@domain".to_string(),
+        BibItem {
+            citation_key: "user@domain".to_string(),
+            title: "User Citation".to_string(),
+            authors: vec![vec!["User".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2024".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let citation_tpl = "{{item.citation_key}}";
+    let mut last_index = 0;
+
+    let result = replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        citation_tpl,
+        &mut last_index,
+    );
+
+    // Verify all citations were found
+    assert!(cited.contains("doi:10.5555/12345"));
+    assert!(cited.contains("arXiv:2301.12345"));
+    assert!(cited.contains("user@domain"));
+
+    // Verify replacements occurred
+    assert!(result.contains("doi:10.5555/12345"));
+    assert!(result.contains("arXiv:2301.12345"));
+    assert!(result.contains("user@domain"));
+
+    // Verify original patterns are gone
+    assert!(!result.contains("{{#cite doi:10.5555/12345}}"));
+    assert!(!result.contains("@@arXiv:2301.12345"));
+    assert!(!result.contains("@@user@domain"));
+}
+
+#[test]
 fn test_ref_pattern_excludes_mdbook_expressions() {
     use crate::REF_PATTERN;
     use regex::Regex;

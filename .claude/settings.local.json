@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cargo test:*)"
+      "Bash(cargo test:*)",
+      "WebSearch",
+      "WebFetch(domain:mirrors.ibiblio.org)"
     ]
   }
 }
