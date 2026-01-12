@@ -737,7 +737,8 @@ pub(crate) const REF_PATTERN: &str = r"
 ([a-zA-Z0-9\s_.\-:/\\\+]+)   # citation key (capture group 1)
 \s*\}\}                      # whitespace and placeholder closing parens";
 
-const AT_REF_PATTERN: &str = r##"(@@)([^\[\]\s,;"#'()={}%]+)"##;
+pub(crate) const AT_REF_PATTERN: &str =
+    r##"(@@)([a-zA-Z0-9_\-/\\+]+(?:[.:][a-zA-Z0-9_\-/\\+]+)*)"##;
 
 fn breadcrumbs_up_to_root(source_file: &std::path::Path) -> String {
     if source_file.as_os_str().is_empty() {
