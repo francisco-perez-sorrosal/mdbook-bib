@@ -674,6 +674,7 @@ This book is written in Rust @@Klabnik2018.
 Another citation at end of sentence @@fps!
 What about questions @@simple_key?
 Or maybe colons @@another_key: it should work.
+We reference this paper @@10.1145/3508461.
 "#;
 
     let mut bibliography = IndexMap::new();
@@ -729,6 +730,19 @@ Or maybe colons @@another_key: it should work.
             index: None,
         },
     );
+    bibliography.insert(
+        "10.1145/3508461".to_string(),
+        BibItem {
+            citation_key: "10.1145/3508461".to_string(),
+            title: "Paper with DOI".to_string(),
+            authors: vec![vec!["DOI".to_string(), "Author".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "DOI citation test".to_string(),
+            url: Some("https://doi.org/10.1145/3508461".to_string()),
+            index: None,
+        },
+    );
 
     let chapter = Chapter::new(
         "Test",
@@ -753,24 +767,28 @@ Or maybe colons @@another_key: it should work.
     assert!(cited.contains("fps"));
     assert!(cited.contains("simple_key"));
     assert!(cited.contains("another_key"));
+    assert!(cited.contains("10.1145/3508461"));
 
     // Check that the replacements were made correctly
     assert!(result.contains("Klabnik2018"));
     assert!(result.contains("fps"));
     assert!(result.contains("simple_key"));
     assert!(result.contains("another_key"));
+    assert!(result.contains("10.1145/3508461"));
 
     // Check that original @@ patterns are gone
     assert!(!result.contains("@@Klabnik2018"));
     assert!(!result.contains("@@fps"));
     assert!(!result.contains("@@simple_key"));
     assert!(!result.contains("@@another_key"));
+    assert!(!result.contains("@@10.1145/3508461"));
 
     // Check that punctuation is preserved after the citation
     assert!(result.contains("Klabnik2018."));
     assert!(result.contains("fps!"));
     assert!(result.contains("simple_key?"));
     assert!(result.contains("another_key:"));
+    assert!(result.contains("10.1145/3508461."));
 }
 
 #[test]
