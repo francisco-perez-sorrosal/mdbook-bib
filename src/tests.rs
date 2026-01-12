@@ -635,11 +635,10 @@ fn test_regex_pattern() {
 
 #[test]
 fn test_at_ref_pattern_with_dots() {
+    use crate::AT_REF_PATTERN;
     use regex::Regex;
 
-    // Test the AT_REF_PATTERN specifically
-    let at_pattern = r##"(@@)([^\[\]\s,;"#'()={}%]+)"##;
-    let re = Regex::new(at_pattern).unwrap();
+    let re = Regex::new(AT_REF_PATTERN).unwrap();
 
     let test_cases = vec![
         "@@10.1145/3508461",
@@ -661,6 +660,117 @@ fn test_at_ref_pattern_with_dots() {
             panic!("No match found for test case: {test_case}");
         }
     }
+}
+
+#[test]
+fn test_at_ref_followed_by_punctuation() {
+    use crate::{replace_all_placeholders, BibItem};
+    use indexmap::IndexMap;
+    use mdbook_preprocessor::book::Chapter;
+    use std::collections::HashSet;
+
+    let content = r#"
+This book is written in Rust @@Klabnik2018.
+Another citation at end of sentence @@fps!
+What about questions @@simple_key?
+Or maybe colons @@another_key: it should work.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "Klabnik2018".to_string(),
+        BibItem {
+            citation_key: "Klabnik2018".to_string(),
+            title: "The Rust Programming Language".to_string(),
+            authors: vec![vec!["Klabnik".to_string(), "Steve".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2018".to_string(),
+            summary: "The Rust book".to_string(),
+            url: Some("https://doc.rust-lang.org/book/".to_string()),
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "fps".to_string(),
+        BibItem {
+            citation_key: "fps".to_string(),
+            title: "Test Entry".to_string(),
+            authors: vec![vec!["Francisco".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2020".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "simple_key".to_string(),
+        BibItem {
+            citation_key: "simple_key".to_string(),
+            title: "Simple Paper".to_string(),
+            authors: vec![vec!["Author".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2023".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+    bibliography.insert(
+        "another_key".to_string(),
+        BibItem {
+            citation_key: "another_key".to_string(),
+            title: "Another Paper".to_string(),
+            authors: vec![vec!["Another".to_string()]],
+            pub_month: "N/A".to_string(),
+            pub_year: "2024".to_string(),
+            summary: "Test".to_string(),
+            url: None,
+            index: None,
+        },
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let citation_tpl = "{{item.citation_key}}";
+    let mut last_index = 0;
+
+    let result = replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        citation_tpl,
+        &mut last_index,
+    );
+
+    // Check that all citations were found (without punctuation)
+    assert!(cited.contains("Klabnik2018"));
+    assert!(cited.contains("fps"));
+    assert!(cited.contains("simple_key"));
+    assert!(cited.contains("another_key"));
+
+    // Check that the replacements were made correctly
+    assert!(result.contains("Klabnik2018"));
+    assert!(result.contains("fps"));
+    assert!(result.contains("simple_key"));
+    assert!(result.contains("another_key"));
+
+    // Check that original @@ patterns are gone
+    assert!(!result.contains("@@Klabnik2018"));
+    assert!(!result.contains("@@fps"));
+    assert!(!result.contains("@@simple_key"));
+    assert!(!result.contains("@@another_key"));
+
+    // Check that punctuation is preserved after the citation
+    assert!(result.contains("Klabnik2018."));
+    assert!(result.contains("fps!"));
+    assert!(result.contains("simple_key?"));
+    assert!(result.contains("another_key:"));
 }
 
 #[test]
