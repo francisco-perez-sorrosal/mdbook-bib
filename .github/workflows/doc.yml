@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Release"]
     branches: 
-      - v0.0.*
+      - v0.5.*
     types:
       - completed
 
