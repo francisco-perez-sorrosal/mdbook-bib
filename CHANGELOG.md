@@ -1,5 +1,11 @@
 #
 
+## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+
+**Merged pull requests:**
+
+- Add Claude Code GitHub Workflow [\#58](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/58) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+
 ## [v0.5.0](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.0) (2025-12-06)
 
 **Fixed bugs:**
