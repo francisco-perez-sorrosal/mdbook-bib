@@ -17,9 +17,10 @@ use std::{
 // use std::{println as info, println as warn};
 use tempfile::Builder as TempFileBuilder;
 
-use crate::{
-    build_bibliography, extract_date, load_bibliography, replace_all_placeholders, BibItem, Config,
-};
+use crate::config::Config;
+use crate::io;
+use crate::models::BibItem;
+use crate::parser;
 use toml::value::Table;
 use toml::Value;
 
@@ -88,7 +89,7 @@ fn load_bib_bibliography_from_file() {
         .write_all(DUMMY_BIB_SRC.as_bytes())
         .unwrap();
 
-    let bibliography_loaded: String = load_bibliography(chapter_path.as_path()).unwrap();
+    let bibliography_loaded: String = io::load_bibliography(chapter_path.as_path()).unwrap();
     assert_ne!(bibliography_loaded, "");
     assert!(bibliography_loaded.contains("\"Francisco Perez-Sorrosal\""));
 }
@@ -102,14 +103,14 @@ fn cant_load_bib_bibliography_from_file() {
         .write_all(DUMMY_BIB_SRC.as_bytes())
         .unwrap();
 
-    let bibliography_loaded: String = load_bibliography(chapter_path.as_path()).unwrap();
+    let bibliography_loaded: String = io::load_bibliography(chapter_path.as_path()).unwrap();
     assert_eq!(bibliography_loaded, "");
 }
 
 #[test]
 fn bibliography_builder_returns_a_bibliography() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
     assert_eq!(bibliography_loaded.len(), 2);
     assert_eq!(bibliography_loaded.get("fps").unwrap().citation_key, "fps");
 }
@@ -117,14 +118,14 @@ fn bibliography_builder_returns_a_bibliography() {
 #[test]
 fn bibliography_render_all_vs_cited() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     let mut cited = HashSet::new();
     cited.insert("fps".to_string());
 
     let handlebars = create_references_handlebars();
 
-    let html = Bibliography::generate_bibliography_html(
+    let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &cited,
         false,
@@ -135,7 +136,7 @@ fn bibliography_render_all_vs_cited() {
     assert!(html.contains("This is a bib entry!"));
     assert!(html.contains("The Rust Programming Language"));
 
-    let html = Bibliography::generate_bibliography_html(
+    let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &cited,
         true,
@@ -150,7 +151,7 @@ fn bibliography_render_all_vs_cited() {
 #[test]
 fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     // fps dummy book does not include a url for in the BibItem
     let fps = bibliography_loaded.get("fps");
@@ -163,7 +164,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
     );
     // ...and is included in the render
     let handlebars = create_references_handlebars();
-    let html = Bibliography::generate_bibliography_html(
+    let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &HashSet::new(),
         false,
@@ -176,7 +177,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
 #[test]
 fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     let mut bibliography: IndexMap<String, BibItem> =
-        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     let mut cited: HashSet<String> = HashSet::new();
 
@@ -190,7 +191,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
 
     let handlebars = create_citation_handlebars();
     let mut last_index = 0;
-    let text_with_citations = replace_all_placeholders(
+    let text_with_citations = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
@@ -210,7 +211,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         vec![],
     );
     let mut last_index = 0;
-    let text_with_citations = replace_all_placeholders(
+    let text_with_citations = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
@@ -224,13 +225,13 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
 #[test]
 fn citations_in_subfolders_link_properly() {
     let mut bibliography: IndexMap<String, BibItem> =
-        build_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
 
     // Check valid references included in a dummy text
     let handlebars = create_citation_handlebars();
     let mut check_citations_for = |chapter: &Chapter, link: &str| {
         let mut last_index = 0;
-        let text_with_citations = replace_all_placeholders(
+        let text_with_citations = crate::citation::replace_all_placeholders(
             chapter,
             &mut bibliography,
             &mut HashSet::new(),
@@ -289,7 +290,7 @@ fn citations_in_subfolders_link_properly() {
 
 #[test]
 fn debug_replace_all_placeholders() {
-    use crate::{replace_all_placeholders, BibItem};
+    use crate::models::BibItem;
     use indexmap::IndexMap;
     use mdbook_preprocessor::book::Chapter;
     use std::collections::HashSet;
@@ -356,7 +357,7 @@ This is a reference to {{#cite DUMMY:1}}
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
     let mut last_index = 0;
-    let _ = replace_all_placeholders(
+    let _ = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
@@ -367,7 +368,7 @@ This is a reference to {{#cite DUMMY:1}}
 
 #[test]
 fn test_citation_with_dots_replacement() {
-    use crate::{replace_all_placeholders, BibItem};
+    use crate::models::BibItem;
     use indexmap::IndexMap;
     use mdbook_preprocessor::book::Chapter;
     use std::collections::HashSet;
@@ -415,7 +416,7 @@ This is another reference @@simple_key that should also work.
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
     let mut last_index = 0;
 
-    let result = replace_all_placeholders(
+    let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
@@ -532,19 +533,19 @@ fn check_date_extractions_from_biblatex() {
     let mut fake_bib_entry: HashMap<String, String> = HashMap::new();
 
     // Check when no date and no year/month we return the standard Non Available string
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "N/A");
     assert_eq!(month, "N/A");
 
     // Check date is split properly
     fake_bib_entry.insert("date".to_string(), "2021-02-21".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "2021");
     assert_eq!(month, "02");
 
     // Check date is split properly
     fake_bib_entry.insert("date".to_string(), "2021".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "2021");
     assert_eq!(month, "N/A");
 
@@ -553,7 +554,7 @@ fn check_date_extractions_from_biblatex() {
     fake_bib_entry.insert("date".to_string(), "2020-03".to_string());
     fake_bib_entry.insert("year".to_string(), "2021".to_string());
     fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "2020");
     assert_eq!(month, "03");
 
@@ -561,21 +562,21 @@ fn check_date_extractions_from_biblatex() {
     fake_bib_entry.clear();
     fake_bib_entry.insert("year".to_string(), "2021".to_string());
     fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "2021");
     assert_eq!(month, "jul");
 
     // Check only month works too
     fake_bib_entry.clear();
     fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "N/A");
     assert_eq!(month, "jul");
 
     // Check only year works too
     fake_bib_entry.clear();
     fake_bib_entry.insert("year".to_string(), "2021".to_string());
-    let (year, month) = extract_date(&fake_bib_entry);
+    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
     assert_eq!(year, "2021");
     assert_eq!(month, "N/A");
 }
@@ -695,7 +696,7 @@ fn test_at_ref_pattern_with_dots() {
 
 #[test]
 fn test_at_ref_followed_by_punctuation() {
-    use crate::{replace_all_placeholders, BibItem};
+    use crate::models::BibItem;
     use indexmap::IndexMap;
     use mdbook_preprocessor::book::Chapter;
     use std::collections::HashSet;
@@ -839,7 +840,7 @@ Citations in parentheses (see @@Jones2019).
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
     let mut last_index = 0;
 
-    let result = replace_all_placeholders(
+    let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
@@ -898,7 +899,8 @@ Citations in parentheses (see @@Jones2019).
 
 #[test]
 fn test_biblatex_compliant_citation_keys() {
-    use crate::{replace_all_placeholders, BibItem, AT_REF_PATTERN, REF_PATTERN};
+    use crate::models::BibItem;
+    use crate::{AT_REF_PATTERN, REF_PATTERN};
     use indexmap::IndexMap;
     use mdbook_preprocessor::book::Chapter;
     use regex::Regex;
@@ -1013,7 +1015,7 @@ User citation @@user@domain is valid.
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
     let mut last_index = 0;
 
-    let result = replace_all_placeholders(
+    let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
