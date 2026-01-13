@@ -81,15 +81,9 @@ impl Bibliography {
         bibliography: &IndexMap<String, BibItem>,
         cited: &HashSet<String>,
         cited_only: bool,
-        references_tpl: String,
+        handlebars: &Handlebars,
         order: SortOrder,
     ) -> String {
-        let mut handlebars = Handlebars::new();
-        handlebars
-            .register_template_string("references", references_tpl)
-            .unwrap();
-        tracing::debug!("Handlebars content: {:?}", handlebars);
-
         let sorted: Vec<(&str, &BibItem)> = match order {
             SortOrder::None => bibliography.iter().map(|(k, v)| (k.as_str(), v)).collect(),
             SortOrder::Key => {
@@ -135,7 +129,7 @@ impl Bibliography {
     fn expand_cite_references_in_book(
         book: &mut Book,
         bibliography: &mut IndexMap<String, BibItem>,
-        citation_tpl: &str,
+        handlebars: &Handlebars,
     ) -> HashSet<String> {
         let mut cited = HashSet::new();
         let mut last_index = 0;
@@ -150,7 +144,7 @@ impl Bibliography {
                         ch,
                         bibliography,
                         &mut cited,
-                        citation_tpl,
+                        handlebars,
                         &mut last_index,
                     );
                     ch.content = new_content;
@@ -513,6 +507,21 @@ impl Preprocessor for Bibliography {
                 return Ok(book);
             }
         };
+        // Configure template registry
+        let mut handlebars = Handlebars::new();
+        handlebars
+            .register_template_string("references", config.bib_hb_html.clone())
+            .unwrap();
+        handlebars
+            .register_template_string(
+                "chapter_refs",
+                config::DEFAULT_CHAPTER_REFS_FOOTER_HB_TEMPLATE,
+            )
+            .unwrap();
+        handlebars
+            .register_template_string("citation", config.cite_hb_html.clone())
+            .unwrap();
+        tracing::debug!("Handlebars content: {:?}", handlebars);
 
         let bib_content = Bibliography::retrieve_bibliography_content(ctx, &config);
 
@@ -536,22 +545,16 @@ impl Preprocessor for Bibliography {
         let mut bib = bibliography.unwrap();
 
         if config.add_bib_in_each_chapter {
-            add_bib_at_end_of_chapters(
-                &mut book,
-                &mut bib,
-                &config.bib_hb_html,
-                config.order.to_owned(),
-            );
+            add_bib_at_end_of_chapters(&mut book, &mut bib, &handlebars, config.order.to_owned());
         }
 
-        let cited =
-            Bibliography::expand_cite_references_in_book(&mut book, &mut bib, &config.cite_hb_html);
+        let cited = Bibliography::expand_cite_references_in_book(&mut book, &mut bib, &handlebars);
 
         let bib_content_html = Bibliography::generate_bibliography_html(
             &bib,
             &cited,
             config.cited_only,
-            config.bib_hb_html,
+            &handlebars,
             config.order,
         );
 
@@ -575,7 +578,7 @@ impl Preprocessor for Bibliography {
 fn add_bib_at_end_of_chapters(
     book: &mut Book,
     bibliography: &mut IndexMap<String, BibItem>,
-    references_tpl: &String,
+    handlebars: &Handlebars,
     order: SortOrder,
 ) {
     use regex::Regex;
@@ -610,14 +613,6 @@ fn add_bib_at_end_of_chapters(
                 }
                 tracing::info!("Refs cited in this chapter: {:?}", cited);
 
-                let mut handlebars = Handlebars::new();
-                handlebars
-                    .register_template_string(
-                        "chapter_refs",
-                        config::DEFAULT_CHAPTER_REFS_FOOTER_HB_TEMPLATE,
-                    )
-                    .unwrap();
-
                 let ch_bib_header_html = handlebars
                     .render("chapter_refs", &String::new())
                     .unwrap()
@@ -628,7 +623,7 @@ fn add_bib_at_end_of_chapters(
                     bibliography,
                     &cited,
                     true,
-                    references_tpl.to_string(),
+                    handlebars,
                     order.clone(),
                 );
 
@@ -645,15 +640,9 @@ fn replace_all_placeholders(
     chapter: &Chapter,
     bibliography: &mut IndexMap<String, BibItem>,
     cited: &mut HashSet<String>,
-    citation_tpl: &str,
+    handlebars: &Handlebars,
     last_index: &mut u32,
 ) -> String {
-    let mut handlebars = Handlebars::new();
-    handlebars
-        .register_template_string("citation", citation_tpl)
-        .unwrap();
-    tracing::debug!("Handlebars content: {:?}", handlebars);
-
     let chapter_path = chapter
         .path
         .as_deref()
