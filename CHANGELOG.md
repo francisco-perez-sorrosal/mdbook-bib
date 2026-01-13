@@ -6,9 +6,11 @@
 
 - This preprocessor overrides mdBook's default built-in `{{\#...}}` preprocessor expressions [\#52](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/52)
 - @@ citations with a dot \(.\) at the end, won't render properly [\#49](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/49)
+- Extract a single handlebars registry for the different templates of the project [\#47](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/47)
 
 **Merged pull requests:**
 
+- Single handlebar registry for storing the plugin templates [\#61](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/61) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix render of @@ citations with a dot \(.\) at the end [\#60](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/60) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix override of mdBook's default built-in {{\#...}} expressions [\#59](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/59) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Add Claude Code GitHub Workflow [\#58](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/58) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
