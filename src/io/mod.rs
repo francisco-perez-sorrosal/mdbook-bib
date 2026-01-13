@@ -7,20 +7,42 @@ use mdbook_preprocessor::errors::{Error, Result as MdResult};
 use reqwest::blocking::Response;
 
 use crate::file_utils;
+use crate::parser::BibFormat;
 
 /// Load bibliography from file.
+/// Supports .bib, .bibtex, and .yaml/.yml files.
 pub fn load_bibliography<P: AsRef<Path>>(biblio_file: P) -> MdResult<String> {
     tracing::info!("Loading bibliography from {:?}...", biblio_file.as_ref());
 
     let biblio_file_ext = file_utils::get_filename_extension(biblio_file.as_ref());
-    if biblio_file_ext.unwrap_or_default().to_lowercase() != "bib" {
+    let ext = biblio_file_ext.unwrap_or_default().to_lowercase();
+
+    if !matches!(ext.as_str(), "bib" | "bibtex" | "yaml" | "yml") {
         tracing::warn!(
-            "Only biblatex-based bibliography is supported for now! Yours: {:?}",
+            "Unsupported bibliography format! Expected .bib, .bibtex, .yaml, or .yml. Yours: {:?}",
             biblio_file.as_ref()
         );
         return Ok(String::new());
     }
+
     Ok(fs::read_to_string(biblio_file)?)
+}
+
+/// Detect bibliography format from file extension.
+pub fn detect_format<P: AsRef<Path>>(biblio_file: P) -> BibFormat {
+    let biblio_file_ext = file_utils::get_filename_extension(biblio_file.as_ref());
+    let ext = biblio_file_ext.unwrap_or_default().to_lowercase();
+
+    match ext.as_str() {
+        "yaml" | "yml" => {
+            tracing::info!("Detected YAML bibliography format");
+            BibFormat::Yaml
+        }
+        _ => {
+            tracing::info!("Detected BibTeX bibliography format");
+            BibFormat::BibTeX
+        }
+    }
 }
 
 /// Download bibliography from Zotero.

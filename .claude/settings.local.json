@@ -4,7 +4,22 @@
       "Bash(cargo test:*)",
       "WebSearch",
       "WebFetch(domain:mirrors.ibiblio.org)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:crates.io)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(mdbook build:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cargo doc:*)",
+      "Bash(MDBOOK_LOG=mdbook_bib=debug mdbook build:*)",
+      "Bash(MDBOOK_LOG=mdbook_bib=info mdbook build:*)",
+      "Bash(cargo install:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

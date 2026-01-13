@@ -8,10 +8,7 @@ use mdbook_driver::MDBook;
 use std::fs::File;
 use std::io::Write;
 
-use std::{
-    collections::{HashMap, HashSet},
-    path::PathBuf,
-};
+use std::{collections::HashSet, path::PathBuf};
 
 #[cfg(test)]
 // use std::{println as info, println as warn};
@@ -20,7 +17,7 @@ use tempfile::Builder as TempFileBuilder;
 use crate::config::Config;
 use crate::io;
 use crate::models::BibItem;
-use crate::parser;
+use crate::parser::{self, BibFormat};
 use toml::value::Table;
 use toml::Value;
 
@@ -55,19 +52,19 @@ static EXAMPLE_CSS_TEMPLATE: &str = include_str!("../manual/src/render/my_style.
 static EXAMPLE_HB_TEMPLATE: &str = include_str!("../manual/src/render/my_references.hbs");
 
 const DUMMY_BIB_SRC: &str = r#"
-@misc {fps,
-    title = {"This is a bib entry!"},
-    author = {"Francisco Perez-Sorrosal"},
-    month = {"oct"},
-    year = {"2020"},
-    what_is_this = {"blabla"},
+@misc{fps,
+    title = {This is a bib entry!},
+    author = {Francisco Perez-Sorrosal},
+    month = {10},
+    year = {2020},
+    what_is_this = {blabla},
 }
 @book{rust_book,
-    author = {"Klabnik, Steve and Nichols, Carol"},
-    title = {"The Rust Programming Language"},
-    year = {"2018"},
-    isbn = {"1593278284"},
-    publisher = {"No Starch Press"},
+    author = {Klabnik, Steve and Nichols, Carol},
+    title = {The Rust Programming Language},
+    year = {2018},
+    isbn = {1593278284},
+    publisher = {No Starch Press},
     url = {https://doc.rust-lang.org/book/},
 }
 "#;
@@ -91,7 +88,7 @@ fn load_bib_bibliography_from_file() {
 
     let bibliography_loaded: String = io::load_bibliography(chapter_path.as_path()).unwrap();
     assert_ne!(bibliography_loaded, "");
-    assert!(bibliography_loaded.contains("\"Francisco Perez-Sorrosal\""));
+    assert!(bibliography_loaded.contains("Francisco Perez-Sorrosal"));
 }
 
 #[test]
@@ -110,7 +107,7 @@ fn cant_load_bib_bibliography_from_file() {
 #[test]
 fn bibliography_builder_returns_a_bibliography() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
     assert_eq!(bibliography_loaded.len(), 2);
     assert_eq!(bibliography_loaded.get("fps").unwrap().citation_key, "fps");
 }
@@ -118,7 +115,7 @@ fn bibliography_builder_returns_a_bibliography() {
 #[test]
 fn bibliography_render_all_vs_cited() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
     let mut cited = HashSet::new();
     cited.insert("fps".to_string());
@@ -151,7 +148,7 @@ fn bibliography_render_all_vs_cited() {
 #[test]
 fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
     let bibliography_loaded: IndexMap<String, BibItem> =
-        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
     // fps dummy book does not include a url for in the BibItem
     let fps = bibliography_loaded.get("fps");
@@ -177,7 +174,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
 #[test]
 fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     let mut bibliography: IndexMap<String, BibItem> =
-        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
     let mut cited: HashSet<String> = HashSet::new();
 
@@ -225,7 +222,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
 #[test]
 fn citations_in_subfolders_link_properly() {
     let mut bibliography: IndexMap<String, BibItem> =
-        parser::parse_bibliography(DUMMY_BIB_SRC.to_string()).unwrap();
+        parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
     // Check valid references included in a dummy text
     let handlebars = create_citation_handlebars();
@@ -529,56 +526,70 @@ fn check_config_attributes() {
 }
 
 #[test]
-fn check_date_extractions_from_biblatex() {
-    let mut fake_bib_entry: HashMap<String, String> = HashMap::new();
+fn test_hayagriva_date_extraction() {
+    // Note: hayagriva doesn't support numeric months (month = {10}) because
+    // they're not standard BibTeX. BibTeX uses month constants: jan, feb, mar, etc.
 
-    // Check when no date and no year/month we return the standard Non Available string
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "N/A");
-    assert_eq!(month, "N/A");
+    // Test string month (short form - standard BibTeX constant)
+    let bib_string_short = r#"
+@article{string_month_short,
+    title = {Test String Month Short},
+    author = {Doe, John},
+    month = oct,
+    year = {2020},
+}
+"#;
+    let result = parser::parse_bibliography(bib_string_short.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("string_month_short").unwrap();
+    assert_eq!(entry.pub_year, "2020");
+    assert_eq!(entry.pub_month, "10");
 
-    // Check date is split properly
-    fake_bib_entry.insert("date".to_string(), "2021-02-21".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "2021");
-    assert_eq!(month, "02");
+    // Test missing month (year only)
+    let bib_year_only = r#"
+@article{year_only,
+    title = {Test Year Only},
+    author = {Doe, John},
+    year = {2020},
+}
+"#;
+    let result = parser::parse_bibliography(bib_year_only.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("year_only").unwrap();
+    assert_eq!(entry.pub_year, "2020");
+    assert_eq!(entry.pub_month, "N/A");
 
-    // Check date is split properly
-    fake_bib_entry.insert("date".to_string(), "2021".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "2021");
-    assert_eq!(month, "N/A");
+    // Test missing date entirely
+    let bib_no_date = r#"
+@article{no_date,
+    title = {Test No Date},
+    author = {Doe, John},
+}
+"#;
+    let result = parser::parse_bibliography(bib_no_date.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("no_date").unwrap();
+    assert_eq!(entry.pub_year, "N/A");
+    assert_eq!(entry.pub_month, "N/A");
 
-    // Check date takes precedence over year/month
-    fake_bib_entry.clear();
-    fake_bib_entry.insert("date".to_string(), "2020-03".to_string());
-    fake_bib_entry.insert("year".to_string(), "2021".to_string());
-    fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "2020");
-    assert_eq!(month, "03");
-
-    // Check year and month work too
-    fake_bib_entry.clear();
-    fake_bib_entry.insert("year".to_string(), "2021".to_string());
-    fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "2021");
-    assert_eq!(month, "jul");
-
-    // Check only month works too
-    fake_bib_entry.clear();
-    fake_bib_entry.insert("month".to_string(), "jul".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "N/A");
-    assert_eq!(month, "jul");
-
-    // Check only year works too
-    fake_bib_entry.clear();
-    fake_bib_entry.insert("year".to_string(), "2021".to_string());
-    let (year, month) = parser::extract_date(&fake_bib_entry, "test_key");
-    assert_eq!(year, "2021");
-    assert_eq!(month, "N/A");
+    // Test Zotero-style month with braces (common export format)
+    let bib_zotero_style = r#"
+@article{zotero_month,
+    title = {Test Zotero Month Format},
+    author = {Doe, John},
+    month = {oct},
+    year = {2020},
+}
+"#;
+    let result = parser::parse_bibliography(bib_zotero_style.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("zotero_month").unwrap();
+    assert_eq!(entry.pub_year, "2020");
+    assert_eq!(entry.pub_month, "10");
 }
 
 pub struct NotFound;

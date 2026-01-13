@@ -16,6 +16,7 @@ mod parser;
 mod renderer;
 
 use crate::config::Config;
+use crate::parser::BibFormat;
 
 // Re-export for tests
 #[cfg(test)]
@@ -36,8 +37,8 @@ impl Bibliography {
     fn retrieve_bibliography_content(
         ctx: &PreprocessorContext,
         cfg: &Config,
-    ) -> Result<String, Error> {
-        let bib_content = match &cfg.bibliography {
+    ) -> Result<(String, BibFormat), Error> {
+        let (bib_content, format) = match &cfg.bibliography {
             Some(biblio_file) => {
                 tracing::info!("Bibliography file: {}", biblio_file);
                 let mut biblio_path = ctx.root.join(&ctx.config.book.src);
@@ -46,7 +47,9 @@ impl Bibliography {
                     Err(anyhow!("Bibliography file {biblio_path:?} not found!",))
                 } else {
                     tracing::info!("Bibliography path: {}", biblio_path.display());
-                    io::load_bibliography(biblio_path)
+                    let format = io::detect_format(&biblio_path);
+                    let content = io::load_bibliography(biblio_path)?;
+                    Ok((content, format))
                 }
             }
             _ => {
@@ -59,7 +62,8 @@ impl Bibliography {
                             let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
                             tracing::info!("Saving Zotero bibliography to {:?}", biblio_path);
                             let _ = fs::write(biblio_path, &bib_str);
-                            Ok(bib_str)
+                            // Zotero always returns BibTeX format
+                            Ok((bib_str, BibFormat::BibTeX))
                         } else {
                             Err(anyhow!("Bib content retrieved from Zotero is empty!"))
                         }
@@ -67,8 +71,8 @@ impl Bibliography {
                     _ => Err(anyhow!("Zotero user id not specified either :(")),
                 }
             }
-        };
-        bib_content
+        }?;
+        Ok((bib_content, format))
     }
 
     fn create_bibliography_chapter(
@@ -141,17 +145,19 @@ impl Preprocessor for Bibliography {
             .context("Failed to register citation template. Check your 'cite-hb-tpl' configuration for valid Handlebars syntax")?;
         tracing::debug!("Handlebars content: {:?}", handlebars);
 
-        let bib_content = Bibliography::retrieve_bibliography_content(ctx, &config);
+        let bib_result = Bibliography::retrieve_bibliography_content(ctx, &config);
 
-        if bib_content.is_err() {
+        if bib_result.is_err() {
             tracing::warn!(
                 "Raw Bibliography content couldn't be retrieved. Skipping processing: {:?}",
-                bib_content.err()
+                bib_result.err()
             );
             return Ok(book);
         }
 
-        let bibliography = parser::parse_bibliography(bib_content?);
+        let (bib_content, format) = bib_result?;
+
+        let bibliography = parser::parse_bibliography(bib_content, format);
         if bibliography.is_err() {
             tracing::warn!(
                 "Error building Bibliography from raw content. Skipping render: {:?}",
