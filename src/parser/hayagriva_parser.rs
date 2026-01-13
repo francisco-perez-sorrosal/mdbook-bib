@@ -46,10 +46,26 @@ pub fn parse_bibliography(
             let url = extract_url(entry, &citation_key);
             let (pub_year, pub_month) = extract_date(entry, &citation_key);
 
+            // Extract extended fields
+            let entry_type = extract_entry_type(entry);
+            let doi = extract_doi(entry);
+            let pages = extract_pages(entry);
+            let volume = extract_volume(entry);
+            let issue = extract_issue(entry);
+            let publisher = extract_publisher(entry);
+            let address = extract_location(entry);
+            let isbn = extract_isbn(entry);
+            let issn = extract_issn(entry);
+            let editor = extract_editors(entry, &citation_key);
+            let edition = extract_edition(entry);
+            let note = extract_note(entry);
+            let organization = extract_organization(entry);
+
             tracing::debug!(
-                "Entry {}: processed - title='{}', authors={:?}, year='{}', month='{}'",
+                "Entry {}: processed - title='{}', type={:?}, authors={:?}, year='{}', month='{}'",
                 citation_key,
                 title,
+                entry_type,
                 authors,
                 pub_year,
                 pub_month
@@ -66,6 +82,20 @@ pub fn parse_bibliography(
                     summary,
                     url,
                     index: None,
+                    // Extended fields
+                    entry_type,
+                    doi,
+                    pages,
+                    volume,
+                    issue,
+                    publisher,
+                    address,
+                    isbn,
+                    issn,
+                    editor,
+                    edition,
+                    note,
+                    organization,
                 },
             )
         })
@@ -203,4 +233,80 @@ fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (String, String
             ("N/A".to_string(), "N/A".to_string())
         }
     }
+}
+
+fn extract_entry_type(entry: &hayagriva::Entry) -> Option<String> {
+    Some(format!("{:?}", entry.entry_type()))
+}
+
+fn extract_doi(entry: &hayagriva::Entry) -> Option<String> {
+    entry.doi().map(|d| d.to_string())
+}
+
+fn extract_pages(entry: &hayagriva::Entry) -> Option<String> {
+    entry.page_range().map(|range| range.to_string())
+}
+
+fn extract_volume(entry: &hayagriva::Entry) -> Option<String> {
+    entry.volume().map(|v| v.to_string())
+}
+
+fn extract_issue(entry: &hayagriva::Entry) -> Option<String> {
+    entry.issue().map(|i| i.to_string())
+}
+
+fn extract_publisher(entry: &hayagriva::Entry) -> Option<String> {
+    entry.publisher().map(|p| {
+        // Publisher type doesn't implement Display, so use Debug formatting
+        // This will include both name and location if available
+        format!("{p:?}")
+    })
+}
+
+fn extract_location(entry: &hayagriva::Entry) -> Option<String> {
+    entry.location().map(format_string_to_text)
+}
+
+fn extract_isbn(entry: &hayagriva::Entry) -> Option<String> {
+    entry.isbn().map(|isbn| isbn.to_string())
+}
+
+fn extract_issn(entry: &hayagriva::Entry) -> Option<String> {
+    entry.issn().map(|issn| issn.to_string())
+}
+
+fn extract_editors(entry: &hayagriva::Entry, citation_key: &str) -> Option<Vec<Vec<String>>> {
+    let editors = entry.editors();
+
+    match editors {
+        Some(editors) if !editors.is_empty() => {
+            let editor_list: Vec<Vec<String>> = editors.iter().map(person_to_parts).collect();
+
+            tracing::debug!(
+                "Entry {}: extracted {} editors: {:?}",
+                citation_key,
+                editor_list.len(),
+                editor_list
+            );
+            Some(editor_list)
+        }
+        _ => {
+            tracing::debug!("Entry {}: no editors found", citation_key);
+            None
+        }
+    }
+}
+
+fn extract_edition(entry: &hayagriva::Entry) -> Option<String> {
+    entry.edition().map(|e| e.to_string())
+}
+
+fn extract_note(_entry: &hayagriva::Entry) -> Option<String> {
+    // Note field was already used for summary/abstract, so we return None here
+    // to avoid duplication. The note() method is used in extract_summary().
+    None
+}
+
+fn extract_organization(entry: &hayagriva::Entry) -> Option<String> {
+    entry.organization().map(format_string_to_text)
 }

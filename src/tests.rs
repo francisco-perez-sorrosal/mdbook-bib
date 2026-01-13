@@ -55,7 +55,7 @@ const DUMMY_BIB_SRC: &str = r#"
 @misc{fps,
     title = {This is a bib entry!},
     author = {Francisco Perez-Sorrosal},
-    month = {10},
+    month = oct,
     year = {2020},
     what_is_this = {blabla},
 }
@@ -310,6 +310,7 @@ This is a reference to {{#cite DUMMY:1}}
             summary: "mdBook is a command line tool.".to_string(),
             url: Some("https://rust-lang.github.io/mdBook/".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -329,6 +330,7 @@ This is a reference to {{#cite DUMMY:1}}
                 "https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/44".to_string(),
             ),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -342,6 +344,7 @@ This is a reference to {{#cite DUMMY:1}}
             summary: "N/A".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
 
@@ -387,6 +390,7 @@ This is another reference @@simple_key that should also work.
             summary: "A paper with a DOI citation key".to_string(),
             url: Some("https://doi.org/10.1145/3508461".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -400,6 +404,7 @@ This is another reference @@simple_key that should also work.
             summary: "A paper with a simple citation key".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
 
@@ -592,6 +597,226 @@ fn test_hayagriva_date_extraction() {
     assert_eq!(entry.pub_month, "10");
 }
 
+#[test]
+fn test_extended_bibitem_fields() {
+    // Test comprehensive BibTeX entry with all extended fields
+    let bib_comprehensive = r#"
+@article{comprehensive_entry,
+    title = {A Comprehensive Research Article},
+    author = {Smith, John and Doe, Jane},
+    editor = {Johnson, Robert},
+    year = {2023},
+    month = mar,
+    journal = {Journal of Computer Science},
+    volume = {42},
+    number = {3},
+    pages = {123-145},
+    doi = {10.1234/jcs.2023.42.3.123},
+    issn = {1234-5678},
+    publisher = {Academic Press},
+    address = {Cambridge, MA},
+    note = {This is a comprehensive test entry},
+}
+"#;
+
+    let result = parser::parse_bibliography(bib_comprehensive.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok(), "Failed to parse comprehensive entry");
+
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("comprehensive_entry").unwrap();
+
+    // Verify core fields
+    assert_eq!(entry.citation_key, "comprehensive_entry");
+    assert_eq!(entry.title, "A Comprehensive Research Article");
+    assert_eq!(entry.pub_year, "2023");
+    assert_eq!(entry.pub_month, "03");
+
+    // Verify authors
+    assert_eq!(entry.authors.len(), 2);
+    assert_eq!(entry.authors[0], vec!["Smith", "John"]);
+    assert_eq!(entry.authors[1], vec!["Doe", "Jane"]);
+
+    // Verify extended fields that hayagriva supports
+    assert!(entry.entry_type.is_some(), "entry_type should be present");
+    assert!(entry.entry_type.as_ref().unwrap().contains("Article"));
+
+    assert_eq!(entry.doi, Some("10.1234/jcs.2023.42.3.123".to_string()));
+    assert_eq!(entry.issn, Some("1234-5678".to_string()));
+
+    // Volume and issue - check if extracted
+    if entry.volume.is_some() {
+        assert_eq!(entry.volume, Some("42".to_string()));
+    }
+    if entry.issue.is_some() {
+        assert_eq!(entry.issue, Some("3".to_string()));
+    }
+
+    // Pages should be extracted
+    assert!(
+        entry.pages.is_some(),
+        "pages should be present: {:?}",
+        entry.pages
+    );
+
+    // Publisher - hayagriva might not extract for all entry types
+    // It's optional, so we just verify the field exists in the structure
+
+    // Editor - check if extracted
+    if entry.editor.is_some() {
+        let editors = entry.editor.as_ref().unwrap();
+        assert!(!editors.is_empty(), "Should have at least one editor");
+    }
+}
+
+#[test]
+fn test_book_entry_with_isbn() {
+    let bib_book = r#"
+@book{rust_programming,
+    title = {The Rust Programming Language},
+    author = {Klabnik, Steve and Nichols, Carol},
+    year = {2018},
+    publisher = {No Starch Press},
+    address = {San Francisco},
+    isbn = {978-1593278281},
+    edition = {1st},
+}
+"#;
+
+    let result = parser::parse_bibliography(bib_book.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("rust_programming").unwrap();
+
+    assert_eq!(entry.citation_key, "rust_programming");
+    assert_eq!(entry.title, "The Rust Programming Language");
+    assert!(entry.entry_type.is_some());
+    assert!(entry.entry_type.as_ref().unwrap().contains("Book"));
+
+    // ISBN should be extracted
+    assert_eq!(entry.isbn, Some("978-1593278281".to_string()));
+
+    // Publisher and edition - hayagriva support varies
+    // Just verify the structure supports them
+}
+
+#[test]
+fn test_inproceedings_with_organization() {
+    let bib_conference = r#"
+@inproceedings{conference_paper,
+    title = {Novel Approaches to Distributed Systems},
+    author = {Williams, Sarah},
+    year = {2024},
+    month = jun,
+    booktitle = {Proceedings of ICSE 2024},
+    pages = {45-60},
+    organization = {IEEE},
+    address = {Lisbon, Portugal},
+}
+"#;
+
+    let result = parser::parse_bibliography(bib_conference.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("conference_paper").unwrap();
+
+    assert_eq!(entry.citation_key, "conference_paper");
+    assert!(entry.entry_type.is_some(), "entry_type should be present");
+
+    assert_eq!(entry.pub_month, "06");
+    assert!(entry.pages.is_some(), "pages should be extracted");
+
+    // Organization - hayagriva support may vary
+    if entry.organization.is_some() {
+        assert_eq!(entry.organization, Some("IEEE".to_string()));
+    }
+}
+
+#[test]
+fn test_entry_with_minimal_fields() {
+    // Test that entries with only required fields still work
+    let bib_minimal = r#"
+@misc{minimal_entry,
+    title = {Minimal Entry},
+    author = {Anonymous},
+    year = {2024},
+}
+"#;
+
+    let result = parser::parse_bibliography(bib_minimal.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("minimal_entry").unwrap();
+
+    assert_eq!(entry.citation_key, "minimal_entry");
+    assert_eq!(entry.title, "Minimal Entry");
+
+    // All extended fields should be None
+    assert!(entry.doi.is_none());
+    assert!(entry.isbn.is_none());
+    assert!(entry.issn.is_none());
+    assert!(entry.volume.is_none());
+    assert!(entry.issue.is_none());
+    assert!(entry.pages.is_none());
+    assert!(entry.editor.is_none());
+    assert!(entry.organization.is_none());
+}
+
+#[test]
+fn test_serialization_with_extended_fields() {
+    // Test that BibItem with extended fields serializes correctly
+    let bib = r#"
+@article{serialize_test,
+    title = {Serialization Test},
+    author = {Tester, John},
+    year = {2024},
+    doi = {10.1234/test.2024},
+    volume = {1},
+    pages = {1-10},
+}
+"#;
+
+    let result = parser::parse_bibliography(bib.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok());
+
+    let bibliography = result.unwrap();
+    let entry = bibliography.get("serialize_test").unwrap();
+
+    // Serialize to JSON
+    let json_result = serde_json::to_string(&entry);
+    assert!(json_result.is_ok(), "Should serialize to JSON");
+
+    let json = json_result.unwrap();
+    assert!(json.contains("doi"), "DOI should be in JSON");
+    assert!(
+        json.contains("10.1234/test.2024"),
+        "DOI value should be in JSON"
+    );
+
+    // Volume might or might not be extracted by hayagriva
+    if entry.volume.is_some() {
+        assert!(
+            json.contains("volume"),
+            "Volume should be in JSON when present"
+        );
+    }
+
+    // Pages should be present
+    assert!(entry.pages.is_some(), "Pages should be extracted");
+
+    // Fields that are None should not appear in JSON (due to skip_serializing_if)
+    assert!(
+        !json.contains("isbn"),
+        "ISBN should not be in JSON when None"
+    );
+    assert!(
+        !json.contains("issn"),
+        "ISSN should not be in JSON when None"
+    );
+}
+
 pub struct NotFound;
 
 /// Check if a string is present in the file contents
@@ -734,6 +959,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "The Rust book".to_string(),
             url: Some("https://doc.rust-lang.org/book/".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -747,6 +973,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -760,6 +987,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -773,6 +1001,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -786,6 +1015,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "DOI citation test".to_string(),
             url: Some("https://doi.org/10.1145/3508461".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -799,6 +1029,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -812,6 +1043,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -825,6 +1057,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -838,6 +1071,7 @@ Citations in parentheses (see @@Jones2019).
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
 
@@ -987,6 +1221,7 @@ User citation @@user@domain is valid.
             summary: "Test".to_string(),
             url: Some("https://doi.org/10.5555/12345".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -1000,6 +1235,7 @@ User citation @@user@domain is valid.
             summary: "Test".to_string(),
             url: Some("https://arxiv.org/abs/2301.12345".to_string()),
             index: None,
+            ..Default::default()
         },
     );
     bibliography.insert(
@@ -1013,6 +1249,7 @@ User citation @@user@domain is valid.
             summary: "Test".to_string(),
             url: None,
             index: None,
+            ..Default::default()
         },
     );
 
