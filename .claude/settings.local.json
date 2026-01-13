@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cargo test:*)",
       "WebSearch",
-      "WebFetch(domain:mirrors.ibiblio.org)"
+      "WebFetch(domain:mirrors.ibiblio.org)",
+      "Bash(cargo build:*)"
     ]
   }
 }

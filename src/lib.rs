@@ -8,7 +8,7 @@ use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use crate::config::{Config, SortOrder};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use handlebars::Handlebars;
 use indexmap::IndexMap;
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
@@ -510,17 +510,19 @@ impl Preprocessor for Bibliography {
         // Configure template registry
         let mut handlebars = Handlebars::new();
         handlebars
-            .register_template_string("references", config.bib_hb_html.clone())
-            .unwrap();
+            .register_template_string("references", &config.bib_hb_html)
+            .context("Failed to register references template. Check your 'hb-tpl' configuration for valid Handlebars syntax")?;
         handlebars
             .register_template_string(
                 "chapter_refs",
                 config::DEFAULT_CHAPTER_REFS_FOOTER_HB_TEMPLATE,
             )
-            .unwrap();
+            .context(
+                "Failed to register chapter_refs template. This is a bug - please report it",
+            )?;
         handlebars
-            .register_template_string("citation", config.cite_hb_html.clone())
-            .unwrap();
+            .register_template_string("citation", &config.cite_hb_html)
+            .context("Failed to register citation template. Check your 'cite-hb-tpl' configuration for valid Handlebars syntax")?;
         tracing::debug!("Handlebars content: {:?}", handlebars);
 
         let bib_content = Bibliography::retrieve_bibliography_content(ctx, &config);
