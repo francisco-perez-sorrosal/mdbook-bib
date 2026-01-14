@@ -142,7 +142,7 @@ impl CslBackend {
 }
 
 impl BibliographyBackend for CslBackend {
-    fn format_citation(&self, item: &BibItem, _context: &CitationContext) -> MdResult<String> {
+    fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
         // Get the hayagriva Entry from the BibItem
         let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
             anyhow!(
@@ -167,15 +167,48 @@ impl BibliographyBackend for CslBackend {
         let rendered = driver.finish(bib_request);
 
         // Extract the first citation (we only have one)
-        let citation_html = rendered
+        let citation_text = rendered
             .citations
             .first()
             .map(|c| c.citation.to_string())
             .unwrap_or_else(|| format!("[{}]", item.citation_key));
 
         // Strip ANSI codes from hayagriva output
-        let clean_html = Self::strip_ansi_codes(&citation_html);
-        Ok(clean_html)
+        let clean_citation = Self::strip_ansi_codes(&citation_text);
+
+        // Strip outer delimiters from CSL citation (e.g., [1] -> 1, (Author 2024) -> Author 2024)
+        // so we can wrap it in our own markdown link format
+        let citation_content = clean_citation
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .trim_start_matches('(')
+            .trim_end_matches(')');
+
+        // Wrap in markdown link, matching the legacy backend format:
+        // For IEEE [1]: [[1](path#key)] -> [<a href="path#key">1</a>]
+        // For Chicago (Author 2024): ([Author 2024](path#key)) -> (<a href="path#key">Author 2024</a>)
+        // For Nature 1: [[1](path#key)] -> [<a href="path#key">1</a>]
+        let linked_citation = if clean_citation.starts_with('[') && clean_citation.ends_with(']') {
+            // Numbered styles with brackets (IEEE, Vancouver, etc.)
+            format!(
+                "[[{}]({}#{})]",
+                citation_content, context.bib_page_path, item.citation_key
+            )
+        } else if clean_citation.starts_with('(') && clean_citation.ends_with(')') {
+            // Author-date styles with parentheses (Chicago, APA, Harvard, etc.)
+            format!(
+                "([{}]({}#{}))",
+                citation_content, context.bib_page_path, item.citation_key
+            )
+        } else {
+            // Superscript or other formats without delimiters (Nature, etc.)
+            format!(
+                "[[{}]({}#{})]",
+                clean_citation, context.bib_page_path, item.citation_key
+            )
+        };
+
+        Ok(linked_citation)
     }
 
     fn format_reference(&self, item: &BibItem) -> MdResult<String> {
@@ -216,8 +249,11 @@ impl BibliographyBackend for CslBackend {
         // Strip ANSI codes from hayagriva output
         let clean_html = Self::strip_ansi_codes(&bib_html);
 
-        // Wrap in a div with CSL entry class
-        Ok(format!("<div class='csl-entry'>{clean_html}</div>"))
+        // Wrap in a div with CSL entry class and add anchor for linking
+        Ok(format!(
+            "<div class='csl-entry' id='{}'>{}</div>",
+            item.citation_key, clean_html
+        ))
     }
 
     fn name(&self) -> &str {

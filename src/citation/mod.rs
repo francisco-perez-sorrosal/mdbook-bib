@@ -143,10 +143,14 @@ pub fn replace_all_placeholders(
                 bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
                 chapter_path: chapter_path.display().to_string(),
             };
-            backend.format_citation(item, &context).unwrap_or_else(|e| {
-                tracing::error!("Failed to format citation for '{}': {}", cite, e);
-                format!("\\[Error formatting {cite}\\]")
-            })
+            {
+                let formatted = backend.format_citation(item, &context).unwrap_or_else(|e| {
+                    tracing::error!("Failed to format citation for '{}': {}", cite, e);
+                    format!("\\[Error formatting {cite}\\]")
+                });
+                tracing::info!("Citation replacement: '{}' -> '{}'", cite, formatted);
+                formatted
+            }
         } else {
             format!("\\[Unknown bib ref: {cite}\\]")
         }
@@ -169,10 +173,14 @@ pub fn replace_all_placeholders(
                 bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
                 chapter_path: chapter_path.display().to_string(),
             };
-            backend.format_citation(item, &context).unwrap_or_else(|e| {
-                tracing::error!("Failed to format citation for '{}': {}", cite, e);
-                format!("\\[Error formatting {cite}\\]")
-            })
+            {
+                let formatted = backend.format_citation(item, &context).unwrap_or_else(|e| {
+                    tracing::error!("Failed to format citation for '{}': {}", cite, e);
+                    format!("\\[Error formatting {cite}\\]")
+                });
+                tracing::info!("Citation replacement: '{}' -> '{}'", cite, formatted);
+                formatted
+            }
         } else {
             format!("\\[Unknown bib ref: {cite}\\]")
         }
