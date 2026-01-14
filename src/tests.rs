@@ -669,8 +669,7 @@ fn test_extended_bibitem_fields() {
     // It's optional, so we just verify the field exists in the structure
 
     // Editor - check if extracted
-    if entry.editor.is_some() {
-        let editors = entry.editor.as_ref().unwrap();
+    if let Some(editors) = &entry.editor {
         assert!(!editors.is_empty(), "Should have at least one editor");
     }
 }

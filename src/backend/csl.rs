@@ -7,11 +7,17 @@ use anyhow::anyhow;
 use hayagriva::archive::{locales, ArchivedStyle};
 use hayagriva::citationberg::{IndependentStyle, Locale, Style};
 use hayagriva::{BibliographyDriver, BibliographyRequest, CitationItem, CitationRequest};
+use lazy_static::lazy_static;
 use mdbook_preprocessor::errors::Result as MdResult;
+use regex::Regex;
 
 use crate::models::BibItem;
 
 use super::{BibliographyBackend, CitationContext};
+
+lazy_static! {
+    static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+}
 
 /// CSL backend using hayagriva's BibliographyDriver.
 ///
@@ -148,11 +154,7 @@ impl CslBackend {
     /// Hayagriva outputs formatted text with ANSI codes for terminal display,
     /// which need to be removed for HTML output.
     fn strip_ansi_codes(text: &str) -> String {
-        use regex::Regex;
-
-        // Pattern to match ANSI escape sequences with ESC character
-        let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-        let result = re.replace_all(text, "");
+        let result = ANSI_REGEX.replace_all(text, "");
 
         // Also remove bare ANSI codes that appear without ESC (hayagriva quirk)
         // Only match specific known ANSI codes to avoid stripping legitimate brackets
