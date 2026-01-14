@@ -3,6 +3,7 @@ use hayagriva::io::{from_biblatex_str, from_yaml_str};
 use hayagriva::types::Person;
 use indexmap::IndexMap;
 use mdbook_preprocessor::errors::{Error, Result as MdResult};
+use std::sync::Arc;
 
 use crate::models::BibItem;
 
@@ -96,6 +97,8 @@ pub fn parse_bibliography(
                     edition,
                     note,
                     organization,
+                    // Store original hayagriva Entry for CSL rendering
+                    hayagriva_entry: Some(Arc::new(entry.clone())),
                 },
             )
         })
