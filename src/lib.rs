@@ -177,9 +177,15 @@ impl Preprocessor for Bibliography {
                 Box::new(LegacyBackend::new(&handlebars))
             }
             BackendMode::Csl => {
-                tracing::info!("Using CSL backend (Phase 4 stub - limited functionality)");
+                tracing::info!(
+                    "Using CSL backend with style '{}'",
+                    config.csl_style.as_deref().unwrap_or("apa")
+                );
                 let style = config.csl_style.as_deref().unwrap_or("apa");
-                Box::new(CslBackend::new(style.to_string()))
+                Box::new(
+                    CslBackend::new(style.to_string())
+                        .context("Failed to initialize CSL backend")?,
+                )
             }
         };
 

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// Bibliography item representation.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BibItem {
     // === Core fields (existing, maintained for backward compatibility) ===
     /// The citation key.
@@ -73,6 +74,12 @@ pub struct BibItem {
     /// Organization (for conference proceedings).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub organization: Option<String>,
+
+    // === Internal fields for CSL rendering ===
+    /// Original hayagriva Entry for CSL rendering.
+    /// This is kept for CSL backend to use with BibliographyDriver.
+    #[serde(skip)]
+    pub hayagriva_entry: Option<Arc<hayagriva::Entry>>,
 }
 
 impl BibItem {
@@ -111,12 +118,13 @@ impl BibItem {
             edition: None,
             note: None,
             organization: None,
+            hayagriva_entry: None,
         }
     }
 }
 
 /// Citation context for rendering.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Citation {
     pub item: BibItem,
     pub path: String,
