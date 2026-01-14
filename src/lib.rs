@@ -191,26 +191,29 @@ impl Preprocessor for Bibliography {
 
         tracing::info!("Backend initialized: {}", backend.name());
 
-        // Render chapter-level header once
-        let chapter_refs_header = handlebars
-            .render("chapter_refs", &String::new())
-            .context("Failed to render chapter_refs header")?;
+        // First, expand citations to assign indices to BibItems
+        let citation_result =
+            citation::expand_cite_references_in_book(&mut book, &mut bib, backend.as_ref());
 
+        // Then add per-chapter bibliographies (now items have correct indices)
         if config.add_bib_in_each_chapter {
+            let chapter_refs_header = handlebars
+                .render("chapter_refs", &String::new())
+                .context("Failed to render chapter_refs header")?;
+
             citation::add_bib_at_end_of_chapters(
                 &mut book,
                 &mut bib,
                 backend.as_ref(),
                 &chapter_refs_header,
                 config.order.clone(),
+                &citation_result.per_chapter,
             );
         }
 
-        let cited = citation::expand_cite_references_in_book(&mut book, &mut bib, backend.as_ref());
-
         let bib_content_html = renderer::generate_bibliography_html(
             &bib,
-            &cited,
+            &citation_result.all_cited,
             config.cited_only,
             backend.as_ref(),
             config.order,
