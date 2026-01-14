@@ -268,11 +268,36 @@ pub enum BackendMode {
 
 ---
 
-### Phase 6: Testing, Documentation, Polish 🔲 TODO
+### Phase 6: Testing, Documentation, Polish 🔄 IN PROGRESS
 
 **Goal**: Comprehensive testing, documentation, and release preparation.
 
-**Tasks**:
+**Documentation Updates** ✅ COMPLETED:
+
+- ✅ Updated `README.md`:
+  - Added dual backend feature description
+  - Added "Rendering Backends" section with context
+  - Added quick start examples for both backends
+  - Added links to detailed manual pages
+- ✅ Updated `manual/src/intro.md`:
+  - Added backend comparison table
+  - Added quick start section
+  - Links to detailed backend pages
+- ✅ Created `manual/src/legacy.md`:
+  - Complete template variables reference
+  - Example templates for bibliography and citations
+  - Custom CSS/JS examples
+- ✅ Created `manual/src/csl.md`:
+  - Available CSL styles (numeric, author-date, note)
+  - Examples for IEEE, Chicago, Nature, APA
+  - YAML bibliography support documentation
+- ✅ Updated `manual/src/config.md`:
+  - Simplified structure with backend selection
+  - Configuration reference table
+  - Complete examples for different use cases
+- ✅ Updated `manual/src/SUMMARY.md` with new pages
+
+**Remaining Tasks**:
 
 1. Create comprehensive test suite:
    - Regression tests (old output vs new output)
@@ -285,25 +310,19 @@ pub enum BackendMode {
 2. Write migration guide:
    - How to upgrade from v0.5.x
    - When to use Legacy vs CSL backend
-   - CSL style selection guide
 
-3. Update documentation:
-   - README.md with new features
-   - Manual with backend examples
-   - CSL style examples
-
-4. Performance benchmarking:
+3. Performance benchmarking:
    - Compare to nom-bibtex baseline
    - Test with large bibliographies
 
-5. Security audit:
+4. Security audit:
    - Dependency check
    - Input validation
 
 **Success Criteria**:
 
 - [ ] All tests pass (target: 95%+ code coverage)
-- [ ] Documentation complete and clear
+- [x] Documentation complete and clear
 - [ ] Migration guide covers common scenarios
 - [ ] Performance equal or better than v0.5.x
 - [ ] No known security issues
