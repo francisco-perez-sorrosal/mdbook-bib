@@ -59,7 +59,9 @@ impl Bibliography {
                 match &cfg.zotero_uid {
                     Some(uid) => {
                         let user_id = uid.to_string();
-                        let bib_str = io::download_bib_from_zotero(user_id).unwrap_or_default();
+                        let bib_str = io::download_bib_from_zotero(user_id)
+                            .inspect_err(|e| tracing::warn!("Zotero download failed: {e}"))
+                            .unwrap_or_default();
                         if !bib_str.is_empty() {
                             let biblio_path = ctx.root.join(Path::new("my_zotero.bib"));
                             tracing::info!("Saving Zotero bibliography to {:?}", biblio_path);
