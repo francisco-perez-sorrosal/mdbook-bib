@@ -1,8 +1,8 @@
-# Legacy Backend (Handlebars)
+# Custom Backend (Handlebars)
 
-The Legacy backend uses [Handlebars](https://handlebarsjs.com/) templates to render citations and bibliography entries. This gives you full control over the HTML output, including custom layouts, interactive elements, and styling.
+The Custom backend uses [Handlebars](https://handlebarsjs.com/) templates to render citations and bibliography entries. This gives you full control over the HTML output, including custom layouts, interactive elements, and styling.
 
-## When to Use Legacy Backend
+## When to Use Custom Backend
 
 - You need custom HTML layouts for bibliography entries
 - You want interactive elements (copy buttons, collapsible details, tooltips)
@@ -11,7 +11,7 @@ The Legacy backend uses [Handlebars](https://handlebarsjs.com/) templates to ren
 
 ## Configuration
 
-The Legacy backend is the default. No `backend` option is needed:
+The Custom backend is the default. No `backend` option is needed:
 
 ```toml
 [preprocessor.bib]

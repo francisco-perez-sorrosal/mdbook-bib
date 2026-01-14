@@ -2,13 +2,13 @@
 //!
 //! This module provides a trait-based abstraction for different bibliography
 //! rendering backends, allowing users to choose between custom Handlebars
-//! templates (LegacyBackend) or CSL citation styles (CslBackend).
+//! templates (CustomBackend) or CSL citation styles (CslBackend).
 
 mod csl;
-mod legacy;
+mod custom;
 
 pub use csl::CslBackend;
-pub use legacy::LegacyBackend;
+pub use custom::CustomBackend;
 
 use crate::models::BibItem;
 use mdbook_preprocessor::errors::Result as MdResult;
@@ -16,8 +16,8 @@ use mdbook_preprocessor::errors::Result as MdResult;
 /// Backend mode determines which rendering system to use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendMode {
-    /// Legacy mode: Uses custom Handlebars templates for maximum flexibility.
-    Legacy,
+    /// Custom mode: Uses Handlebars templates for maximum flexibility.
+    Custom,
     /// CSL mode: Uses Citation Style Language for standardized formatting.
     Csl,
 }
@@ -34,7 +34,7 @@ pub struct CitationContext {
 /// Trait for bibliography rendering backends.
 ///
 /// Implementations provide different rendering strategies:
-/// - LegacyBackend: Uses Handlebars templates for custom formatting
+/// - CustomBackend: Uses Handlebars templates for custom formatting
 /// - CslBackend: Uses hayagriva's CSL driver for standardized formatting
 pub trait BibliographyBackend {
     /// Format an inline citation reference.

@@ -11,20 +11,20 @@
 
 mdbook-bib offers two rendering backends to suit different needs:
 
-| Feature | Legacy (Handlebars) | CSL |
+| Feature | Custom (Handlebars) | CSL |
 |---------|---------------------|-----|
 | **Use case** | Full customization | Standard academic formats |
 | **Citation styles** | Custom templates | IEEE, Chicago, Nature, APA, 80+ more |
 | **Interactive elements** | Copy buttons, collapsible details | Basic (links only) |
 | **Configuration** | More flexible | Simpler |
 
-### Legacy Backend (Default)
+### Custom Backend (Default)
 
-The **Legacy backend** uses [Handlebars](https://handlebarsjs.com/) templates for maximum flexibility. You control exactly how citations and bibliography entries are rendered, including custom HTML, CSS, and JavaScript.
+The **Custom backend** uses [Handlebars](https://handlebarsjs.com/) templates for maximum flexibility. You control exactly how citations and bibliography entries are rendered, including custom HTML, CSS, and JavaScript.
 
 Best for: Power users who need custom layouts, interactive elements, or non-standard citation formats.
 
-See [Legacy Backend](./legacy.md) for details.
+See [Custom Backend](./custom.md) for details.
 
 ### CSL Backend
 
@@ -38,7 +38,7 @@ See [CSL Backend](./csl.md) for details.
 
 ```toml
 [preprocessor.bib]
-# Legacy mode by default
+# Custom mode by default
 bibliography = "refs.bib"
 # For CSL mode, add:
 # backend = "csl"

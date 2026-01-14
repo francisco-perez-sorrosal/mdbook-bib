@@ -14,7 +14,7 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 - Add citations from your BibLaTeX or YAML bibliography files
 - Automatically download your public bibliography from Zotero and cite it
 - **Two rendering backends**:
-  - **Legacy (Handlebars)**: Full template customization with custom CSS/JS
+  - **Custom (Handlebars)**: Full template customization with custom CSS/JS
   - **CSL (Citation Style Language)**: Standard academic citation styles (IEEE, Chicago, Nature, APA, and 80+ more)
 
 ## Basic Install
@@ -47,11 +47,11 @@ Now you can cite entries using either syntax:
 
 ## Rendering Backends
 
-mdbook-bib provides two rendering backends. The **Legacy backend** (default) gives you full control over citation and bibliography formatting through Handlebars templates, custom CSS, and JavaScript. The **CSL backend** uses [hayagriva](https://github.com/typst/hayagriva) to render citations in standard academic formats (IEEE, APA, Chicago, Nature, and 80+ more) without any template configuration.
+mdbook-bib provides two rendering backends. The **Custom backend** (default) gives you full control over citation and bibliography formatting through Handlebars templates, custom CSS, and JavaScript. The **CSL backend** uses [hayagriva](https://github.com/typst/hayagriva) to render citations in standard academic formats (IEEE, APA, Chicago, Nature, and 80+ more) without any template configuration.
 
-Choose Legacy if you need custom layouts or interactive elements. Choose CSL if you want standard academic formatting with minimal setup.
+Choose Custom if you need custom layouts or interactive elements. Choose CSL if you want standard academic formatting with minimal setup.
 
-### Legacy Backend (Default)
+### Custom Backend (Default)
 
 The default backend uses Handlebars templates for full customization:
 
@@ -64,7 +64,7 @@ cite-hb-tpl = "render/citation.hbs"
 css = "render/style.css"
 ```
 
-See [Legacy Backend documentation](https://francisco-perez-sorrosal.github.io/mdbook-bib/legacy.html) for template variables and examples.
+See [Custom Backend documentation](https://francisco-perez-sorrosal.github.io/mdbook-bib/custom.html) for template variables and examples.
 
 ### CSL Backend
 

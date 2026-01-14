@@ -1,4 +1,4 @@
-use crate::backend::LegacyBackend;
+use crate::backend::CustomBackend;
 use crate::config::DEFAULT_JS_TEMPLATE;
 use crate::config::{SortOrder, DEFAULT_HB_TEMPLATE};
 use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
@@ -122,7 +122,7 @@ fn bibliography_render_all_vs_cited() {
     cited.insert("fps".to_string());
 
     let handlebars = create_references_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
 
     let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
@@ -163,7 +163,7 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
     );
     // ...and is included in the render
     let handlebars = create_references_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &HashSet::new(),
@@ -190,7 +190,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     );
 
     let handlebars = create_citation_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut last_index = 0;
     let text_with_citations = crate::citation::replace_all_placeholders(
         &chapter,
@@ -230,7 +230,7 @@ fn citations_in_subfolders_link_properly() {
 
     // Check valid references included in a dummy text
     let handlebars = create_citation_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut check_citations_for = |chapter: &Chapter, link: &str| {
         let mut last_index = 0;
         let text_with_citations = crate::citation::replace_all_placeholders(
@@ -361,7 +361,7 @@ This is a reference to {{#cite DUMMY:1}}
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut last_index = 0;
     let _ = crate::citation::replace_all_placeholders(
         &chapter,
@@ -422,7 +422,7 @@ This is another reference @@simple_key that should also work.
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
@@ -1090,7 +1090,7 @@ Citations in parentheses (see @@Jones2019).
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
@@ -1269,7 +1269,7 @@ User citation @@user@domain is valid.
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
@@ -1349,12 +1349,12 @@ fn test_ref_pattern_excludes_mdbook_expressions() {
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Regression Tests: Verify Legacy backend produces expected output
+// Regression Tests: Verify Custom backend produces expected output
 // ----------------------------------------------------------------------------
 
 #[test]
-fn regression_legacy_citation_format() {
-    // Verify Legacy backend produces same citation format as before hayagriva integration
+fn regression_custom_citation_format() {
+    // Verify Custom backend produces same citation format as before hayagriva integration
     let mut bibliography: IndexMap<String, BibItem> =
         parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
@@ -1366,7 +1366,7 @@ fn regression_legacy_citation_format() {
     );
 
     let handlebars = create_citation_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut cited = HashSet::new();
     let mut last_index = 0;
 
@@ -1378,21 +1378,21 @@ fn regression_legacy_citation_format() {
         &mut last_index,
     );
 
-    // Legacy format: [[key](bibliography.html#key)]
+    // Custom format: [[key](bibliography.html#key)]
     assert!(
         result.contains("[fps](bibliography.html#fps)"),
-        "Legacy citation should link to bibliography: {result}"
+        "Custom citation should link to bibliography: {result}"
     );
 }
 
 #[test]
-fn regression_legacy_bibliography_html_structure() {
-    // Verify Legacy backend produces expected bibliography HTML structure
+fn regression_custom_bibliography_html_structure() {
+    // Verify Custom backend produces expected bibliography HTML structure
     let bibliography: IndexMap<String, BibItem> =
         parser::parse_bibliography(DUMMY_BIB_SRC.to_string(), BibFormat::BibTeX).unwrap();
 
     let handlebars = create_references_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
 
     let html = crate::renderer::generate_bibliography_html(
         &bibliography,
@@ -1415,11 +1415,11 @@ fn regression_legacy_bibliography_html_structure() {
 }
 
 // ----------------------------------------------------------------------------
-// Backend-Specific Tests: Legacy vs CSL
+// Backend-Specific Tests: Custom vs CSL
 // ----------------------------------------------------------------------------
 
 #[test]
-fn backend_legacy_vs_csl_citation_format_differs() {
+fn backend_custom_vs_csl_citation_format_differs() {
     use crate::backend::{BibliographyBackend, CitationContext, CslBackend};
 
     // Parse a bibliography entry
@@ -1440,10 +1440,10 @@ fn backend_legacy_vs_csl_citation_format_differs() {
         chapter_path: "chapter.md".to_string(),
     };
 
-    // Legacy backend
+    // Custom backend
     let handlebars = create_citation_handlebars();
-    let legacy_backend = LegacyBackend::new(&handlebars);
-    let legacy_citation = legacy_backend.format_citation(item, &context).unwrap();
+    let custom_backend = CustomBackend::new(&handlebars);
+    let custom_citation = custom_backend.format_citation(item, &context).unwrap();
 
     // CSL backend (IEEE - numeric style)
     let csl_backend = CslBackend::new("ieee".to_string()).unwrap();
@@ -1451,15 +1451,15 @@ fn backend_legacy_vs_csl_citation_format_differs() {
 
     // Both should produce valid output but different formats
     assert!(
-        !legacy_citation.is_empty(),
-        "Legacy citation should not be empty"
+        !custom_citation.is_empty(),
+        "Custom citation should not be empty"
     );
     assert!(!csl_citation.is_empty(), "CSL citation should not be empty");
 
-    // Legacy uses [key] format, CSL uses [number] format
+    // Custom uses [key] format, CSL uses [number] format
     assert!(
-        legacy_citation.contains("smith2024"),
-        "Legacy should use citation key"
+        custom_citation.contains("smith2024"),
+        "Custom should use citation key"
     );
     // CSL IEEE uses numbered citations
     assert!(
@@ -1644,12 +1644,12 @@ fn yaml_bibliography_parsing() {
 }
 
 #[test]
-fn yaml_bibliography_with_legacy_backend() {
+fn yaml_bibliography_with_custom_backend() {
     let bibliography =
         parser::parse_bibliography(YAML_BIB_SRC.to_string(), BibFormat::Yaml).unwrap();
 
     let handlebars = create_references_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
 
     let html = crate::renderer::generate_bibliography_html(
         &bibliography,
@@ -1952,7 +1952,7 @@ fn citation_to_nonexistent_key() {
     );
 
     let handlebars = create_citation_handlebars();
-    let backend = LegacyBackend::new(&handlebars);
+    let backend = CustomBackend::new(&handlebars);
     let mut cited = HashSet::new();
     let mut last_index = 0;
 
