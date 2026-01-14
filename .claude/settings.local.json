@@ -31,7 +31,9 @@
       "Bash(MDBOOK_LOG=mdbook_bib::backend::csl=debug mdbook build:*)",
       "Bash(MDBOOK_LOG=debug mdbook build:*)",
       "Bash(echo:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(pandoc:*)",
+      "Bash(mdbook:*)"
     ]
   }
 }
