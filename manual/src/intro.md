@@ -47,6 +47,10 @@ bibliography = "refs.bib"
 
 Cite entries with `{{#cite key}}` or `@@key`.
 
+## Upgrading from v0.5.x
+
+Version 1.0.0 introduces the dual backend system while maintaining full backwards compatibility. Your existing books will build without any changes. If you want to explore the new CSL backend or learn about new template variables, see the [Migration Guide](./migration.md).
+
 ### GitHub project
 
 mdbook-bib is Open Source and available [on GitHub](https://github.com/francisco-perez-sorrosal/mdbook-bib).

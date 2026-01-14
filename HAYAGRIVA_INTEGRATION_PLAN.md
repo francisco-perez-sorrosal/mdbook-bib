@@ -297,6 +297,18 @@ pub enum BackendMode {
   - Complete examples for different use cases
 - ✅ Updated `manual/src/SUMMARY.md` with new pages
 
+**Migration Guide** ✅ COMPLETED:
+
+- ✅ Created `manual/src/migration.md`:
+  - Upgrade instructions from v0.5.x
+  - Backwards compatibility guarantees
+  - When to use Legacy vs CSL backend
+  - New template variables reference
+  - YAML bibliography support
+  - Troubleshooting section
+- ✅ Updated `manual/src/intro.md` with migration guide reference
+- ✅ Updated `manual/src/SUMMARY.md` with migration page link
+
 **Remaining Tasks**:
 
 1. Create comprehensive test suite:
@@ -307,11 +319,7 @@ pub enum BackendMode {
    - Per-chapter bibliography tests with all backends
    - Edge cases (missing fields, malformed entries)
 
-2. Write migration guide:
-   - How to upgrade from v0.5.x
-   - When to use Legacy vs CSL backend
-
-3. Performance benchmarking:
+2. Performance benchmarking:
    - Compare to nom-bibtex baseline
    - Test with large bibliographies
 
@@ -323,7 +331,7 @@ pub enum BackendMode {
 
 - [ ] All tests pass (target: 95%+ code coverage)
 - [x] Documentation complete and clear
-- [ ] Migration guide covers common scenarios
+- [x] Migration guide covers common scenarios
 - [ ] Performance equal or better than v0.5.x
 - [ ] No known security issues
 - [ ] Ready for release
