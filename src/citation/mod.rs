@@ -2,14 +2,14 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::path::{Component, Path};
 
-use handlebars::Handlebars;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
 use regex::Regex;
 
+use crate::backend::{BibliographyBackend, CitationContext};
 use crate::config::SortOrder;
-use crate::models::{BibItem, Citation};
+use crate::models::BibItem;
 use crate::renderer;
 
 static BIB_OUT_FILE: &str = "bibliography";
@@ -39,7 +39,7 @@ lazy_static! {
 pub fn expand_cite_references_in_book(
     book: &mut Book,
     bibliography: &mut IndexMap<String, BibItem>,
-    handlebars: &Handlebars,
+    backend: &dyn BibliographyBackend,
 ) -> HashSet<String> {
     let mut cited = HashSet::new();
     let mut last_index = 0;
@@ -54,7 +54,7 @@ pub fn expand_cite_references_in_book(
                     ch,
                     bibliography,
                     &mut cited,
-                    handlebars,
+                    backend,
                     &mut last_index,
                 );
                 ch.content = new_content;
@@ -68,7 +68,8 @@ pub fn expand_cite_references_in_book(
 pub fn add_bib_at_end_of_chapters(
     book: &mut Book,
     bibliography: &mut IndexMap<String, BibItem>,
-    handlebars: &Handlebars,
+    backend: &dyn BibliographyBackend,
+    chapter_refs_header: &str,
     order: SortOrder,
 ) {
     book.for_each_mut(|section: &mut BookItem| {
@@ -94,22 +95,16 @@ pub fn add_bib_at_end_of_chapters(
                 }
                 tracing::info!("Refs cited in this chapter: {:?}", cited);
 
-                let ch_bib_header_html = handlebars
-                    .render("chapter_refs", &String::new())
-                    .unwrap()
-                    .as_str()
-                    .to_string();
-
                 let ch_bib_content_html = renderer::generate_bibliography_html(
                     bibliography,
                     &cited,
                     true,
-                    handlebars,
+                    backend,
                     order.clone(),
                 );
 
                 let new_content = String::from(ch.content.as_str())
-                    + ch_bib_header_html.as_str()
+                    + chapter_refs_header
                     + ch_bib_content_html.as_str();
                 ch.content = new_content;
             }
@@ -121,7 +116,7 @@ pub fn replace_all_placeholders(
     chapter: &Chapter,
     bibliography: &mut IndexMap<String, BibItem>,
     cited: &mut HashSet<String>,
-    handlebars: &Handlebars,
+    backend: &dyn BibliographyBackend,
     last_index: &mut u32,
 ) -> String {
     let chapter_path = chapter.path.as_deref().unwrap_or_else(|| Path::new(""));
@@ -144,15 +139,14 @@ pub fn replace_all_placeholders(
                 **idx_mut += 1;
                 item.index = Some(**idx_mut);
             }
-            let citation = Citation {
-                item: item.clone(),
-                path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+            let context = CitationContext {
+                bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+                chapter_path: chapter_path.display().to_string(),
             };
-            handlebars
-                .render("citation", &citation)
-                .unwrap()
-                .as_str()
-                .to_string()
+            backend.format_citation(item, &context).unwrap_or_else(|e| {
+                tracing::error!("Failed to format citation for '{}': {}", cite, e);
+                format!("\\[Error formatting {cite}\\]")
+            })
         } else {
             format!("\\[Unknown bib ref: {cite}\\]")
         }
@@ -171,15 +165,14 @@ pub fn replace_all_placeholders(
                 **idx_mut += 1;
                 item.index = Some(**idx_mut);
             }
-            let citation = Citation {
-                item: item.clone(),
-                path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+            let context = CitationContext {
+                bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+                chapter_path: chapter_path.display().to_string(),
             };
-            handlebars
-                .render("citation", &citation)
-                .unwrap()
-                .as_str()
-                .to_string()
+            backend.format_citation(item, &context).unwrap_or_else(|e| {
+                tracing::error!("Failed to format citation for '{}': {}", cite, e);
+                format!("\\[Error formatting {cite}\\]")
+            })
         } else {
             format!("\\[Unknown bib ref: {cite}\\]")
         }

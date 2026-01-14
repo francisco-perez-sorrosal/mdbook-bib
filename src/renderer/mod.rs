@@ -1,17 +1,17 @@
 use std::collections::HashSet;
 
-use handlebars::Handlebars;
 use indexmap::IndexMap;
 
+use crate::backend::BibliographyBackend;
 use crate::config::SortOrder;
 use crate::models::BibItem;
 
-/// Generate bibliography HTML from BibItems.
+/// Generate bibliography HTML from BibItems using the specified backend.
 pub fn generate_bibliography_html(
     bibliography: &IndexMap<String, BibItem>,
     cited: &HashSet<String>,
     cited_only: bool,
-    handlebars: &Handlebars,
+    backend: &dyn BibliographyBackend,
     order: SortOrder,
 ) -> String {
     let sorted: Vec<(&str, &BibItem)> = match order {
@@ -48,7 +48,15 @@ pub fn generate_bibliography_html(
     let mut content = String::new();
     for (key, value) in sorted {
         if !cited_only || cited.contains(key) {
-            content.push_str(handlebars.render("references", &value).unwrap().as_str());
+            match backend.format_reference(value) {
+                Ok(html) => content.push_str(&html),
+                Err(e) => {
+                    tracing::error!("Failed to format reference for '{}': {}", key, e);
+                    content.push_str(&format!(
+                        "<div class='error'>Error formatting reference: {key}</div>"
+                    ));
+                }
+            }
         }
     }
 

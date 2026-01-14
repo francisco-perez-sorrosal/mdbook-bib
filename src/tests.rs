@@ -1,3 +1,4 @@
+use crate::backend::LegacyBackend;
 use crate::config::DEFAULT_JS_TEMPLATE;
 use crate::config::{SortOrder, DEFAULT_HB_TEMPLATE};
 use crate::config::{DEFAULT_CITE_HB_TEMPLATE, DEFAULT_CSS_TEMPLATE};
@@ -121,12 +122,13 @@ fn bibliography_render_all_vs_cited() {
     cited.insert("fps".to_string());
 
     let handlebars = create_references_handlebars();
+    let backend = LegacyBackend::new(&handlebars);
 
     let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &cited,
         false,
-        &handlebars,
+        &backend,
         SortOrder::None,
     );
 
@@ -137,7 +139,7 @@ fn bibliography_render_all_vs_cited() {
         &bibliography_loaded,
         &cited,
         true,
-        &handlebars,
+        &backend,
         SortOrder::None,
     );
 
@@ -161,11 +163,12 @@ fn bibliography_includes_and_renders_url_when_present_in_bibitems() {
     );
     // ...and is included in the render
     let handlebars = create_references_handlebars();
+    let backend = LegacyBackend::new(&handlebars);
     let html = crate::renderer::generate_bibliography_html(
         &bibliography_loaded,
         &HashSet::new(),
         false,
-        &handlebars,
+        &backend,
         SortOrder::None,
     );
     assert!(html.contains("href=\"https://doc.rust-lang.org/book/\""));
@@ -187,12 +190,13 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     );
 
     let handlebars = create_citation_handlebars();
+    let backend = LegacyBackend::new(&handlebars);
     let mut last_index = 0;
     let text_with_citations = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
     // TODO: These asserts will probably fail if we allow users to specify the bibliography
@@ -212,7 +216,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
     assert!(text_with_citations.contains("[fps]"));
@@ -226,13 +230,14 @@ fn citations_in_subfolders_link_properly() {
 
     // Check valid references included in a dummy text
     let handlebars = create_citation_handlebars();
+    let backend = LegacyBackend::new(&handlebars);
     let mut check_citations_for = |chapter: &Chapter, link: &str| {
         let mut last_index = 0;
         let text_with_citations = crate::citation::replace_all_placeholders(
             chapter,
             &mut bibliography,
             &mut HashSet::new(),
-            &handlebars,
+            &backend,
             &mut last_index,
         );
 
@@ -356,12 +361,13 @@ This is a reference to {{#cite DUMMY:1}}
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
+    let backend = LegacyBackend::new(&handlebars);
     let mut last_index = 0;
     let _ = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
 }
@@ -416,13 +422,14 @@ This is another reference @@simple_key that should also work.
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
+    let backend = LegacyBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
 
@@ -1083,13 +1090,14 @@ Citations in parentheses (see @@Jones2019).
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
+    let backend = LegacyBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
 
@@ -1261,13 +1269,14 @@ User citation @@user@domain is valid.
     );
     let mut cited = HashSet::new();
     let handlebars = create_citation_handlebars_with_template("{{item.citation_key}}");
+    let backend = LegacyBackend::new(&handlebars);
     let mut last_index = 0;
 
     let result = crate::citation::replace_all_placeholders(
         &chapter,
         &mut bibliography,
         &mut cited,
-        &handlebars,
+        &backend,
         &mut last_index,
     );
 
