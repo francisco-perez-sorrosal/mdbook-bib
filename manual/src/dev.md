@@ -53,6 +53,7 @@ The release process can be triggered with the make command `make release VERSION
 
 - Update new version (e.g. 0.0.7) in `Cargo.toml`, and `doc.yml` in the github workflows
 - Do a commit with those changes with a message like `Prepare for release v0.0.7`
+- Pull the remote changes to get the updated CHANGELOG.md by the previous commit from github: `git pull origin master`
 - The release will be triggered by:
   - Creating a new tag in github: `git tag -a v0.0.7 -m "Version v0.0.7"`
   - Pushing the tag to github: `git push origin v0.0.7`
