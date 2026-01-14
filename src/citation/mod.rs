@@ -35,13 +35,22 @@ lazy_static! {
     static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
 }
 
+/// Result of citation expansion, containing both global and per-chapter citations.
+pub struct CitationResult {
+    /// All citations found across the entire book.
+    pub all_cited: HashSet<String>,
+    /// Citations found per chapter, keyed by chapter path.
+    pub per_chapter: IndexMap<String, HashSet<String>>,
+}
+
 /// Expand all citation references in the book, replacing placeholders with formatted citations.
 pub fn expand_cite_references_in_book(
     book: &mut Book,
     bibliography: &mut IndexMap<String, BibItem>,
     backend: &dyn BibliographyBackend,
-) -> HashSet<String> {
-    let mut cited = HashSet::new();
+) -> CitationResult {
+    let mut all_cited = HashSet::new();
+    let mut per_chapter: IndexMap<String, HashSet<String>> = IndexMap::new();
     let mut last_index = 0;
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
@@ -50,18 +59,24 @@ pub fn expand_cite_references_in_book(
                     "Replacing placeholders: {{{{#cite ...}}}} and @@citation in {}",
                     chapter_path.as_path().display()
                 );
+                let mut chapter_cited = HashSet::new();
                 let new_content = replace_all_placeholders(
                     ch,
                     bibliography,
-                    &mut cited,
+                    &mut chapter_cited,
                     backend,
                     &mut last_index,
                 );
                 ch.content = new_content;
+                all_cited.extend(chapter_cited.clone());
+                per_chapter.insert(chapter_path.display().to_string(), chapter_cited);
             }
         }
     });
-    cited
+    CitationResult {
+        all_cited,
+        per_chapter,
+    }
 }
 
 /// Add bibliography at the end of each chapter.
@@ -71,28 +86,26 @@ pub fn add_bib_at_end_of_chapters(
     backend: &dyn BibliographyBackend,
     chapter_refs_header: &str,
     order: SortOrder,
+    per_chapter_citations: &IndexMap<String, HashSet<String>>,
 ) {
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
             if let Some(ref chapter_path) = ch.path {
-                tracing::info!(
-                    "Adding bibliography at the end of chapter {}",
-                    chapter_path.as_path().display()
-                );
+                let chapter_key = chapter_path.display().to_string();
+                let cited = per_chapter_citations
+                    .get(&chapter_key)
+                    .cloned()
+                    .unwrap_or_default();
 
-                let mut cited = HashSet::new();
-                // Find all {{#cite ...}} keys
-                for caps in REF_REGEX.captures_iter(&ch.content) {
-                    if let Some(cite) = caps.get(1) {
-                        cited.insert(cite.as_str().trim().to_owned());
-                    }
+                if cited.is_empty() {
+                    tracing::info!(
+                        "No citations in chapter {}, skipping bibliography",
+                        chapter_key
+                    );
+                    return;
                 }
-                // Find all @@... keys
-                for caps in AT_REF_REGEX.captures_iter(&ch.content) {
-                    if let Some(cite) = caps.get(2) {
-                        cited.insert(cite.as_str().trim().to_owned());
-                    }
-                }
+
+                tracing::info!("Adding bibliography at the end of chapter {}", chapter_key);
                 tracing::info!("Refs cited in this chapter: {:?}", cited);
 
                 let ch_bib_content_html = renderer::generate_bibliography_html(

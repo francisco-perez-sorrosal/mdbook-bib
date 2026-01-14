@@ -274,9 +274,16 @@ impl BibliographyBackend for CslBackend {
 
         // For numbered styles, prepend the index number
         let is_numeric = self.is_numeric_citation_style();
+        let is_superscript = self.is_superscript_citation_style();
         let formatted_entry = if is_numeric {
             let index = item.index.unwrap_or(1);
-            format!("[{index}] {clean_html}")
+            if is_superscript {
+                // Nature and similar styles use "1." format
+                format!("{index}. {clean_html}")
+            } else {
+                // IEEE and similar styles use "[1]" format
+                format!("[{index}] {clean_html}")
+            }
         } else {
             clean_html
         };
