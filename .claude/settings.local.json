@@ -19,7 +19,10 @@
       "Bash(MDBOOK_LOG=mdbook_bib=debug mdbook build:*)",
       "Bash(MDBOOK_LOG=mdbook_bib=info mdbook build:*)",
       "Bash(cargo install:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(MDBOOK_LOG=debug cargo test:*)",
+      "Bash(perl -i.bak -pe:*)",
+      "Bash(find:*)"
     ]
   }
 }

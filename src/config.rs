@@ -8,6 +8,8 @@ use std::str::FromStr;
 use toml::value::Table;
 use tracing::info;
 
+use crate::backend::BackendMode;
+
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
@@ -74,6 +76,10 @@ pub struct Config<'a> {
     pub js_html: String,
     /// Sort order in bibliography output
     pub order: SortOrder,
+    /// Backend mode: Legacy (Handlebars) or CSL (Phase 5)
+    pub backend: BackendMode,
+    /// CSL style name (only used when backend = CSL)
+    pub csl_style: Option<String>,
 }
 
 impl<'a> Config<'a> {
@@ -173,6 +179,33 @@ impl<'a> Config<'a> {
                     Some(order) => SortOrder::from_str(order.as_str().unwrap())?,
                     None => SortOrder::None,
                 },
+
+                backend: match table.get("backend") {
+                    Some(backend) => match backend.as_str().unwrap() {
+                        "legacy" => {
+                            info!("Using Legacy (Handlebars) backend");
+                            BackendMode::Legacy
+                        }
+                        "csl" => {
+                            info!("Using CSL backend (Phase 5 - limited support)");
+                            BackendMode::Csl
+                        }
+                        other => {
+                            return Err(anyhow!(
+                                "Unknown backend '{other}'. Use one of [legacy, csl]. \
+                                Defaulting to 'legacy'."
+                            ));
+                        }
+                    },
+                    None => {
+                        info!("No backend specified, defaulting to Legacy (Handlebars)");
+                        BackendMode::Legacy
+                    }
+                },
+
+                csl_style: table
+                    .get("csl-style")
+                    .map(|v| v.as_str().unwrap().to_string()),
             })
         } else {
             Err(anyhow!("No configuration provided."))

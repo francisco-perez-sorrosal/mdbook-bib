@@ -7,6 +7,7 @@ use mdbook_preprocessor::book::{Book, Chapter};
 use mdbook_preprocessor::errors::Error;
 use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 
+mod backend;
 mod citation;
 mod config;
 mod file_utils;
@@ -15,6 +16,7 @@ mod models;
 mod parser;
 mod renderer;
 
+use crate::backend::{BackendMode, CslBackend, LegacyBackend};
 use crate::config::Config;
 use crate::parser::BibFormat;
 
@@ -168,22 +170,43 @@ impl Preprocessor for Bibliography {
 
         let mut bib = bibliography.unwrap();
 
+        // Create the appropriate backend based on configuration
+        let backend: Box<dyn crate::backend::BibliographyBackend> = match config.backend {
+            BackendMode::Legacy => {
+                tracing::info!("Using Legacy (Handlebars) backend for rendering");
+                Box::new(LegacyBackend::new(&handlebars))
+            }
+            BackendMode::Csl => {
+                tracing::info!("Using CSL backend (Phase 4 stub - limited functionality)");
+                let style = config.csl_style.as_deref().unwrap_or("apa");
+                Box::new(CslBackend::new(style.to_string()))
+            }
+        };
+
+        tracing::info!("Backend initialized: {}", backend.name());
+
+        // Render chapter-level header once
+        let chapter_refs_header = handlebars
+            .render("chapter_refs", &String::new())
+            .context("Failed to render chapter_refs header")?;
+
         if config.add_bib_in_each_chapter {
             citation::add_bib_at_end_of_chapters(
                 &mut book,
                 &mut bib,
-                &handlebars,
+                backend.as_ref(),
+                &chapter_refs_header,
                 config.order.clone(),
             );
         }
 
-        let cited = citation::expand_cite_references_in_book(&mut book, &mut bib, &handlebars);
+        let cited = citation::expand_cite_references_in_book(&mut book, &mut bib, backend.as_ref());
 
         let bib_content_html = renderer::generate_bibliography_html(
             &bib,
             &cited,
             config.cited_only,
-            &handlebars,
+            backend.as_ref(),
             config.order,
         );
 
