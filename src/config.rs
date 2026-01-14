@@ -76,7 +76,7 @@ pub struct Config<'a> {
     pub js_html: String,
     /// Sort order in bibliography output
     pub order: SortOrder,
-    /// Backend mode: Legacy (Handlebars) or CSL (Phase 5)
+    /// Backend mode: Custom (Handlebars) or CSL
     pub backend: BackendMode,
     /// CSL style name (only used when backend = CSL)
     pub csl_style: Option<String>,
@@ -182,24 +182,24 @@ impl<'a> Config<'a> {
 
                 backend: match table.get("backend") {
                     Some(backend) => match backend.as_str().unwrap() {
-                        "legacy" => {
-                            info!("Using Legacy (Handlebars) backend");
-                            BackendMode::Legacy
+                        "custom" => {
+                            info!("Using Custom (Handlebars) backend");
+                            BackendMode::Custom
                         }
                         "csl" => {
-                            info!("Using CSL backend (Phase 5 - limited support)");
+                            info!("Using CSL backend");
                             BackendMode::Csl
                         }
                         other => {
                             return Err(anyhow!(
-                                "Unknown backend '{other}'. Use one of [legacy, csl]. \
-                                Defaulting to 'legacy'."
+                                "Unknown backend '{other}'. Use one of [custom, csl]. \
+                                Defaulting to 'custom'."
                             ));
                         }
                     },
                     None => {
-                        info!("No backend specified, defaulting to Legacy (Handlebars)");
-                        BackendMode::Legacy
+                        info!("No backend specified, defaulting to Custom (Handlebars)");
+                        BackendMode::Custom
                     }
                 },
 

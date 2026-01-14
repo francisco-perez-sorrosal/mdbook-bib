@@ -4,7 +4,7 @@ This guide helps you upgrade from mdbook-bib v0.5.x to v1.0.0.
 
 ## What's New in v1.0.0
 
-- **Dual backend system**: Choose between Legacy (Handlebars) or CSL rendering
+- **Dual backend system**: Choose between Custom (Handlebars) or CSL rendering
 - **hayagriva-powered parsing**: Better BibTeX/BibLaTeX handling, YAML support
 - **80+ CSL styles**: IEEE, Chicago, Nature, APA, and many more
 - **Expanded bibliography fields**: DOI, keywords, volume, issue, and more
@@ -13,7 +13,7 @@ This guide helps you upgrade from mdbook-bib v0.5.x to v1.0.0.
 
 **Good news**: Your existing books will work without any changes.
 
-- The Legacy backend is the default
+- The Custom backend is the default
 - All existing configuration options work identically
 - Custom Handlebars templates continue to work
 - Citation syntax (`{{#cite key}}` and `@@key`) is unchanged
@@ -49,14 +49,14 @@ See [CSL Backend](./csl.md) for available styles.
 
 ## Which Backend Should I Use?
 
-### Use Legacy Backend If You Need
+### Use Custom Backend If You Need
 
 - Custom HTML layouts for bibliography entries
 - Interactive elements (copy buttons, tooltips, collapsible sections)
 - Non-standard citation formats
 - Full control over styling via CSS/JS
 
-See [Legacy Backend](./legacy.md) for template customization.
+See [Custom Backend](./custom.md) for template customization.
 
 ### Use CSL Backend If You Need
 

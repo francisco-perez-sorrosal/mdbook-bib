@@ -5,7 +5,7 @@
 - [Installation](./install.md)
 - [Migration Guide](./migration.md)
 - [Configuration](./config.md)
-  - [Legacy Backend](./legacy.md)
+  - [Custom Backend](./custom.md)
   - [CSL Backend](./csl.md)
 - [Dev](./dev.md)
 - [Contribute](./contrib.md)

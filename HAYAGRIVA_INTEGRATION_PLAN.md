@@ -4,7 +4,7 @@
 
 Comprehensive integration of hayagriva into mdbook-bib to add robust bibliography parsing, CSL citation styles, and expanded field support. This plan includes full architectural refactoring for long-term maintainability.
 
-**Key Features**: Two backend modes - Legacy (Handlebars) for full customization, and CSL for standard academic citation styles.
+**Key Features**: Two backend modes - Custom (Handlebars) for full customization, and CSL for standard academic citation styles.
 
 **Release Target**: v1.0.0
 
@@ -12,7 +12,7 @@ Comprehensive integration of hayagriva into mdbook-bib to add robust bibliograph
 
 ### Core Principles
 
-1. **Dual Backend System**: Legacy (Handlebars) for customization, CSL for standard formats
+1. **Dual Backend System**: Custom (Handlebars) for customization, CSL for standard formats
 2. **Best of Both Worlds**: Full template control OR standardized academic formats
 3. **100% Backwards Compatible**: All existing books work without config changes
 4. **Clean Architecture**: Proper abstractions, traits, and module separation
@@ -20,7 +20,7 @@ Comprehensive integration of hayagriva into mdbook-bib to add robust bibliograph
 
 ### Backend Comparison
 
-| Feature | Legacy (Handlebars) | CSL Backend |
+| Feature | Custom (Handlebars) | CSL Backend |
 |---------|---------------------|-------------|
 | Citation formatting | Custom templates | IEEE, Chicago, Nature, APA, etc. |
 | Bibliography layout | Custom templates | Standard CSL formatting |
@@ -53,7 +53,7 @@ Comprehensive integration of hayagriva into mdbook-bib to add robust bibliograph
               ┌────────────────┴────────────────┐
               │                                 │
     ┌─────────▼──────────┐           ┌─────────▼──────────┐
-    │ Legacy Backend     │           │ CSL Backend        │
+    │ Custom Backend     │           │ CSL Backend        │
     │ (Handlebars)       │           │ (hayagriva)        │
     │                    │           │                    │
     │ Full template      │           │ Standard academic  │
@@ -80,7 +80,7 @@ src/
 │   └── hayagriva_parser.rs         # Hayagriva-based parser
 ├── backend/
 │   ├── mod.rs                      # BibliographyBackend trait + BackendMode enum
-│   ├── legacy.rs                   # LegacyBackend (Handlebars templates)
+│   ├── custom.rs                   # CustomBackend (Handlebars templates)
 │   └── csl.rs                      # CslBackend (hayagriva CSL)
 ├── models/
 │   └── mod.rs                      # BibItem, Citation structs
@@ -118,9 +118,9 @@ add-bib-in-chapters = true              # Add bibliography at end of each chapte
 
 # === Backend Selection ===
 
-# --- Option 1: Legacy (Handlebars) - Default ---
+# --- Option 1: Custom (Handlebars) - Default ---
 # Full customization via templates
-backend = "legacy"                      # Optional, this is the default
+backend = "custom"                      # Optional, this is the default
 hb-tpl = "render/my_references.hbs"     # Custom references template
 cite-hb-tpl = "render/my_citation.hbs"  # Custom citation template
 css = "render/my_style.css"
@@ -137,7 +137,7 @@ csl-style = "ieee"                      # ieee, chicago-author-date, nature, apa
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendMode {
-    Legacy,  // Handlebars templates (default)
+    Custom,  // Handlebars templates (default)
     Csl,     // CSL citation styles via hayagriva
 }
 ```
@@ -162,7 +162,7 @@ pub enum BackendMode {
 
 **Files Created/Modified**:
 - `src/parser/mod.rs`, `src/parser/hayagriva_parser.rs`
-- `src/backend/mod.rs`, `src/backend/legacy.rs`
+- `src/backend/mod.rs`, `src/backend/custom.rs`
 - `src/models/mod.rs`
 - `src/citation/mod.rs`
 - `src/renderer/mod.rs`
@@ -210,22 +210,22 @@ pub enum BackendMode {
 
 ### Phase 4: Backend Abstraction ✅ COMPLETED
 
-**Goal**: Implement `BibliographyBackend` trait with LegacyBackend and CslBackend.
+**Goal**: Implement `BibliographyBackend` trait with CustomBackend and CslBackend.
 
 **Achievements**:
 
 - ✅ Defined `BibliographyBackend` trait in `src/backend/mod.rs`
-- ✅ Implemented `LegacyBackend` in `src/backend/legacy.rs`:
+- ✅ Implemented `CustomBackend` in `src/backend/custom.rs`:
   - Uses Handlebars registry for rendering
   - Preserves exact current behavior
 - ✅ Created `CslBackend` stub in `src/backend/csl.rs`
-- ✅ Added `BackendMode` enum (Legacy, Csl)
+- ✅ Added `BackendMode` enum (Custom, Csl)
 - ✅ Updated `Config` to detect backend mode
 - ✅ Updated `Bibliography::run()` to use backend abstraction
 
 **Files Created/Modified**:
 - `src/backend/mod.rs` - Trait definition + BackendMode enum
-- `src/backend/legacy.rs` - LegacyBackend implementation
+- `src/backend/custom.rs` - CustomBackend implementation
 - `src/backend/csl.rs` - CslBackend stub
 - `src/config.rs` - Backend mode detection
 - `src/lib.rs` - Use backend abstraction
@@ -283,7 +283,7 @@ pub enum BackendMode {
   - Added backend comparison table
   - Added quick start section
   - Links to detailed backend pages
-- ✅ Created `manual/src/legacy.md`:
+- ✅ Created `manual/src/custom.md`:
   - Complete template variables reference
   - Example templates for bibliography and citations
   - Custom CSS/JS examples
@@ -302,7 +302,7 @@ pub enum BackendMode {
 - ✅ Created `manual/src/migration.md`:
   - Upgrade instructions from v0.5.x
   - Backwards compatibility guarantees
-  - When to use Legacy vs CSL backend
+  - When to use Custom vs CSL backend
   - New template variables reference
   - YAML bibliography support
   - Troubleshooting section
@@ -311,15 +311,15 @@ pub enum BackendMode {
 
 **Comprehensive Test Suite** ✅ COMPLETED:
 
-- ✅ Regression tests (Legacy backend output verification)
-- ✅ Backend-specific tests (Legacy vs CSL comparison)
+- ✅ Regression tests (Custom backend output verification)
+- ✅ Backend-specific tests (Custom vs CSL comparison)
   - Citation format differences
   - Numeric vs author-date styles
   - Superscript style (Nature)
   - Reference formatting
 - ✅ YAML bibliography tests
   - Parsing validation
-  - Legacy backend rendering
+  - Custom backend rendering
   - CSL backend rendering
   - YAML vs BibTeX equivalence
 - ✅ Zotero integration tests (config parsing, URL construction)
@@ -359,7 +359,7 @@ None
 
 | Directory | Backend | Purpose |
 |-----------|---------|---------|
-| `test_book/` | Legacy | Original test book, backwards compatibility |
+| `test_book/` | Custom | Original test book, backwards compatibility |
 | `test_book_csl_ieee/` | CSL | IEEE numbered citations |
 | `test_book_csl_chicago/` | CSL | Chicago author-date citations |
 | `test_book_csl_nature/` | CSL | Nature superscript citations |
@@ -393,18 +393,18 @@ cd test_book_csl_nature && mdbook build
 
 **For existing users:**
 1. Upgrade to v1.0.0
-2. No config changes needed (uses Legacy mode automatically)
+2. No config changes needed (uses Custom mode automatically)
 3. Optionally try CSL backend: Add `backend = "csl"` and `csl-style = "ieee"`
 
 **For new users:**
-- Legacy mode for full customization
+- Custom mode for full customization
 - CSL mode for standard academic formats
 
 ## Conclusion
 
 This integration provides two complementary backend modes:
 
-### Legacy Backend (Handlebars)
+### Custom Backend (Handlebars)
 - Full template customization
 - Interactive elements (copy buttons, collapsible details)
 - Best for power users with specific formatting needs

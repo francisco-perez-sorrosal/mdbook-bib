@@ -159,11 +159,11 @@ Citations automatically link to their bibliography entries. The bibliography pag
 
 The CSL backend does not support:
 
-- Custom HTML templates (use Legacy backend for this)
+- Custom HTML templates (use Custom backend for this)
 - Copy buttons or interactive elements
 - Custom JavaScript integration
 
-For these features, use the [Legacy Backend](./legacy.md).
+For these features, use the [Custom Backend](./custom.md).
 
 ## Tips
 

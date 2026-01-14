@@ -48,17 +48,17 @@ The experiment confirmed earlier findings @@jones2023.
 
 mdbook-bib offers two rendering backends:
 
-### Legacy (Default)
+### Custom (Default)
 
 Uses Handlebars templates for full customization:
 
 ```toml
 [preprocessor.bib]
 bibliography = "refs.bib"
-# backend = "legacy"  # Optional, this is the default
+# backend = "custom"  # Optional, this is the default
 ```
 
-See [Legacy Backend](./legacy.md) for template customization options.
+See [Custom Backend](./custom.md) for template customization options.
 
 ### CSL
 
@@ -79,7 +79,7 @@ See [CSL Backend](./csl.md) for available styles.
 |--------|-------------|---------|
 | `bibliography` | Path to `.bib` or `.yaml` file | - |
 | `zotero-uid` | Zotero user ID (alternative to file) | - |
-| `backend` | Rendering backend: `legacy` or `csl` | `legacy` |
+| `backend` | Rendering backend: `custom` or `csl` | `custom` |
 | `csl-style` | CSL style name (when `backend = "csl"`) | - |
 | `title` | Bibliography section title | `Bibliography` |
 | `render-bib` | Show `all` entries or only `cited` | `cited` |
@@ -92,7 +92,7 @@ See [CSL Backend](./csl.md) for available styles.
 
 ## Complete Examples
 
-### Minimal (Legacy)
+### Minimal (Custom)
 
 ```toml
 [preprocessor.bib]
@@ -110,7 +110,7 @@ title = "References"
 render-bib = "cited"
 ```
 
-### Custom Templates (Legacy)
+### Custom Templates (Custom Backend)
 
 ```toml
 [preprocessor.bib]

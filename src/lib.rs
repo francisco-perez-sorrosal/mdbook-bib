@@ -16,7 +16,7 @@ mod models;
 mod parser;
 mod renderer;
 
-use crate::backend::{BackendMode, CslBackend, LegacyBackend};
+use crate::backend::{BackendMode, CslBackend, CustomBackend};
 use crate::config::Config;
 use crate::parser::BibFormat;
 
@@ -172,9 +172,9 @@ impl Preprocessor for Bibliography {
 
         // Create the appropriate backend based on configuration
         let backend: Box<dyn crate::backend::BibliographyBackend> = match config.backend {
-            BackendMode::Legacy => {
-                tracing::info!("Using Legacy (Handlebars) backend for rendering");
-                Box::new(LegacyBackend::new(&handlebars))
+            BackendMode::Custom => {
+                tracing::info!("Using Custom (Handlebars) backend for rendering");
+                Box::new(CustomBackend::new(&handlebars))
             }
             BackendMode::Csl => {
                 tracing::info!(
