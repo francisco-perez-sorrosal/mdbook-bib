@@ -22,7 +22,16 @@
       "Bash(git restore:*)",
       "Bash(MDBOOK_LOG=debug cargo test:*)",
       "Bash(perl -i.bak -pe:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(rustc:*)",
+      "Bash(/tmp/test_hayagriva:*)",
+      "Bash(xxd:*)",
+      "Bash(MDBOOK_LOG=mdbook_bib::backend::csl=debug mdbook build:*)",
+      "Bash(MDBOOK_LOG=debug mdbook build:*)",
+      "Bash(echo:*)",
+      "Bash(git reset:*)"
     ]
   }
 }

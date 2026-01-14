@@ -116,6 +116,29 @@ impl CslBackend {
             _ => None,
         }
     }
+
+    /// Strip ANSI escape codes from text.
+    /// Hayagriva outputs formatted text with ANSI codes for terminal display,
+    /// which need to be removed for HTML output.
+    fn strip_ansi_codes(text: &str) -> String {
+        use regex::Regex;
+
+        // Pattern to match ANSI escape sequences with ESC character
+        let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+        let result = re.replace_all(text, "");
+
+        // Also remove bare ANSI codes that appear without ESC (hayagriva quirk)
+        // Only match specific known ANSI codes to avoid stripping legitimate brackets
+        result
+            .replace("[0m", "") // reset
+            .replace("[1m", "") // bold
+            .replace("[2m", "") // dim
+            .replace("[3m", "") // italic
+            .replace("[4m", "") // underline
+            .replace("[22m", "") // normal intensity
+            .replace("[23m", "") // not italic
+            .replace("[24m", "") // not underline
+    }
 }
 
 impl BibliographyBackend for CslBackend {
@@ -150,7 +173,9 @@ impl BibliographyBackend for CslBackend {
             .map(|c| c.citation.to_string())
             .unwrap_or_else(|| format!("[{}]", item.citation_key));
 
-        Ok(citation_html)
+        // Strip ANSI codes from hayagriva output
+        let clean_html = Self::strip_ansi_codes(&citation_html);
+        Ok(clean_html)
     }
 
     fn format_reference(&self, item: &BibItem) -> MdResult<String> {
@@ -188,8 +213,11 @@ impl BibliographyBackend for CslBackend {
             })
             .unwrap_or_else(|| format!("{} (no bibliography)", item.citation_key));
 
+        // Strip ANSI codes from hayagriva output
+        let clean_html = Self::strip_ansi_codes(&bib_html);
+
         // Wrap in a div with CSL entry class
-        Ok(format!("<div class='csl-entry'>{bib_html}</div>"))
+        Ok(format!("<div class='csl-entry'>{clean_html}</div>"))
     }
 
     fn name(&self) -> &str {
@@ -356,5 +384,93 @@ mod tests {
         let citation_text = citation.unwrap();
         tracing::info!("Nature citation: {}", citation_text);
         assert!(!citation_text.is_empty(), "Citation should not be empty");
+    }
+
+    #[test]
+    fn test_ansi_stripping_debug() {
+        let backend = CslBackend::new("ieee".to_string()).unwrap();
+
+        let entry_str = r#"@article{test2024,
+            author = {Smith, John},
+            title = {Test},
+            journal = {Test Journal},
+            year = {2024},
+        }"#;
+
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        // Create a citation request directly to see raw output
+        let mut driver = BibliographyDriver::new();
+        let citation_item = CitationItem::with_entry(entry);
+        let citation_request =
+            CitationRequest::from_items(vec![citation_item], &backend.style, &backend.locales);
+        driver.citation(citation_request);
+
+        let bib_request = BibliographyRequest::new(&backend.style, None, &backend.locales);
+        let rendered = driver.finish(bib_request);
+
+        if let Some(citation) = rendered.citations.first() {
+            let raw = citation.citation.to_string();
+            println!("\n=== RAW OUTPUT ===");
+            println!("String: {raw:?}");
+            println!("Bytes: {:?}", raw.as_bytes());
+            println!("Contains [0m: {}", raw.contains("[0m"));
+
+            let stripped = CslBackend::strip_ansi_codes(&raw);
+            println!("\n=== AFTER STRIPPING ===");
+            println!("String: {stripped:?}");
+            println!("Bytes: {:?}", stripped.as_bytes());
+
+            // Verify stripping worked
+            assert!(
+                !stripped.contains("[0m"),
+                "Stripped output should not contain [0m"
+            );
+            assert!(
+                !stripped.contains("[3m"),
+                "Stripped output should not contain [3m"
+            );
+            assert_eq!(stripped, "[1]", "IEEE citation should be [1]");
+        }
+    }
+
+    #[test]
+    fn test_format_citation_output_clean() {
+        // End-to-end test: verify format_citation returns clean output
+        let backend = CslBackend::new("ieee".to_string()).unwrap();
+
+        let entry_str = r#"@article{test2024,
+            author = {Smith, John},
+            title = {Test},
+            journal = {Test Journal},
+            year = {2024},
+        }"#;
+
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "test2024".to_string(),
+            title: "Test".to_string(),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let context = CitationContext {
+            bib_page_path: "bibliography.html".to_string(),
+            chapter_path: "chapter1.md".to_string(),
+        };
+
+        let result = backend.format_citation(&item, &context).unwrap();
+        println!("format_citation result: {result:?}");
+
+        // Verify no ANSI codes in output
+        assert!(!result.contains("[0m"), "Output should not contain [0m");
+        assert!(!result.contains("[3m"), "Output should not contain [3m");
+        assert!(
+            !result.contains("\x1b"),
+            "Output should not contain ESC character"
+        );
     }
 }
