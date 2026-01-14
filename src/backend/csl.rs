@@ -117,6 +117,33 @@ impl CslBackend {
         }
     }
 
+    /// Check if the CSL style uses numeric citations (vs. author-date)
+    fn is_numeric_citation_style(&self) -> bool {
+        // Check the style name for known numeric styles
+        let style_lower = self.style_name.to_lowercase();
+        matches!(
+            style_lower.as_str(),
+            "ieee"
+                | "nature"
+                | "vancouver"
+                | "vancouver-superscript"
+                | "cell"
+                | "elsevier-vancouver"
+                | "springer-basic"
+                | "acs"
+                | "acm"
+                | "ama"
+                | "alphanumeric"
+        )
+    }
+
+    /// Check if the CSL style uses superscript citations (vs. bracketed)
+    fn is_superscript_citation_style(&self) -> bool {
+        // Nature and Vancouver-superscript use superscript numbers
+        let style_lower = self.style_name.to_lowercase();
+        matches!(style_lower.as_str(), "nature" | "vancouver-superscript")
+    }
+
     /// Strip ANSI escape codes from text.
     /// Hayagriva outputs formatted text with ANSI codes for terminal display,
     /// which need to be removed for HTML output.
@@ -143,68 +170,64 @@ impl CslBackend {
 
 impl BibliographyBackend for CslBackend {
     fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
-        // Get the hayagriva Entry from the BibItem
-        let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
-            anyhow!(
-                "BibItem '{}' missing hayagriva_entry for CSL rendering",
-                item.citation_key
-            )
-        })?;
+        // Determine citation style characteristics
+        let is_numeric_style = self.is_numeric_citation_style();
+        let is_superscript_style = self.is_superscript_citation_style();
 
-        // Create a bibliography driver
-        let mut driver = BibliographyDriver::new();
+        let linked_citation = if is_numeric_style {
+            // For numbered styles, use the assigned index
+            // The index is set by citation/mod.rs based on order of first appearance
+            let index = item.index.unwrap_or(1);
 
-        // Create a citation request with a single citation item
-        let citation_item = CitationItem::with_entry(entry.as_ref());
-        let citation_request =
-            CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
+            if is_superscript_style {
+                // Superscript styles (Nature, Vancouver-superscript, etc.)
+                // Render as: <sup><a href="url">1</a></sup>
+                format!(
+                    "<sup><a href=\"{}#{}\">{}</a></sup>",
+                    context.bib_page_path, item.citation_key, index
+                )
+            } else {
+                // Bracketed numeric styles (IEEE, Vancouver, etc.)
+                // Render as: [[1](url)] → [<a href="url">1</a>]
+                format!(
+                    "[[{}]({}#{})]",
+                    index, context.bib_page_path, item.citation_key
+                )
+            }
+        } else {
+            // For author-date styles (Chicago, APA, Harvard, etc.), use hayagriva formatting
+            let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
+                anyhow!(
+                    "BibItem '{}' missing hayagriva_entry for CSL rendering",
+                    item.citation_key
+                )
+            })?;
 
-        // Register the citation request
-        driver.citation(citation_request);
+            // Create a bibliography driver for this single citation
+            let mut driver = BibliographyDriver::new();
+            let citation_item = CitationItem::with_entry(entry.as_ref());
+            let citation_request =
+                CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
+            driver.citation(citation_request);
 
-        // Finish and get the rendered output
-        let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
-        let rendered = driver.finish(bib_request);
+            let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
+            let rendered = driver.finish(bib_request);
 
-        // Extract the first citation (we only have one)
-        let citation_text = rendered
-            .citations
-            .first()
-            .map(|c| c.citation.to_string())
-            .unwrap_or_else(|| format!("[{}]", item.citation_key));
+            // Extract and clean the citation
+            let citation_text = rendered
+                .citations
+                .first()
+                .map(|c| c.citation.to_string())
+                .unwrap_or_else(|| format!("({})", item.citation_key));
 
-        // Strip ANSI codes from hayagriva output
-        let clean_citation = Self::strip_ansi_codes(&citation_text);
+            let clean_citation = Self::strip_ansi_codes(&citation_text);
 
-        // Strip outer delimiters from CSL citation (e.g., [1] -> 1, (Author 2024) -> Author 2024)
-        // so we can wrap it in our own markdown link format
-        let citation_content = clean_citation
-            .trim_start_matches('[')
-            .trim_end_matches(']')
-            .trim_start_matches('(')
-            .trim_end_matches(')');
+            // Author-date citations are typically in parentheses
+            let citation_content = clean_citation.trim_start_matches('(').trim_end_matches(')');
 
-        // Wrap in markdown link, matching the legacy backend format:
-        // For IEEE [1]: [[1](path#key)] -> [<a href="path#key">1</a>]
-        // For Chicago (Author 2024): ([Author 2024](path#key)) -> (<a href="path#key">Author 2024</a>)
-        // For Nature 1: [[1](path#key)] -> [<a href="path#key">1</a>]
-        let linked_citation = if clean_citation.starts_with('[') && clean_citation.ends_with(']') {
-            // Numbered styles with brackets (IEEE, Vancouver, etc.)
-            format!(
-                "[[{}]({}#{})]",
-                citation_content, context.bib_page_path, item.citation_key
-            )
-        } else if clean_citation.starts_with('(') && clean_citation.ends_with(')') {
-            // Author-date styles with parentheses (Chicago, APA, Harvard, etc.)
             format!(
                 "([{}]({}#{}))",
                 citation_content, context.bib_page_path, item.citation_key
-            )
-        } else {
-            // Superscript or other formats without delimiters (Nature, etc.)
-            format!(
-                "[[{}]({}#{})]",
-                clean_citation, context.bib_page_path, item.citation_key
             )
         };
 
@@ -249,10 +272,19 @@ impl BibliographyBackend for CslBackend {
         // Strip ANSI codes from hayagriva output
         let clean_html = Self::strip_ansi_codes(&bib_html);
 
+        // For numbered styles, prepend the index number
+        let is_numeric = self.is_numeric_citation_style();
+        let formatted_entry = if is_numeric {
+            let index = item.index.unwrap_or(1);
+            format!("[{index}] {clean_html}")
+        } else {
+            clean_html
+        };
+
         // Wrap in a div with CSL entry class and add anchor for linking
         Ok(format!(
             "<div class='csl-entry' id='{}'>{}</div>",
-            item.citation_key, clean_html
+            item.citation_key, formatted_entry
         ))
     }
 
