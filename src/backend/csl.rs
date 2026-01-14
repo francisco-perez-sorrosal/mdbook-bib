@@ -71,8 +71,9 @@ impl CslBackend {
             .or_else(|| Self::parse_archived_style_name(style_name))
             .ok_or_else(|| {
                 anyhow!(
-                    "Style '{style_name}' not found in bundled styles. Custom .csl files not yet supported. \
-                    Try: ieee, apa, chicago-author-date, mla, nature, vancouver, harvard, acm, ama, springer-basic, cell"
+                    "Style '{style_name}' not found in bundled styles. Custom .csl files not yet supported.\n\
+                    Common styles: ieee, apa, chicago-author-date, mla, nature, vancouver, harvard, acm, ama, springer-basic, cell\n\
+                    See https://francisco-perez-sorrosal.github.io/mdbook-bib/csl.html for the full list of supported styles."
                 )
             })?;
 

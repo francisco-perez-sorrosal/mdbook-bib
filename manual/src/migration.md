@@ -78,10 +78,12 @@ If you use custom Handlebars templates, new fields are now available:
 | `issue` | Issue number |
 | `publisher` | Publisher name |
 | `address` | Publisher location |
+| `isbn` | International Standard Book Number |
+| `issn` | International Standard Serial Number |
 | `editor` | Editors (same format as authors) |
 | `edition` | Edition |
-| `series` | Series name |
 | `note` | Additional notes |
+| `organization` | Organization (for conference proceedings) |
 
 These fields are optional. Use `{{#if field}}...{{/if}}` to conditionally render them:
 
