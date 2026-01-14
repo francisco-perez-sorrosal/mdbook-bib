@@ -1,0 +1,12 @@
+[book]
+title = "Nature Style Citation Demo"
+authors = ["mdbook-bib CSL Backend"]
+language = "en"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title = "References"
+backend = "csl"
+csl-style = "nature"
+render-bib = "cited"
+order = "index"

@@ -1,0 +1,13 @@
+[book]
+title = "Chicago Author-Date Style Citation Demo"
+authors = ["mdbook-bib CSL Backend"]
+language = "en"
+src = "src"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title = "References"
+backend = "csl"
+csl-style = "chicago-author-date"
+render-bib = "cited"
+order = "author"
