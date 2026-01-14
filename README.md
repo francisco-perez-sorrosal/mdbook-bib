@@ -11,9 +11,11 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 
 ## Features
 
-- Add citations from your BibLaText files
+- Add citations from your BibLaTeX or YAML bibliography files
 - Automatically download your public bibliography from Zotero and cite it
-- Allows defining a template for the citations shown in the references page
+- **Two rendering backends**:
+  - **Legacy (Handlebars)**: Full template customization with custom CSS/JS
+  - **CSL (Citation Style Language)**: Standard academic citation styles (IEEE, Chicago, Nature, APA, and 80+ more)
 
 ## Basic Install
 
@@ -27,34 +29,59 @@ Make sure your PATH env var contains Cargo's `/bin` directory where the plugin w
 
 See all options in the [Install section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/install.html).
 
-## Add a BibLaTex File and Cite your Bib Entries!
+## Add a Bibliography and Cite your Entries
 
-Add a bibliography file in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to the root of your mdbook (which is pointed by the `src` parameter in the `[book]` section of the `.toml` file) and then add the following section to the mdbook's `.toml` config file:
+Add a bibliography file in [BibLaTeX format](https://www.ctan.org/pkg/biblatex) (or YAML) to the root of your mdbook and configure the plugin in your `book.toml`:
 
 ```toml
-[book]
-#...
 [preprocessor.bib]
 bibliography = "my_biblio.bib"
 ```
 
-The bibliography will appear as a separate section in your book ToC.
+Now you can cite entries using either syntax:
 
-Now you can add references/citations to the citation-keys appearing in the `.bib` file with:
-
-```handlebars
+```markdown
 {{#cite my-citation-key}}
-```
-or simply with:
-
-```handlebars
 @@my-citation-key
 ```
 
-See other configuration options in the [Config section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/config.html).
+## Rendering Backends
 
+mdbook-bib provides two rendering backends. The **Legacy backend** (default) gives you full control over citation and bibliography formatting through Handlebars templates, custom CSS, and JavaScript. The **CSL backend** uses [hayagriva](https://github.com/typst/hayagriva) to render citations in standard academic formats (IEEE, APA, Chicago, Nature, and 80+ more) without any template configuration.
 
-**Note**: You can debug your book builds with `MDBOOK_LOG=mdbook_bib=debug mdbook build` for troubleshooting/help.
+Choose Legacy if you need custom layouts or interactive elements. Choose CSL if you want standard academic formatting with minimal setup.
+
+### Legacy Backend (Default)
+
+The default backend uses Handlebars templates for full customization:
+
+```toml
+[preprocessor.bib]
+bibliography = "my_biblio.bib"
+# Optional: custom templates
+hb-tpl = "render/references.hbs"
+cite-hb-tpl = "render/citation.hbs"
+css = "render/style.css"
+```
+
+See [Legacy Backend documentation](https://francisco-perez-sorrosal.github.io/mdbook-bib/legacy.html) for template variables and examples.
+
+### CSL Backend
+
+For standard academic citation styles, enable the CSL backend:
+
+```toml
+[preprocessor.bib]
+bibliography = "my_biblio.bib"
+backend = "csl"
+csl-style = "ieee"  # or: chicago-author-date, nature, apa, mla, harvard, ...
+```
+
+See [CSL Backend documentation](https://francisco-perez-sorrosal.github.io/mdbook-bib/csl.html) for available styles and examples.
+
+See the [manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/) for all configuration options.
+
+**Tip**: Debug builds with `MDBOOK_LOG=mdbook_bib=debug mdbook build`.
 
 ## Contribute
 

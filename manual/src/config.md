@@ -1,135 +1,133 @@
 # Configuration
 
-## Adding a BibLaTex-format Bibliography
+## Adding a Bibliography
 
-**mdbook-bib** allows adding a bibliography in [BibLaTex format](https://www.ctan.org/pkg/biblatex) to your book. 
+**mdbook-bib** supports bibliographies in [BibLaTeX format](https://www.ctan.org/pkg/biblatex) or YAML format.
 
-Assuming that your directory structure for your book looks like this:
-
-```
-my_book/
-├── book.toml
-└── src
-    ├── chapter_1.md
-    └── SUMMARY.md
-```
-
-1. just add your `.bib` file containing the bibliography items to the root source of your mdbook (pointed by the `src` parameter in the `[book]` section of the `.toml` file)...
+Add your `.bib` or `.yaml` file to your mdbook source directory:
 
 ```
 my_book/
 ├── book.toml
 └── src
-    ├── my_biblio.bib
+    ├── refs.bib
     ├── chapter_1.md
     └── SUMMARY.md
 ```
 
-2. ...and then add the following configuration to the `.toml` config file:
-
-```toml
-[book]
-#...
-[preprocessor.bib]
-bibliography = "my_biblio.bib"
-```
-
-The bibliography will appear as a separate section in your book ToC.
-
-**Note**: You can debug your book builds with `MDBOOK_LOG=mdbook_bib=debug mdbook build` for troubleshooting/help.
-
-## Adding a BibLaTex-format Bibliography from [Zotero](https://www.zotero.org/)
-
-Alternatively, you can use any publicly available library in BibLaTex format from Zotero.
-In order to do so, just specify the `Zotero UserId` of the public bibliography you want to access in the preprocessor section:
-
-```toml
-[book]
-#...
-[preprocessor.bib]
-zotero-uid = "<a_Zotero_userID>"
-```
-
-The `Zotero UserId` is the number that appears following the `users` resource in a public bibliography URL. e.g. in the 
-example below, the `Zotero UserId` is 475425:
-```shell
-https://api.zotero.org/users/475425/items?format=atom&v=3
-```
-
-If you have a Zotero account, you can make your library public marking the checkbox in the [Zotero Privacy Settings page](https://www.zotero.org/settings/privacy).
-
-You can find your `Zotero userID` in the [Zotero Feeds/API](https://www.zotero.org/settings/keys) section of your 
-Zotero account.
-
-## Add References/Citations to the Bibliography
-
-In your markdown files, create references/citations to the citation-keys included in the `.bib` file with any of these two options:
-
-1. Surround the citation key with the `{{#cite` and `}}` delimiters
-2. Prepend the citation key with two `@` characters
-
-## Configure your own Style for Bibliography Entries
-
-You can override the default biblio style provided for the bibliography entries by specifying an ad-hoc Handlebars template and style.
-In order to do so, the `hb-tpl`, `css`, and `js` parameters are provided as configuration options.
-`hb-tpl` allows to point to a `.hbs` file that includes the Handlebars style.
-For examples, see the provided [templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual).
-
-The available placeholders that can be used in the handlebars template for now are:
-
-* `citation_key`
-* `authors`
-* `title`
-* `url`
-* `pub_year`
-
-Also, with the parameters `css` and `js`, you can point to files that provide your own css style and/or Javascript functions used in the rendering of the Handlebars template entries (e.g. for the `bib_div` class above). For more details, check the [structure of the manual](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual) of this project.
-
-Handlebars files for different reference styles are provided in the folder
-[templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual)
-in the [GitHub repository](https://github.com/francisco-perez-sorrosal/mdbook-bib/).
-
-## Configure your own Style for Citations
-
-You can override the default inline citation style by specifying a Handlebars template
-using the `cite-hb-tpl` config option. This works in the same way as for [bibliography styles](#configure-your-own-style-for-bibliography-entries)
-
-The available placeholders that can be used in the handlebars template for now are:
-
-* `path` -- the path to the bibliography file in the output HTML
-* `item.citation_key`
-* `item.authors`
-* `item.title`
-* `item.url`
-* `item.pub_year`
-
-Handlebars files for different citation styles are provided in the folder
-[templates](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/master/manual)
-in the [GitHub repository](https://github.com/francisco-perez-sorrosal/mdbook-bib/).
-
-## Sort order references
-
-## Configuration Parameters
-
-| Option         | Description                                                                                    | Default |
-|----------------|------------------------------------------------------------------------------------------------|---------|
-| `bibliography` | `.bib` file to use.                                                                            | -       |
-| `zotero-uid`   | Zotero user ID, alternative to bib file.                                                       | -       |
-| `title`        | Title for the Bibliography section of the book                                                 | `Bibliography` |
-| `render-bib`   | Render the entire bibliography (`all`), or only cited entries (`cited`)                        | `cited` |
-| `hb-tpl`       | Ad-hoc Handlebars template file used to render the bibliography. Overwrites the default style. | -       |
-| `cite-hb-tpl`  | Ad-hoc Handlebars template file used to render inline citations. Overwrites the default style. | -       |
-| `css`          | Extra CSS file with the style used when rendering the ad-hoc biblio.                           | -       |
-| `js`           | Extra JS file with code used when rendering the ad-hoc biblio.                                 | -       |
-| `order`        | Sort order for references. One of `none`, `key`, `author`, `index`.                            | -       |
-
-A complete `preprocessor.bib` section example, which reads the bibliography from a local file and only shows the cited entries of the bibliography:
+Then configure in `book.toml`:
 
 ```toml
 [preprocessor.bib]
-title = "My Biblio!"
-bibliography = "my_biblio.bib"
+bibliography = "refs.bib"
+```
+
+The bibliography appears as a separate section in your book's table of contents.
+
+## Using Zotero
+
+Alternatively, download a public bibliography from [Zotero](https://www.zotero.org/):
+
+```toml
+[preprocessor.bib]
+zotero-uid = "<your_zotero_user_id>"
+```
+
+Find your User ID in [Zotero Feeds/API settings](https://www.zotero.org/settings/keys). Your library must be public in [Privacy Settings](https://www.zotero.org/settings/privacy).
+
+## Adding Citations
+
+Reference entries in your markdown using either syntax:
+
+```markdown
+According to {{#cite smith2024}}, the results show...
+The experiment confirmed earlier findings @@jones2023.
+```
+
+## Backend Selection
+
+mdbook-bib offers two rendering backends:
+
+### Legacy (Default)
+
+Uses Handlebars templates for full customization:
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+# backend = "legacy"  # Optional, this is the default
+```
+
+See [Legacy Backend](./legacy.md) for template customization options.
+
+### CSL
+
+Uses hayagriva for standard academic citation styles:
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"  # or: chicago-author-date, nature, apa, mla, ...
+```
+
+See [CSL Backend](./csl.md) for available styles.
+
+## Configuration Reference
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `bibliography` | Path to `.bib` or `.yaml` file | - |
+| `zotero-uid` | Zotero user ID (alternative to file) | - |
+| `backend` | Rendering backend: `legacy` or `csl` | `legacy` |
+| `csl-style` | CSL style name (when `backend = "csl"`) | - |
+| `title` | Bibliography section title | `Bibliography` |
+| `render-bib` | Show `all` entries or only `cited` | `cited` |
+| `order` | Sort order: `none`, `key`, `author`, `index` | `none` |
+| `add-bib-in-chapters` | Add bibliography at end of each chapter | `false` |
+| `hb-tpl` | Custom Handlebars template for entries | - |
+| `cite-hb-tpl` | Custom Handlebars template for citations | - |
+| `css` | Custom CSS file | - |
+| `js` | Custom JavaScript file | - |
+
+## Complete Examples
+
+### Minimal (Legacy)
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+```
+
+### Academic Paper (CSL)
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"
+title = "References"
 render-bib = "cited"
-hb-tpl = "render/my_references.hbs"
-css = "render/my_style.css"
+```
+
+### Custom Templates (Legacy)
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+title = "Bibliography"
+render-bib = "cited"
+order = "index"
+hb-tpl = "render/references.hbs"
+cite-hb-tpl = "render/citation.hbs"
+css = "render/style.css"
+js = "render/script.js"
+```
+
+## Debugging
+
+Enable debug logging for troubleshooting:
+
+```bash
+MDBOOK_LOG=mdbook_bib=debug mdbook build
 ```
