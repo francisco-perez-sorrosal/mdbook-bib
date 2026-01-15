@@ -1,6 +1,355 @@
-div.bib_div {
-    background-color: black;
-    color: grey;
-    border: 1px solid white;
-    padding: 2em;
+/* ==========================================================================
+   mdbook-bib: Modern Bibliography Styles
+   Designed to work with mdBook's light and dark themes
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties - Theme Integration
+   Uses mdBook's CSS variables for seamless theme switching
+   -------------------------------------------------------------------------- */
+:root {
+  --bib-accent: #3b82f6;
+  --bib-accent-hover: #2563eb;
+  --bib-cite-bg: rgba(59, 130, 246, 0.1);
+  --bib-cite-border: rgba(59, 130, 246, 0.3);
+  --bib-abstract-bg: rgba(0, 0, 0, 0.03);
+  --bib-divider: rgba(0, 0, 0, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.08);
+  --bib-text-secondary: #6b7280;
+}
+
+/* Dark theme adjustments */
+.coal .bib-entry,
+.navy .bib-entry,
+.ayu .bib-entry {
+  --bib-abstract-bg: rgba(255, 255, 255, 0.03);
+  --bib-divider: rgba(255, 255, 255, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.3);
+  --bib-text-secondary: #9ca3af;
+}
+
+/* --------------------------------------------------------------------------
+   Inline Citations - The clickable reference markers in text
+   -------------------------------------------------------------------------- */
+.bib-cite {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.45em;
+  margin: 0 0.1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: none;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  vertical-align: baseline;
+}
+
+.bib-cite:hover {
+  background: var(--bib-accent);
+  color: white;
+  border-color: var(--bib-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--bib-shadow);
+  text-decoration: none;
+}
+
+.bib-cite:active {
+  transform: translateY(0);
+}
+
+/* Superscript variant (optional - add class "bib-cite-sup" to use) */
+.bib-cite-sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  padding: 0.05em 0.3em;
+}
+
+/* --------------------------------------------------------------------------
+   Bibliography Entry Container
+   -------------------------------------------------------------------------- */
+.bib-entry {
+  position: relative;
+  margin: 1.25rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg);
+  border-left: 3px solid var(--bib-accent);
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 1px 3px var(--bib-shadow);
+  transition: all 0.2s ease;
+}
+
+.bib-entry:hover {
+  box-shadow: 0 4px 12px var(--bib-shadow);
+  transform: translateX(2px);
+}
+
+/* --------------------------------------------------------------------------
+   Reference Header (the clickable summary)
+   -------------------------------------------------------------------------- */
+.bib-entry details {
+  margin: 0;
+}
+
+.bib-entry summary {
+  cursor: pointer;
+  list-style: none;
+  display: block;
+}
+
+.bib-entry summary::-webkit-details-marker {
+  display: none;
+}
+
+.bib-entry summary::marker {
+  display: none;
+}
+
+/* Citation key badge */
+.bib-key {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  margin-right: 0.75rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Index number - for ordered bibliographies */
+.bib-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0.5rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: white;
+  background: var(--bib-accent);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* Title styling */
+.bib-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--fg);
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.bib-title a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--bib-accent);
+  transition: border-color 0.2s ease;
+}
+
+.bib-title a:hover {
+  color: var(--bib-accent);
+  border-bottom-style: solid;
+}
+
+/* External link icon */
+.bib-title a::after {
+  content: " ↗";
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Metadata Row (authors, year, etc.)
+   -------------------------------------------------------------------------- */
+.bib-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.9em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-meta-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.bib-authors {
+  font-style: italic;
+}
+
+/* Expand indicator */
+.bib-expand-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.2em 0.5em;
+  font-size: 0.75em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.bib-entry:hover .bib-expand-hint {
+  opacity: 1;
+}
+
+.bib-expand-arrow {
+  transition: transform 0.3s ease;
+}
+
+details[open] .bib-expand-arrow {
+  transform: rotate(180deg);
+}
+
+/* --------------------------------------------------------------------------
+   Abstract Section (expandable content)
+   -------------------------------------------------------------------------- */
+.bib-abstract {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bib-divider);
+  animation: bib-fade-in 0.3s ease;
+}
+
+@keyframes bib-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bib-abstract-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-abstract-content {
+  padding: 1rem;
+  font-size: 0.95em;
+  line-height: 1.7;
+  background: var(--bib-abstract-bg);
+  border-radius: 6px;
+  text-align: justify;
+}
+
+/* --------------------------------------------------------------------------
+   Copy Button
+   -------------------------------------------------------------------------- */
+.bib-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35em 0.7em;
+  margin-left: 0.75rem;
+  font-size: 0.75em;
+  font-weight: 500;
+  color: var(--bib-text-secondary);
+  background: transparent;
+  border: 1px solid var(--bib-divider);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bib-copy-btn:hover {
+  color: var(--bib-accent);
+  border-color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+}
+
+.bib-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* --------------------------------------------------------------------------
+   Chapter References Section
+   -------------------------------------------------------------------------- */
+.bib-chapter-separator {
+  height: 0;
+  margin: 3rem 0 1.5rem 0;
+  border: none;
+  border-top: 2px solid var(--bib-divider);
+}
+
+.bib-chapter-refs-header {
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--bib-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .bib-entry {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .bib-meta {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-title {
+    font-size: 1em;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles
+   -------------------------------------------------------------------------- */
+@media print {
+  .bib-entry {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .bib-copy-btn,
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-entry details {
+    pointer-events: none;
+  }
+
+  .bib-entry details[open] .bib-abstract {
+    display: block;
+  }
 }

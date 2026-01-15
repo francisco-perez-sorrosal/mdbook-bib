@@ -177,20 +177,19 @@ fn person_to_parts(person: &Person) -> Vec<String> {
 }
 
 fn extract_summary(entry: &hayagriva::Entry, citation_key: &str) -> String {
-    match entry.note() {
-        Some(note) => {
-            let summary = format_string_to_text(note);
-            tracing::debug!("Entry {}: found abstract/note", citation_key);
-            summary
-        }
-        None => {
-            tracing::debug!(
-                "Entry {}: no abstract/note field, using 'N/A'",
-                citation_key
-            );
-            "N/A".to_string()
-        }
+    // Try abstract first (common in BibTeX), then fall back to note
+    if let Some(abstract_) = entry.abstract_() {
+        let summary = format_string_to_text(abstract_);
+        tracing::debug!("Entry {}: found abstract field", citation_key);
+        return summary;
     }
+    if let Some(note) = entry.note() {
+        let summary = format_string_to_text(note);
+        tracing::debug!("Entry {}: found note field", citation_key);
+        return summary;
+    }
+    tracing::debug!("Entry {}: no abstract/note field", citation_key);
+    String::new()
 }
 
 fn extract_url(entry: &hayagriva::Entry, citation_key: &str) -> Option<String> {
@@ -217,7 +216,7 @@ fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (String, String
             let month = date
                 .month
                 .map(|m| format!("{:02}", m + 1))
-                .unwrap_or_else(|| "N/A".to_string());
+                .unwrap_or_default();
 
             tracing::debug!(
                 "Entry {}: extracted date - year='{}', month='{}'",
@@ -229,11 +228,8 @@ fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (String, String
             (year, month)
         }
         None => {
-            tracing::debug!(
-                "Entry {}: no date field, using 'N/A' for both year and month",
-                citation_key
-            );
-            ("N/A".to_string(), "N/A".to_string())
+            tracing::debug!("Entry {}: no date field", citation_key);
+            (String::new(), String::new())
         }
     }
 }

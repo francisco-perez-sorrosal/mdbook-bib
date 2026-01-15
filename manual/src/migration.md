@@ -16,7 +16,7 @@ This guide helps you upgrade from mdbook-bib v0.5.x to v1.0.0.
 - The Custom backend is the default
 - All existing configuration options work identically
 - Custom Handlebars templates continue to work
-- Citation syntax (`{{#cite key}}` and `@@key`) is unchanged
+- Citation syntax **\{\{#cite key\}\}** and **\@\@key** is unchanged
 
 ## Upgrading
 
