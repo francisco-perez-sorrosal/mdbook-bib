@@ -310,9 +310,9 @@ This is a reference to {{#cite DUMMY:1}}
             citation_key: "mdBook".to_string(),
             title: "mdBook Documentation".to_string(),
             authors: vec![vec!["Various Contributors".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2015".to_string(),
-            summary: "mdBook is a command line tool.".to_string(),
+            pub_month: None,
+            pub_year: Some("2015".to_string()),
+            summary: Some("mdBook is a command line tool.".to_string()),
             url: Some("https://rust-lang.github.io/mdBook/".to_string()),
             index: None,
             ..Default::default()
@@ -328,9 +328,9 @@ This is a reference to {{#cite DUMMY:1}}
                 "Jane A. Doeander".to_string(),
                 "John B. Doeanderson".to_string(),
             ]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "What a book about nothing...".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("What a book about nothing...".to_string()),
             url: Some(
                 "https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/44".to_string(),
             ),
@@ -344,9 +344,9 @@ This is a reference to {{#cite DUMMY:1}}
             citation_key: "DUMMY:1".to_string(),
             title: "The Book without Title".to_string(),
             authors: vec![vec!["John".to_string(), "Doe".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2100".to_string(),
-            summary: "N/A".to_string(),
+            pub_month: None,
+            pub_year: Some("2100".to_string()),
+            summary: Some("N/A".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -391,9 +391,9 @@ This is another reference @@simple_key that should also work.
             citation_key: "10.1145/3508461".to_string(),
             title: "Some Paper with DOI".to_string(),
             authors: vec![vec!["Author Name".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "A paper with a DOI citation key".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("A paper with a DOI citation key".to_string()),
             url: Some("https://doi.org/10.1145/3508461".to_string()),
             index: None,
             ..Default::default()
@@ -405,9 +405,9 @@ This is another reference @@simple_key that should also work.
             citation_key: "simple_key".to_string(),
             title: "Simple Paper".to_string(),
             authors: vec![vec!["Another Author".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "A paper with a simple citation key".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("A paper with a simple citation key".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -555,8 +555,8 @@ fn test_hayagriva_date_extraction() {
     assert!(result.is_ok());
     let bibliography = result.unwrap();
     let entry = bibliography.get("string_month_short").unwrap();
-    assert_eq!(entry.pub_year, "2020");
-    assert_eq!(entry.pub_month, "10");
+    assert_eq!(entry.pub_year, Some("2020".to_string()));
+    assert_eq!(entry.pub_month, Some("10".to_string()));
 
     // Test missing month (year only)
     let bib_year_only = r#"
@@ -570,8 +570,8 @@ fn test_hayagriva_date_extraction() {
     assert!(result.is_ok());
     let bibliography = result.unwrap();
     let entry = bibliography.get("year_only").unwrap();
-    assert_eq!(entry.pub_year, "2020");
-    assert!(entry.pub_month.is_empty());
+    assert_eq!(entry.pub_year, Some("2020".to_string()));
+    assert_eq!(entry.pub_month, None);
 
     // Test missing date entirely
     let bib_no_date = r#"
@@ -584,8 +584,8 @@ fn test_hayagriva_date_extraction() {
     assert!(result.is_ok());
     let bibliography = result.unwrap();
     let entry = bibliography.get("no_date").unwrap();
-    assert!(entry.pub_year.is_empty());
-    assert!(entry.pub_month.is_empty());
+    assert_eq!(entry.pub_year, None);
+    assert_eq!(entry.pub_month, None);
 
     // Test Zotero-style month with braces (common export format)
     let bib_zotero_style = r#"
@@ -600,8 +600,8 @@ fn test_hayagriva_date_extraction() {
     assert!(result.is_ok());
     let bibliography = result.unwrap();
     let entry = bibliography.get("zotero_month").unwrap();
-    assert_eq!(entry.pub_year, "2020");
-    assert_eq!(entry.pub_month, "10");
+    assert_eq!(entry.pub_year, Some("2020".to_string()));
+    assert_eq!(entry.pub_month, Some("10".to_string()));
 }
 
 #[test]
@@ -635,8 +635,8 @@ fn test_extended_bibitem_fields() {
     // Verify core fields
     assert_eq!(entry.citation_key, "comprehensive_entry");
     assert_eq!(entry.title, "A Comprehensive Research Article");
-    assert_eq!(entry.pub_year, "2023");
-    assert_eq!(entry.pub_month, "03");
+    assert_eq!(entry.pub_year, Some("2023".to_string()));
+    assert_eq!(entry.pub_month, Some("03".to_string()));
 
     // Verify authors
     assert_eq!(entry.authors.len(), 2);
@@ -730,7 +730,7 @@ fn test_inproceedings_with_organization() {
     assert_eq!(entry.citation_key, "conference_paper");
     assert!(entry.entry_type.is_some(), "entry_type should be present");
 
-    assert_eq!(entry.pub_month, "06");
+    assert_eq!(entry.pub_month, Some("06".to_string()));
     assert!(entry.pages.is_some(), "pages should be extracted");
 
     // Organization - hayagriva support may vary
@@ -960,9 +960,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "Klabnik2018".to_string(),
             title: "The Rust Programming Language".to_string(),
             authors: vec![vec!["Klabnik".to_string(), "Steve".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2018".to_string(),
-            summary: "The Rust book".to_string(),
+            pub_month: None,
+            pub_year: Some("2018".to_string()),
+            summary: Some("The Rust book".to_string()),
             url: Some("https://doc.rust-lang.org/book/".to_string()),
             index: None,
             ..Default::default()
@@ -974,9 +974,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "fps".to_string(),
             title: "Test Entry".to_string(),
             authors: vec![vec!["Francisco".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2020".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2020".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -988,9 +988,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "simple_key".to_string(),
             title: "Simple Paper".to_string(),
             authors: vec![vec!["Author".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1002,9 +1002,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "another_key".to_string(),
             title: "Another Paper".to_string(),
             authors: vec![vec!["Another".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2024".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2024".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1016,9 +1016,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "10.1145/3508461".to_string(),
             title: "Paper with DOI".to_string(),
             authors: vec![vec!["DOI".to_string(), "Author".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "DOI citation test".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("DOI citation test".to_string()),
             url: Some("https://doi.org/10.1145/3508461".to_string()),
             index: None,
             ..Default::default()
@@ -1030,9 +1030,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "ref1".to_string(),
             title: "First Reference".to_string(),
             authors: vec![vec!["Author1".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2020".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2020".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1044,9 +1044,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "ref2".to_string(),
             title: "Second Reference".to_string(),
             authors: vec![vec!["Author2".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2021".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2021".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1058,9 +1058,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "ref3".to_string(),
             title: "Third Reference".to_string(),
             authors: vec![vec!["Author3".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2022".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2022".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1072,9 +1072,9 @@ Citations in parentheses (see @@Jones2019).
             citation_key: "Jones2019".to_string(),
             title: "Jones Paper".to_string(),
             authors: vec![vec!["Jones".to_string(), "J.".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2019".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2019".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1223,9 +1223,9 @@ User citation @@user@domain is valid.
             citation_key: "doi:10.5555/12345".to_string(),
             title: "DOI Paper".to_string(),
             authors: vec![vec!["Author".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("Test".to_string()),
             url: Some("https://doi.org/10.5555/12345".to_string()),
             index: None,
             ..Default::default()
@@ -1237,9 +1237,9 @@ User citation @@user@domain is valid.
             citation_key: "arXiv:2301.12345".to_string(),
             title: "arXiv Paper".to_string(),
             authors: vec![vec!["Researcher".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2023".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2023".to_string()),
+            summary: Some("Test".to_string()),
             url: Some("https://arxiv.org/abs/2301.12345".to_string()),
             index: None,
             ..Default::default()
@@ -1251,9 +1251,9 @@ User citation @@user@domain is valid.
             citation_key: "user@domain".to_string(),
             title: "User Citation".to_string(),
             authors: vec![vec!["User".to_string()]],
-            pub_month: String::new(),
-            pub_year: "2024".to_string(),
-            summary: "Test".to_string(),
+            pub_month: None,
+            pub_year: Some("2024".to_string()),
+            summary: Some("Test".to_string()),
             url: None,
             index: None,
             ..Default::default()
@@ -1633,7 +1633,7 @@ fn yaml_bibliography_parsing() {
     let smith = bibliography.get("smith2024").unwrap();
     assert_eq!(smith.citation_key, "smith2024");
     assert_eq!(smith.title, "A YAML Bibliography Entry");
-    assert_eq!(smith.pub_year, "2024");
+    assert_eq!(smith.pub_year, Some("2024".to_string()));
 
     // Check second entry
     let jones = bibliography.get("jones2023").unwrap();

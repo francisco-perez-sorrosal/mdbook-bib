@@ -11,12 +11,15 @@ pub struct BibItem {
     pub title: String,
     /// The article's author/s in the format [[Last, First], [Last, First], ...].
     pub authors: Vec<Vec<String>>,
-    /// Publication month (1-12 as zero-padded string, or "N/A").
-    pub pub_month: String,
+    /// Publication month (1-12 as zero-padded string).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pub_month: Option<String>,
     /// Publication year as string.
-    pub pub_year: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pub_year: Option<String>,
     /// Summary/Abstract.
-    pub summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
     /// The article's URL.
     pub url: Option<String>,
     /// The item's index for first citation in the book.
@@ -90,9 +93,9 @@ impl BibItem {
         citation_key: &str,
         title: String,
         authors: Vec<Vec<String>>,
-        pub_month: String,
-        pub_year: String,
-        summary: String,
+        pub_month: Option<String>,
+        pub_year: Option<String>,
+        summary: Option<String>,
         url: Option<String>,
     ) -> BibItem {
         BibItem {

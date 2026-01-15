@@ -63,7 +63,7 @@ pub fn parse_bibliography(
             let organization = extract_organization(entry);
 
             tracing::debug!(
-                "Entry {}: processed - title='{}', type={:?}, authors={:?}, year='{}', month='{}'",
+                "Entry {}: processed - title='{}', type={:?}, authors={:?}, year='{:?}', month='{:?}'",
                 citation_key,
                 title,
                 entry_type,
@@ -176,20 +176,20 @@ fn person_to_parts(person: &Person) -> Vec<String> {
     parts
 }
 
-fn extract_summary(entry: &hayagriva::Entry, citation_key: &str) -> String {
+fn extract_summary(entry: &hayagriva::Entry, citation_key: &str) -> Option<String> {
     // Try abstract first (common in BibTeX), then fall back to note
     if let Some(abstract_) = entry.abstract_() {
         let summary = format_string_to_text(abstract_);
         tracing::debug!("Entry {}: found abstract field", citation_key);
-        return summary;
+        return Some(summary);
     }
     if let Some(note) = entry.note() {
         let summary = format_string_to_text(note);
         tracing::debug!("Entry {}: found note field", citation_key);
-        return summary;
+        return Some(summary);
     }
     tracing::debug!("Entry {}: no abstract/note field", citation_key);
-    String::new()
+    None
 }
 
 fn extract_url(entry: &hayagriva::Entry, citation_key: &str) -> Option<String> {
@@ -206,20 +206,17 @@ fn extract_url(entry: &hayagriva::Entry, citation_key: &str) -> Option<String> {
     }
 }
 
-fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (String, String) {
+fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (Option<String>, Option<String>) {
     let date = entry.date();
 
     match date {
         Some(date) => {
-            let year = date.year.to_string();
+            let year = Some(date.year.to_string());
 
-            let month = date
-                .month
-                .map(|m| format!("{:02}", m + 1))
-                .unwrap_or_default();
+            let month = date.month.map(|m| format!("{:02}", m + 1));
 
             tracing::debug!(
-                "Entry {}: extracted date - year='{}', month='{}'",
+                "Entry {}: extracted date - year='{:?}', month='{:?}'",
                 citation_key,
                 year,
                 month
@@ -229,7 +226,7 @@ fn extract_date(entry: &hayagriva::Entry, citation_key: &str) -> (String, String
         }
         None => {
             tracing::debug!("Entry {}: no date field", citation_key);
-            (String::new(), String::new())
+            (None, None)
         }
     }
 }
