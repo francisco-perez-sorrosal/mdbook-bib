@@ -210,6 +210,7 @@ impl Preprocessor for Bibliography {
                 &chapter_refs_header,
                 config.order.clone(),
                 &citation_result.per_chapter,
+                &config.css_html,
             );
         }
 

@@ -37,12 +37,14 @@ Find your User ID in [Zotero Feeds/API settings](https://www.zotero.org/settings
 
 ## Adding Citations
 
-Reference entries in your markdown using either syntax:
+Reference entries in your markdown using either the **\{\{#cite ref_id\}\}** syntax:
 
-```markdown
-According to {{#cite smith2024}}, the results show...
-The experiment confirmed earlier findings @@jones2023.
-```
+According to **\{\{#cite smith2024\}\}**, the results show...
+
+or **\@\@ref_id**:
+
+The experiment confirmed earlier findings **\@\@jones2023**.
+
 
 ## Backend Selection
 

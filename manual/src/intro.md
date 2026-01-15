@@ -36,6 +36,8 @@ See [CSL Backend](./csl.md) for details.
 
 ## Quick Start
 
+Configure your book in the `book.toml` file:
+
 ```toml
 [preprocessor.bib]
 # Custom mode by default
@@ -45,7 +47,7 @@ bibliography = "refs.bib"
 # csl-style = "ieee"
 ```
 
-Cite entries with `{{#cite key}}` or `@@key`.
+Cite entries with **\{\{#cite key\}\}** or **\@\@key**.
 
 ## Upgrading from v0.5.x
 

@@ -1,17 +1,19 @@
 {{#if citation_key}}
-
-<div class="bib_div">
-<details data-key="{{citation_key}}" class=ref>
-{{!-- citation --}}
-<summary class=citation>
-<a id="{{citation_key}}">[{{citation_key}}]</a>{{#if entry_type}} <span class="entry-type">({{entry_type}})</span>{{/if}} - {{#if authors}}{{#each authors as |author|}}{{#each author as |name|}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}} and {{/unless}}{{/each}} - {{/if}}{{#if title}}{{#if url}}<a href="{{url}}" target="_blank">{{/if}}<cite>{{title}}</cite>{{#if url}}</a>{{/if}}.{{/if}}{{#if editor}} Edited by {{#each editor as |ed|}}{{#each ed as |name|}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}} and {{/unless}}{{/each}}.{{/if}} - {{#if pub_year}}{{pub_year}}.{{/if}} -
-<button onclick="copyToClipboard('\{\{ #cite {{citation_key}} \}\}')">Copy citation_key</button>
+<article class="bib-entry" id="{{citation_key}}">
+<details data-key="{{citation_key}}" class="ref">
+<summary class="citation">
+<span class="bib-key">{{citation_key}}</span>{{#if index}}<span class="bib-index">{{index}}</span>{{/if}}
+{{#if title}}<cite class="bib-title">{{#if url}}<a href="{{url}}" target="_blank" rel="noopener noreferrer">{{title}}</a>{{else}}{{title}}{{/if}}</cite>{{/if}}
+<div class="bib-meta">
+{{#if authors}}<span class="bib-meta-item bib-authors">{{#each authors as |author|}}{{#each author as |name|}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}; {{/unless}}{{/each}}</span>{{/if}}
+{{#if pub_year}}<span class="bib-meta-item bib-date" style="white-space:nowrap">— {{#if pub_month}}{{pub_month}}-{{/if}}{{pub_year}}</span>{{/if}}
+{{#if summary}}<span class="bib-expand-hint"><span class="bib-expand-arrow">▼</span> Abstract</span>{{/if}}
+</div>
 </summary>
-{{!-- summary/abstract --}}
 {{#if summary}}
-<section class=abstract>
-<h1>Summary/Abstract</h1>
-<div>{{summary}}</div>
+<section class="bib-abstract">
+<header class="bib-abstract-header">Abstract</header>
+<div class="bib-abstract-content">{{summary}}</div>
 </section>
 {{/if}}
 {{!-- publication details --}}
@@ -65,8 +67,5 @@
 </section>
 {{/if}}
 </details>
-</div>
-
+</article>
 {{/if}}
-
-<br/>

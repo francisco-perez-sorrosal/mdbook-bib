@@ -87,6 +87,7 @@ pub fn add_bib_at_end_of_chapters(
     chapter_refs_header: &str,
     order: SortOrder,
     per_chapter_citations: &IndexMap<String, HashSet<String>>,
+    css_html: &str,
 ) {
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
@@ -116,9 +117,11 @@ pub fn add_bib_at_end_of_chapters(
                     order.clone(),
                 );
 
-                let new_content = String::from(ch.content.as_str())
-                    + chapter_refs_header
-                    + ch_bib_content_html.as_str();
+                // Inject CSS at the start and bibliography at the end
+                let new_content = format!(
+                    "{}\n{}\n{}\n{}",
+                    css_html, ch.content, chapter_refs_header, ch_bib_content_html
+                );
                 ch.content = new_content;
             }
         }

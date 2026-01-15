@@ -14,5 +14,6 @@ default-theme = "theme"
 bibliography = "bibliography.bib"
 title="References" # Custom title
 hb-tpl = "render/my_references.hbs"
+cite-hb-tpl = "render/my_cite.hbs"
 css = "render/my_style.css"
 add-bib-in-chapters = true
