@@ -49,18 +49,69 @@ After successful test pass, the `CHANGELOG.md` is updated.
 
 ## Release
 
-The release process can be triggered with the `make` command `make release VERSION=0.0.7` and it's composed by:
+The release process is managed via `make`. Run `make help` to see all options:
 
-- Update new version (e.g. 0.0.7) in `Cargo.toml`, and `doc.yml` in the github workflows
-- Do a commit with those changes with a message like `Prepare for release v0.0.7`
-- Pull the remote changes to get the updated CHANGELOG.md by the previous commit from github: `git pull origin master`
-- The release will be triggered by:
-  - Creating a new tag in github: `git tag -a v0.0.7 -m "Version v0.0.7"`
-  - Pushing the tag to github: `git push origin v0.0.7`
-- The release will exercise the github workflows:
-  - `publish.yml` - Publish the release
-  - `releaese.yml` - Create the binary packages to release in [here](https://github.com/francisco-perez-sorrosal/mdbook-bib/releases)
-  - `doc.yml`  - Will publish the book with this instructions [here](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
+```sh
+make help
+```
+
+### Quick Release
+
+To release the next patch version (auto-incremented):
+
+```sh
+make release              # Releases 0.5.1 → 0.5.2 automatically
+```
+
+To release a specific version:
+
+```sh
+make release VERSION=1.0.0
+```
+
+### Dry-Run Mode
+
+Add `DRY_RUN=1` to any command to simulate without making changes:
+
+```sh
+make release DRY_RUN=1              # Simulate with auto-version
+make release DRY_RUN=1 VERSION=1.0.0  # Simulate specific version
+make update-cargo DRY_RUN=1         # Simulate just Cargo.toml update
+```
+
+### Available Targets
+
+| Target | Description |
+|--------|-------------|
+| `release` | Complete release (update, commit, tag, push) |
+| `update-version` | Update version in Cargo.toml and doc.yml |
+| `update-cargo` | Update version only in Cargo.toml |
+| `update-doc` | Update version only in doc.yml |
+| `show-version` | Show current and next version |
+
+### Release Steps
+
+The release process performs these steps:
+
+1. Update version in `Cargo.toml` and `.github/workflows/doc.yml`
+2. Commit changes with message `Prepare for release vX.Y.Z`
+3. Create annotated tag `vX.Y.Z`
+4. Push commit and tag to origin
+
+After pushing, pull remote changes to get the updated CHANGELOG.md:
+
+```sh
+git pull origin master
+```
+
+### GitHub Workflows Triggered
+
+The tag push triggers these workflows:
+
+- `publish.yml` - Publishes to crates.io
+- `release.yml` - Creates binary packages in [Releases](https://github.com/francisco-perez-sorrosal/mdbook-bib/releases)
+- `doc.yml` - Publishes documentation to [GitHub Pages](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
 
 ## ToDo
+
 Improve the process above when bored or when you want to improve friction points (e.g. the Changelog is updated post release, etc.)
