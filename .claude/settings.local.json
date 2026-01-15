@@ -35,7 +35,11 @@
       "Bash(pandoc:*)",
       "Bash(mdbook:*)",
       "Bash(git checkout:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(make release-dry-run:*)",
+      "Bash(make help:*)",
+      "Bash(make release:*)",
+      "Bash(make update-cargo:*)"
     ]
   }
 }
