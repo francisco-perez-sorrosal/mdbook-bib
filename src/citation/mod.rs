@@ -128,6 +128,57 @@ pub fn add_bib_at_end_of_chapters(
     });
 }
 
+/// Replace a single citation placeholder with its formatted citation.
+///
+/// This helper function handles the common logic for both `{{#cite ...}}` and `@@cite` patterns:
+/// - Tracks the citation in the cited set
+/// - Assigns an index if this is the first occurrence
+/// - Formats the citation using the backend
+/// - Returns appropriate error messages for missing or invalid citations
+fn replace_citation_placeholder(
+    citation_key: &str,
+    chapter_path: &Path,
+    bib: &RefCell<&mut IndexMap<String, BibItem>>,
+    cited_set: &RefCell<&mut HashSet<String>>,
+    idx: &RefCell<&mut u32>,
+    backend: &dyn BibliographyBackend,
+) -> String {
+    let cite = citation_key.trim();
+
+    // Track this citation
+    cited_set.borrow_mut().insert(cite.to_owned());
+
+    let mut bib_mut = bib.borrow_mut();
+    let mut idx_mut = idx.borrow_mut();
+
+    if bib_mut.contains_key(cite) {
+        let path_to_root = breadcrumbs_up_to_root(chapter_path);
+        let item = bib_mut.get_mut(cite).unwrap();
+
+        // Assign index on first occurrence
+        if item.index.is_none() {
+            **idx_mut += 1;
+            item.index = Some(**idx_mut);
+        }
+
+        let context = CitationContext {
+            bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+            chapter_path: chapter_path.display().to_string(),
+        };
+
+        let formatted = backend.format_citation(item, &context).unwrap_or_else(|e| {
+            tracing::error!("Failed to format citation for '{}': {}", cite, e);
+            format!("\\[Error formatting {cite}\\]")
+        });
+
+        tracing::info!("Citation replacement: '{}' -> '{}'", cite, formatted);
+        formatted
+    } else {
+        tracing::warn!("Unknown bibliography reference: '{}'", cite);
+        format!("\\[Unknown bib ref: {cite}\\]")
+    }
+}
+
 pub fn replace_all_placeholders(
     chapter: &Chapter,
     bibliography: &mut IndexMap<String, BibItem>,
@@ -142,64 +193,16 @@ pub fn replace_all_placeholders(
     let cited_set = RefCell::new(cited);
     let idx = RefCell::new(last_index);
 
-    // First replace all {{#cite ...}}
+    // First replace all {{#cite ...}} patterns (capture group 1)
     let replaced = REF_REGEX.replace_all(&chapter.content, |caps: &regex::Captures| {
-        let cite = caps.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-        cited_set.borrow_mut().insert(cite.to_owned());
-        let mut bib_mut = bib.borrow_mut();
-        let mut idx_mut = idx.borrow_mut();
-        if bib_mut.contains_key(cite) {
-            let path_to_root = breadcrumbs_up_to_root(chapter_path);
-            let item = bib_mut.get_mut(cite).unwrap();
-            if item.index.is_none() {
-                **idx_mut += 1;
-                item.index = Some(**idx_mut);
-            }
-            let context = CitationContext {
-                bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
-                chapter_path: chapter_path.display().to_string(),
-            };
-            {
-                let formatted = backend.format_citation(item, &context).unwrap_or_else(|e| {
-                    tracing::error!("Failed to format citation for '{}': {}", cite, e);
-                    format!("\\[Error formatting {cite}\\]")
-                });
-                tracing::info!("Citation replacement: '{}' -> '{}'", cite, formatted);
-                formatted
-            }
-        } else {
-            format!("\\[Unknown bib ref: {cite}\\]")
-        }
+        let citation_key = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+        replace_citation_placeholder(citation_key, chapter_path, &bib, &cited_set, &idx, backend)
     });
 
-    // Then replace all @@cite
+    // Then replace all @@cite patterns (capture group 2)
     let replaced = AT_REF_REGEX.replace_all(&replaced, |caps: &regex::Captures| {
-        let cite = caps.get(2).map(|m| m.as_str().trim()).unwrap_or("");
-        cited_set.borrow_mut().insert(cite.to_owned());
-        let mut bib_mut = bib.borrow_mut();
-        let mut idx_mut = idx.borrow_mut();
-        if bib_mut.contains_key(cite) {
-            let path_to_root = breadcrumbs_up_to_root(chapter_path);
-            let item = bib_mut.get_mut(cite).unwrap();
-            if item.index.is_none() {
-                **idx_mut += 1;
-                item.index = Some(**idx_mut);
-            }
-            let context = CitationContext {
-                bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
-                chapter_path: chapter_path.display().to_string(),
-            };
-            {
-                let formatted = backend.format_citation(item, &context).unwrap_or_else(|e| {
-                    tracing::error!("Failed to format citation for '{}': {}", cite, e);
-                    format!("\\[Error formatting {cite}\\]")
-                });
-                tracing::info!("Citation replacement: '{}' -> '{}'", cite, formatted);
-                formatted
-            }
-        } else {
-            format!("\\[Unknown bib ref: {cite}\\]")
-        }
+        let citation_key = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+        replace_citation_placeholder(citation_key, chapter_path, &bib, &cited_set, &idx, backend)
     });
 
     replaced.into_owned()
