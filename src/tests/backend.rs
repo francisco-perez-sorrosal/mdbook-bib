@@ -13,6 +13,7 @@ use crate::backend::{BibliographyBackend, CitationContext, CslBackend};
 use crate::config::SortOrder;
 use crate::parser::{self, BibFormat};
 use mdbook_preprocessor::book::Chapter;
+use rstest::rstest;
 use std::collections::HashSet;
 
 // =============================================================================
@@ -174,13 +175,11 @@ fn backend_custom_vs_csl_citation_format_differs() {
 }
 
 // =============================================================================
-// CSL Backend Style Tests
+// CSL Backend Style Tests (Parametrized)
 // =============================================================================
 
-#[test]
-fn backend_csl_numeric_vs_author_date() {
-    let bib_src = r#"
-@article{smith2024,
+const CSL_TEST_BIB: &str = r#"
+@article{test_entry,
     author = {Smith, John},
     title = {Test Article},
     journal = {Test Journal},
@@ -188,108 +187,70 @@ fn backend_csl_numeric_vs_author_date() {
 }
 "#;
 
-    let bibliography = parser::parse_bibliography(bib_src.to_string(), BibFormat::BibTeX).unwrap();
-    let item = bibliography.get("smith2024").unwrap();
+#[rstest]
+#[case::ieee("ieee")]
+#[case::apa("apa")]
+#[case::chicago_author_date("chicago-author-date")]
+#[case::nature("nature")]
+fn backend_csl_citation_links_to_bibliography(#[case] style: &str) {
+    let bibliography =
+        parser::parse_bibliography(CSL_TEST_BIB.to_string(), BibFormat::BibTeX).unwrap();
+    let item = bibliography.get("test_entry").unwrap();
 
     let context = CitationContext {
         bib_page_path: "bibliography.html".to_string(),
         chapter_path: "chapter.md".to_string(),
     };
 
-    // IEEE (numeric)
-    let ieee_backend = CslBackend::new("ieee".to_string()).unwrap();
-    let ieee_citation = ieee_backend.format_citation(item, &context).unwrap();
+    let backend = CslBackend::new(style.to_string()).unwrap();
+    let citation = backend.format_citation(item, &context).unwrap();
 
-    // Chicago author-date
-    let chicago_backend = CslBackend::new("chicago-author-date".to_string()).unwrap();
-    let chicago_citation = chicago_backend.format_citation(item, &context).unwrap();
-
-    // IEEE uses numbers, Chicago uses author-date
-    println!("IEEE citation: {ieee_citation}");
-    println!("Chicago citation: {chicago_citation}");
-
-    // Both should contain links
     assert!(
-        ieee_citation.contains("bibliography.html"),
-        "IEEE should link to bibliography"
+        citation.contains("bibliography.html"),
+        "{style} citation should link to bibliography: {citation}"
+    );
+}
+
+#[rstest]
+#[case::ieee("ieee")]
+#[case::apa("apa")]
+#[case::chicago_author_date("chicago-author-date")]
+#[case::nature("nature")]
+fn backend_csl_reference_has_entry_class(#[case] style: &str) {
+    let bibliography =
+        parser::parse_bibliography(CSL_TEST_BIB.to_string(), BibFormat::BibTeX).unwrap();
+    let item = bibliography.get("test_entry").unwrap();
+
+    let backend = CslBackend::new(style.to_string()).unwrap();
+    let reference = backend.format_reference(item).unwrap();
+
+    assert!(
+        reference.contains("class='csl-entry'"),
+        "{style} should have csl-entry class: {reference}"
     );
     assert!(
-        chicago_citation.contains("bibliography.html"),
-        "Chicago should link to bibliography"
+        reference.contains("id='test_entry'"),
+        "{style} should have citation key id: {reference}"
     );
 }
 
 #[test]
-fn backend_csl_superscript_style() {
-    let bib_src = r#"
-@article{watson1953,
-    author = {Watson, James},
-    title = {DNA Structure},
-    journal = {Nature},
-    year = {1953},
-}
-"#;
-
-    let bibliography = parser::parse_bibliography(bib_src.to_string(), BibFormat::BibTeX).unwrap();
-    let item = bibliography.get("watson1953").unwrap();
+fn backend_csl_nature_uses_superscript() {
+    let bibliography =
+        parser::parse_bibliography(CSL_TEST_BIB.to_string(), BibFormat::BibTeX).unwrap();
+    let item = bibliography.get("test_entry").unwrap();
 
     let context = CitationContext {
         bib_page_path: "bibliography.html".to_string(),
         chapter_path: "chapter.md".to_string(),
     };
 
-    // Nature uses superscript
     let nature_backend = CslBackend::new("nature".to_string()).unwrap();
-    let nature_citation = nature_backend.format_citation(item, &context).unwrap();
+    let citation = nature_backend.format_citation(item, &context).unwrap();
 
-    println!("Nature citation: {nature_citation}");
-
-    // Nature should use <sup> tags
     assert!(
-        nature_citation.contains("<sup>"),
-        "Nature should use superscript: {nature_citation}"
-    );
-}
-
-#[test]
-fn backend_csl_reference_format() {
-    let bib_src = r#"
-@article{smith2024,
-    author = {Smith, John and Doe, Jane},
-    title = {Research Methods in Computer Science},
-    journal = {Journal of CS},
-    year = {2024},
-    volume = {10},
-    pages = {1-20},
-}
-"#;
-
-    let bibliography = parser::parse_bibliography(bib_src.to_string(), BibFormat::BibTeX).unwrap();
-    let item = bibliography.get("smith2024").unwrap();
-
-    // IEEE reference
-    let ieee_backend = CslBackend::new("ieee".to_string()).unwrap();
-    let ieee_ref = ieee_backend.format_reference(item).unwrap();
-
-    // APA reference
-    let apa_backend = CslBackend::new("apa".to_string()).unwrap();
-    let apa_ref = apa_backend.format_reference(item).unwrap();
-
-    println!("IEEE reference: {ieee_ref}");
-    println!("APA reference: {apa_ref}");
-
-    // Both should have the csl-entry class and citation key id
-    assert!(
-        ieee_ref.contains("class='csl-entry'"),
-        "IEEE should have csl-entry class"
-    );
-    assert!(
-        ieee_ref.contains("id='smith2024'"),
-        "IEEE should have citation key id"
-    );
-    assert!(
-        apa_ref.contains("class='csl-entry'"),
-        "APA should have csl-entry class"
+        citation.contains("<sup>"),
+        "Nature should use superscript: {citation}"
     );
 }
 

@@ -10,6 +10,7 @@
 use super::common::{dummy_bibliography, yaml_bibliography, DUMMY_BIB_SRC, YAML_BIB_SRC};
 use crate::io;
 use crate::parser::{self, BibFormat};
+use rstest::rstest;
 use std::fs::File;
 use std::io::Write;
 use tempfile::Builder as TempFileBuilder;
@@ -73,71 +74,56 @@ fn bibliography_includes_url_when_present_in_bibitems() {
 }
 
 // =============================================================================
-// Date Extraction Tests
+// Date Extraction Tests (Parametrized)
 // =============================================================================
 
-#[test]
-fn test_hayagriva_date_extraction() {
-    // Test string month (short form - standard BibTeX constant)
-    let bib_string_short = r#"
-@article{string_month_short,
-    title = {Test String Month Short},
-    author = {Doe, John},
-    month = oct,
-    year = {2020},
-}
-"#;
-    let result = parser::parse_bibliography(bib_string_short.to_string(), BibFormat::BibTeX);
-    assert!(result.is_ok());
-    let bibliography = result.unwrap();
-    let entry = bibliography.get("string_month_short").unwrap();
-    assert_eq!(entry.pub_year, Some("2020".to_string()));
-    assert_eq!(entry.pub_month, Some("10".to_string()));
+#[rstest]
+#[case::string_month_short(
+    "string_month_short",
+    r#"@article{string_month_short, title = {Test}, author = {Doe, John}, month = oct, year = {2020}}"#,
+    Some("2020"),
+    Some("10")
+)]
+#[case::year_only(
+    "year_only",
+    r#"@article{year_only, title = {Test}, author = {Doe, John}, year = {2020}}"#,
+    Some("2020"),
+    None
+)]
+#[case::no_date(
+    "no_date",
+    r#"@article{no_date, title = {Test}, author = {Doe, John}}"#,
+    None,
+    None
+)]
+#[case::zotero_month_braces(
+    "zotero_month",
+    r#"@article{zotero_month, title = {Test}, author = {Doe, John}, month = {oct}, year = {2020}}"#,
+    Some("2020"),
+    Some("10")
+)]
+fn test_hayagriva_date_extraction(
+    #[case] citation_key: &str,
+    #[case] bib_src: &str,
+    #[case] expected_year: Option<&str>,
+    #[case] expected_month: Option<&str>,
+) {
+    let result = parser::parse_bibliography(bib_src.to_string(), BibFormat::BibTeX);
+    assert!(result.is_ok(), "Failed to parse: {bib_src}");
 
-    // Test missing month (year only)
-    let bib_year_only = r#"
-@article{year_only,
-    title = {Test Year Only},
-    author = {Doe, John},
-    year = {2020},
-}
-"#;
-    let result = parser::parse_bibliography(bib_year_only.to_string(), BibFormat::BibTeX);
-    assert!(result.is_ok());
     let bibliography = result.unwrap();
-    let entry = bibliography.get("year_only").unwrap();
-    assert_eq!(entry.pub_year, Some("2020".to_string()));
-    assert_eq!(entry.pub_month, None);
+    let entry = bibliography.get(citation_key).unwrap();
 
-    // Test missing date entirely
-    let bib_no_date = r#"
-@article{no_date,
-    title = {Test No Date},
-    author = {Doe, John},
-}
-"#;
-    let result = parser::parse_bibliography(bib_no_date.to_string(), BibFormat::BibTeX);
-    assert!(result.is_ok());
-    let bibliography = result.unwrap();
-    let entry = bibliography.get("no_date").unwrap();
-    assert_eq!(entry.pub_year, None);
-    assert_eq!(entry.pub_month, None);
-
-    // Test Zotero-style month with braces (common export format)
-    let bib_zotero_style = r#"
-@article{zotero_month,
-    title = {Test Zotero Month Format},
-    author = {Doe, John},
-    month = {oct},
-    year = {2020},
-}
-"#;
-    let result = parser::parse_bibliography(bib_zotero_style.to_string(), BibFormat::BibTeX);
-    assert!(result.is_ok());
-    let bibliography = result.unwrap();
-    let entry = bibliography.get("zotero_month").unwrap();
-    assert_eq!(entry.pub_year, Some("2020".to_string()));
-    assert_eq!(entry.pub_month, Some("10".to_string()));
+    assert_eq!(
+        entry.pub_year,
+        expected_year.map(String::from),
+        "Year mismatch for {citation_key}"
+    );
+    assert_eq!(
+        entry.pub_month,
+        expected_month.map(String::from),
+        "Month mismatch for {citation_key}"
+    );
 }
 
 // =============================================================================

@@ -13,6 +13,7 @@ use super::common::{
 };
 use indexmap::IndexMap;
 use mdbook_preprocessor::book::Chapter;
+use rstest::rstest;
 use std::collections::HashSet;
 
 // =============================================================================
@@ -64,66 +65,60 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
     assert!(text_with_citations.contains("[Unknown bib ref:"));
 }
 
-#[test]
-fn citations_in_subfolders_link_properly() {
+#[rstest]
+#[case::root_chapter("source.md", "bibliography.html")]
+#[case::one_level_down("dir1/source.md", "../bibliography.html")]
+#[case::two_levels_down("dir1/dir2/source.md", "../../bibliography.html")]
+#[case::non_canonical_path("dir1/dir2/../source.md", "../bibliography.html")]
+fn citations_in_subfolders_link_properly(#[case] chapter_path: &str, #[case] expected_link: &str) {
     let mut bibliography = dummy_bibliography();
     let backend = create_citation_backend();
 
-    let mut check_citations_for = |chapter: &Chapter, link: &str| {
-        let mut last_index = 0;
-        let text_with_citations = crate::citation::replace_all_placeholders(
-            chapter,
-            &mut bibliography,
-            &mut HashSet::new(),
-            &backend,
-            &mut last_index,
-        );
+    let chapter = Chapter::new(
+        "",
+        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
+        chapter_path,
+        vec![],
+    );
 
-        assert!(
-            text_with_citations.contains(&format!(r#"href="{link}#fps""#)),
-            "Expecting link to '{link}' in string '{text_with_citations}'",
-        );
-        assert!(
-            text_with_citations.contains(&format!(r#"href="{link}#rust_book""#)),
-            "Expecting link to '{link}' in string '{text_with_citations}'",
-        );
-    };
+    let mut last_index = 0;
+    let text_with_citations = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut HashSet::new(),
+        &backend,
+        &mut last_index,
+    );
+
+    assert!(
+        text_with_citations.contains(&format!(r#"href="{expected_link}#fps""#)),
+        "Expecting link to '{expected_link}' in '{text_with_citations}'",
+    );
+    assert!(
+        text_with_citations.contains(&format!(r#"href="{expected_link}#rust_book""#)),
+        "Expecting link to '{expected_link}' in '{text_with_citations}'",
+    );
+}
+
+#[test]
+fn citations_in_draft_chapter_link_properly() {
+    let mut bibliography = dummy_bibliography();
+    let backend = create_citation_backend();
 
     let mut draft_chapter = Chapter::new_draft("", vec![]);
     draft_chapter.content = DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into();
-    check_citations_for(&draft_chapter, "bibliography.html");
 
-    let chapter_root = Chapter::new(
-        "",
-        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
-        "source.md",
-        vec![],
+    let mut last_index = 0;
+    let text_with_citations = crate::citation::replace_all_placeholders(
+        &draft_chapter,
+        &mut bibliography,
+        &mut HashSet::new(),
+        &backend,
+        &mut last_index,
     );
-    check_citations_for(&chapter_root, "bibliography.html");
 
-    let chapter_1down = Chapter::new(
-        "",
-        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
-        "dir1/source.md",
-        vec![],
-    );
-    check_citations_for(&chapter_1down, "../bibliography.html");
-
-    let chapter_2down = Chapter::new(
-        "",
-        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
-        "dir1/dir2/source.md",
-        vec![],
-    );
-    check_citations_for(&chapter_2down, "../../bibliography.html");
-
-    let chapter_noncanon = Chapter::new(
-        "",
-        DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS.into(),
-        "dir1/dir2/../source.md",
-        vec![],
-    );
-    check_citations_for(&chapter_noncanon, "../bibliography.html");
+    assert!(text_with_citations.contains(r#"href="bibliography.html#fps""#));
+    assert!(text_with_citations.contains(r#"href="bibliography.html#rust_book""#));
 }
 
 #[test]
@@ -244,72 +239,43 @@ This is another reference @@simple_key that should also work.
 }
 
 // =============================================================================
-// Regex Pattern Tests
+// Regex Pattern Tests (Parametrized)
 // =============================================================================
 
-#[test]
-fn test_regex_pattern() {
+#[rstest]
+#[case::simple_key("{{#cite mdBook}}", "mdBook")]
+#[case::key_with_colon("{{#cite DUMMY:1}}", "DUMMY:1")]
+#[case::key_with_hyphen("{{#cite test-key}}", "test-key")]
+#[case::key_with_underscore("{{#cite test_key}}", "test_key")]
+#[case::doi_format("{{#cite 10.1145/3508461}}", "10.1145/3508461")]
+fn test_ref_pattern_captures_key(#[case] input: &str, #[case] expected_key: &str) {
     use crate::REF_PATTERN;
     use regex::Regex;
 
     let re = Regex::new(REF_PATTERN).unwrap();
-
-    let test_cases = vec![
-        ("{{#cite mdBook}}", "mdBook"),
-        ("{{#cite DUMMY:1}}", "DUMMY:1"),
-        ("{{#cite test-key}}", "test-key"),
-        ("{{#cite test_key}}", "test_key"),
-    ];
-
-    for (test_case, expected_key) in test_cases {
-        println!("Testing: '{test_case}'");
-        if let Some(captures) = re.captures(test_case) {
-            println!("  Match found!");
-            println!("  Full match: '{}'", captures.get(0).unwrap().as_str());
-            if let Some(cite_key) = captures.get(1) {
-                let key = cite_key.as_str().trim();
-                println!("  Citation key: '{key}'");
-                assert_eq!(
-                    key, expected_key,
-                    "Citation key should match for: {test_case}"
-                );
-            } else {
-                panic!("No citation key captured for: {test_case}");
-            }
-        } else {
-            panic!("Pattern should match citation: {test_case}");
-        }
-        println!();
-    }
+    let captures = re
+        .captures(input)
+        .unwrap_or_else(|| panic!("Should match: {input}"));
+    let captured_key = captures.get(1).expect("Should capture key").as_str().trim();
+    assert_eq!(captured_key, expected_key);
 }
 
-#[test]
-fn test_at_ref_pattern_with_dots() {
+#[rstest]
+#[case::doi_with_dots("@@10.1145/3508461", "10.1145/3508461")]
+#[case::simple_key("@@simple_key", "simple_key")]
+#[case::key_with_dots("@@key.with.dots", "key.with.dots")]
+#[case::key_with_dashes("@@key-with-dashes", "key-with-dashes")]
+#[case::key_with_underscores("@@key_with_underscores", "key_with_underscores")]
+fn test_at_ref_pattern_captures_key(#[case] input: &str, #[case] expected_key: &str) {
     use crate::AT_REF_PATTERN;
     use regex::Regex;
 
     let re = Regex::new(AT_REF_PATTERN).unwrap();
-
-    let test_cases = vec![
-        "@@10.1145/3508461",
-        "@@simple_key",
-        "@@key.with.dots",
-        "@@key-with-dashes",
-        "@@key_with_underscores",
-    ];
-
-    for test_case in test_cases {
-        if let Some(captures) = re.captures(test_case) {
-            if let Some(cite_key) = captures.get(2) {
-                // Verify that citation keys with dots are captured correctly
-                if test_case.contains("10.1145/3508461") {
-                    assert_eq!(cite_key.as_str(), "10.1145/3508461");
-                }
-            }
-        } else {
-            panic!("No match found for test case: {test_case}");
-        }
-    }
+    let captures = re
+        .captures(input)
+        .unwrap_or_else(|| panic!("Should match: {input}"));
+    let captured_key = captures.get(2).expect("Should capture key").as_str();
+    assert_eq!(captured_key, expected_key);
 }
 
 #[test]
@@ -517,50 +483,19 @@ User citation @@user@domain is valid.
     assert!(!result.contains("@@user@domain"));
 }
 
-#[test]
-fn test_ref_pattern_excludes_mdbook_expressions() {
+#[rstest]
+#[case::include("{{#include file.rs}}")]
+#[case::title("{{#title My Custom Title}}")]
+#[case::playground("{{#playground example.rs}}")]
+#[case::rustdoc_include("{{#rustdoc_include file.rs:2}}")]
+#[case::include_with_range("{{#include file.rs:2:10}}")]
+fn test_ref_pattern_excludes_mdbook_expressions(#[case] input: &str) {
     use crate::REF_PATTERN;
     use regex::Regex;
 
     let re = Regex::new(REF_PATTERN).unwrap();
-
-    // These should NOT match (mdBook expressions)
-    let should_not_match = vec![
-        "{{#include file.rs}}",
-        "{{#title My Custom Title}}",
-        "{{#playground example.rs}}",
-        "{{#rustdoc_include file.rs:2}}",
-        "{{#include file.rs:2:10}}",
-    ];
-
-    for test_case in should_not_match {
-        assert!(
-            !re.is_match(test_case),
-            "Pattern should NOT match mdBook expression: {test_case}"
-        );
-    }
-
-    // These SHOULD match (citation expressions)
-    let should_match = vec![
-        ("{{#cite mdBook}}", "mdBook"),
-        ("{{#cite DUMMY:1}}", "DUMMY:1"),
-        ("{{#cite test-key}}", "test-key"),
-        ("{{#cite 10.1145/3508461}}", "10.1145/3508461"),
-    ];
-
-    for (test_case, expected_key) in should_match {
-        if let Some(captures) = re.captures(test_case) {
-            if let Some(cite_key) = captures.get(1) {
-                assert_eq!(
-                    cite_key.as_str().trim(),
-                    expected_key,
-                    "Citation key should match for: {test_case}"
-                );
-            } else {
-                panic!("No citation key captured for: {test_case}");
-            }
-        } else {
-            panic!("Pattern should match citation: {test_case}");
-        }
-    }
+    assert!(
+        !re.is_match(input),
+        "Pattern should NOT match mdBook expression: {input}"
+    );
 }

@@ -42,6 +42,23 @@ let item = BibItemBuilder::article("smith2024")
     .build();
 ```
 
+### Parametrized Tests
+
+Tests use the `rstest` crate for parametrization. Example:
+
+```rust
+#[rstest]
+#[case::ieee("ieee")]
+#[case::apa("apa")]
+#[case::chicago("chicago-author-date")]
+fn test_csl_style(#[case] style: &str) {
+    let backend = CslBackend::new(style.to_string()).unwrap();
+    // test logic...
+}
+```
+
+Each case runs as a separate test, making it easy to identify failures.
+
 ## Debug
 
 The preprocessor uses the `tracing` library for logging. To enable debug output, use the `MDBOOK_LOG` environment variable:
