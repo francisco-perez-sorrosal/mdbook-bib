@@ -4,10 +4,14 @@
 
 **Closed issues:**
 
+- Automate release project [\#67](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/67)
+- Improve default handlebar templates to make cites/references more appealing [\#66](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/66)
 - Hayagriva integration [\#62](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/62)
 
 **Merged pull requests:**
 
+- Enhance Makefile and documentation for improved release management [\#69](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/69) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Enhance manual and test\_book bibliography rendering and citation syntax [\#68](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/68) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Hayagriva integration [\#65](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/65) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 
 ## [v0.5.1](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.1) (2026-01-14)
@@ -108,6 +112,8 @@
 - Allow citations with @@citation-key [\#33](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/33) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix location of .bib in book scaffold and fix \#24 [\#30](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/30) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Allow custom reference styles [\#29](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/29) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Add bib title config param [\#28](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/28) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- \[\#8\] Extract url from bib entries and render a link on the title of t… [\#21](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/21) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 
 ## [v0.0.3](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.0.3) (2021-04-04)
 
@@ -127,8 +133,6 @@
 
 **Merged pull requests:**
 
-- Add bib title config param [\#28](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/28) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
-- \[\#8\] Extract url from bib entries and render a link on the title of t… [\#21](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/21) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Consolidate config style with hyphens [\#19](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/19) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Parse fields `year` and `month` if `date` is not present [\#18](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/18) ([mlange-42](https://github.com/mlange-42))
 - More tests for critical functionality [\#17](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/17) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
