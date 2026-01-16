@@ -1,5 +1,47 @@
 # Dev
 
+## Testing
+
+### Running Tests
+
+```sh
+cargo test              # Run all tests
+cargo test --workspace  # Run tests for the entire workspace
+```
+
+### Test Organization
+
+Tests are organized into logical modules under `src/tests/`:
+
+| Module | Purpose |
+|--------|---------|
+| `common.rs` | Shared fixtures, helpers, and `BibItemBuilder` |
+| `parser.rs` | BibTeX/YAML parsing, date extraction, extended fields |
+| `citation.rs` | Citation placeholder replacement, regex patterns |
+| `config.rs` | Configuration parsing, Zotero, per-chapter settings |
+| `backend.rs` | Custom and CSL backend formatting, regression tests |
+| `integration.rs` | Full book builds (test_book, CSL style variants) |
+| `edge_cases.rs` | Error handling, malformed input, unicode support |
+
+### Test Utilities
+
+The `common` module provides reusable test infrastructure:
+
+- **`BibItemBuilder`** - Fluent builder for creating test `BibItem` instances
+- **`dummy_bibliography()` / `yaml_bibliography()`** - Pre-parsed bibliographies (lazy-loaded)
+- **`create_*_backend()` functions** - Factory functions for backend instances
+- **Test fixtures** - `DUMMY_BIB_SRC`, sample text with citations
+
+Example using the builder:
+
+```rust
+let item = BibItemBuilder::article("smith2024")
+    .title("Test Article")
+    .authors(&["Smith, John"])
+    .year("2024")
+    .build();
+```
+
 ## Debug
 
 The preprocessor uses the `tracing` library for logging. To enable debug output, use the `MDBOOK_LOG` environment variable:
