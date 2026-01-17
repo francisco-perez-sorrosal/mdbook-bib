@@ -30,12 +30,15 @@ Citations appear as numbers in brackets or superscripts:
 |-------|-----------------|---------|
 | `ieee` | `[1]`, `[2]` | IEEE transactions |
 | `vancouver` | `[1]`, `[2]` | Medical journals |
+| `vancouver-superscript` | `¹`, `²` (superscript) | Vancouver superscript variant |
 | `nature` | `¹`, `²` (superscript) | Nature journal |
 | `acm` | `[1]`, `[2]` | ACM publications |
 | `acs` | `[1]`, `[2]` | American Chemical Society |
 | `ama` | `[1]`, `[2]` | American Medical Association |
 | `cell` | `[1]`, `[2]` | Cell journal |
 | `springer-basic` | `[1]`, `[2]` | Springer publications |
+| `elsevier-vancouver` | `[1]`, `[2]` | Elsevier Vancouver |
+| `alphanumeric` | `[Smi24]` | Alphanumeric labels |
 
 ### Author-Date Styles
 
@@ -45,9 +48,11 @@ Citations include author name and year:
 |-------|-----------------|---------|
 | `chicago-author-date` | (Author Year) | Chicago Manual of Style |
 | `apa` | (Author, Year) | APA 7th edition |
-| `mla` | (Author Page) | MLA style |
+| `mla` | (Author Page) | MLA 9th edition |
+| `mla8` | (Author Page) | MLA 8th edition |
 | `harvard` | (Author Year) | Harvard referencing |
 | `elsevier-harvard` | (Author, Year) | Elsevier journals |
+| `springer-basic-author-date` | (Author Year) | Springer author-date |
 
 ### Note Styles
 
@@ -55,8 +60,7 @@ Some styles use footnotes or endnotes:
 
 | Style | Format |
 |-------|--------|
-| `chicago-note` | Footnote citations |
-| `chicago-fullnote` | Full footnote citations |
+| `chicago-notes` | Footnote citations |
 
 ## Examples by Style
 

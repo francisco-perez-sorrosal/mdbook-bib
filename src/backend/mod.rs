@@ -6,6 +6,7 @@
 
 mod csl;
 mod custom;
+mod hayagriva_style;
 
 pub use csl::CslBackend;
 pub use custom::CustomBackend;
