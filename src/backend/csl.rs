@@ -13,6 +13,7 @@ use regex::Regex;
 
 use crate::models::BibItem;
 
+use super::hayagriva_style::{find_style_info, supported_style_aliases, StyleInfo};
 use super::{BibliographyBackend, CitationContext};
 
 lazy_static! {
@@ -28,6 +29,8 @@ pub struct CslBackend {
     style_name: String,
     style: IndependentStyle,
     locales: Vec<Locale>,
+    /// Cached style info for quick access to numeric/superscript flags
+    style_info: Option<&'static StyleInfo>,
 }
 
 impl CslBackend {
@@ -42,14 +45,14 @@ impl CslBackend {
     ///
     /// # Supported Bundled Styles
     /// The backend includes 80+ bundled styles from the hayagriva archive.
-    /// See `ArchivedStyle` enum for the complete list.
+    /// Use `supported_style_aliases()` to list common aliases.
     pub fn new(style_name: String) -> anyhow::Result<Self> {
         tracing::info!("Initializing CSL backend with style: {}", style_name);
 
-        // Try to load from bundled styles first
-        let style = Self::load_style(&style_name)?;
+        // Look up in registry first (provides aliases), then fall back to hayagriva's by_name
+        let style_info = find_style_info(&style_name);
+        let (style, resolved_info) = Self::load_style(&style_name, style_info)?;
 
-        // Load all locales
         let locales = locales();
 
         tracing::info!(
@@ -61,94 +64,53 @@ impl CslBackend {
             style_name,
             style,
             locales,
+            style_info: resolved_info,
         })
     }
 
     /// Load a CSL style from the bundled archive or from a file path.
-    fn load_style(style_name: &str) -> anyhow::Result<IndependentStyle> {
-        // Try to use ArchivedStyle::by_name() first for convenience
-        let archived_style = ArchivedStyle::by_name(style_name)
-            .or_else(|| Self::parse_archived_style_name(style_name))
-            .ok_or_else(|| {
-                anyhow!(
-                    "Style '{style_name}' not found in bundled styles. Custom .csl files not yet supported.\n\
-                    Common styles: ieee, apa, chicago-author-date, mla, nature, vancouver, harvard, acm, ama, springer-basic, cell\n\
-                    See https://francisco-perez-sorrosal.github.io/mdbook-bib/csl.html for the full list of supported styles."
-                )
-            })?;
+    fn load_style(
+        style_name: &str,
+        style_info: Option<&'static StyleInfo>,
+    ) -> anyhow::Result<(IndependentStyle, Option<&'static StyleInfo>)> {
+        // If found in registry, use the archived style from there
+        let archived_style = if let Some(info) = style_info {
+            tracing::debug!("Style '{}' found in registry", style_name);
+            Some(info.archived)
+        } else {
+            // Fall back to hayagriva's by_name for styles not in our alias registry
+            ArchivedStyle::by_name(style_name)
+        };
+
+        let archived_style = archived_style.ok_or_else(|| {
+            let aliases: Vec<_> = supported_style_aliases().collect();
+            anyhow!(
+                "Style '{style_name}' not found. Custom .csl files not yet supported.\n\
+                Supported aliases: {}\n\
+                See https://francisco-perez-sorrosal.github.io/mdbook-bib/csl.html for the full list.",  // TODO Fix this link
+                aliases.join(", ")
+            )
+        })?;
 
         tracing::debug!("Loading bundled CSL style: {:?}", archived_style);
 
-        // Get the Style and extract IndependentStyle
         let style = archived_style.get();
         match style {
-            Style::Independent(independent) => Ok(independent),
+            Style::Independent(independent) => Ok((independent, style_info)),
             Style::Dependent(_) => Err(anyhow!(
                 "Style '{style_name}' is a dependent style. Please use an independent style instead."
             )),
         }
     }
 
-    /// Parse a style name string into an ArchivedStyle enum variant.
-    /// Supports common style names like "ieee", "apa", "chicago-author-date", etc.
-    fn parse_archived_style_name(name: &str) -> Option<ArchivedStyle> {
-        match name.to_lowercase().as_str() {
-            "ieee" => Some(ArchivedStyle::InstituteOfElectricalAndElectronicsEngineers),
-            "apa" | "american-psychological-association" => {
-                Some(ArchivedStyle::AmericanPsychologicalAssociation)
-            }
-            "chicago-author-date" => Some(ArchivedStyle::ChicagoAuthorDate),
-            "chicago-notes" => Some(ArchivedStyle::ChicagoNotes),
-            "mla" | "modern-language-association" => Some(ArchivedStyle::ModernLanguageAssociation),
-            "mla8" | "modern-language-association-8" => {
-                Some(ArchivedStyle::ModernLanguageAssociation8)
-            }
-            "nature" => Some(ArchivedStyle::Nature),
-            "vancouver" => Some(ArchivedStyle::Vancouver),
-            "vancouver-superscript" => Some(ArchivedStyle::VancouverSuperscript),
-            "harvard" | "harvard-cite-them-right" => Some(ArchivedStyle::HarvardCiteThemRight),
-            "acm" | "association-for-computing-machinery" => {
-                Some(ArchivedStyle::AssociationForComputingMachinery)
-            }
-            "acs" | "american-chemical-society" => Some(ArchivedStyle::AmericanChemicalSociety),
-            "ama" | "american-medical-association" => {
-                Some(ArchivedStyle::AmericanMedicalAssociation)
-            }
-            "springer-basic" => Some(ArchivedStyle::SpringerBasic),
-            "springer-basic-author-date" => Some(ArchivedStyle::SpringerBasicAuthorDate),
-            "cell" => Some(ArchivedStyle::Cell),
-            "elsevier-harvard" => Some(ArchivedStyle::ElsevierHarvard),
-            "elsevier-vancouver" => Some(ArchivedStyle::ElsevierVancouver),
-            "alphanumeric" => Some(ArchivedStyle::Alphanumeric),
-            _ => None,
-        }
-    }
-
     /// Check if the CSL style uses numeric citations (vs. author-date)
     fn is_numeric_citation_style(&self) -> bool {
-        // Check the style name for known numeric styles
-        let style_lower = self.style_name.to_lowercase();
-        matches!(
-            style_lower.as_str(),
-            "ieee"
-                | "nature"
-                | "vancouver"
-                | "vancouver-superscript"
-                | "cell"
-                | "elsevier-vancouver"
-                | "springer-basic"
-                | "acs"
-                | "acm"
-                | "ama"
-                | "alphanumeric"
-        )
+        self.style_info.is_some_and(|info| info.numeric)
     }
 
     /// Check if the CSL style uses superscript citations (vs. bracketed)
     fn is_superscript_citation_style(&self) -> bool {
-        // Nature and Vancouver-superscript use superscript numbers
-        let style_lower = self.style_name.to_lowercase();
-        matches!(style_lower.as_str(), "nature" | "vancouver-superscript")
+        self.style_info.is_some_and(|info| info.superscript)
     }
 
     /// Strip ANSI escape codes from text.
