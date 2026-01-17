@@ -62,6 +62,37 @@ Some styles use footnotes or endnotes:
 |-------|--------|
 | `chicago-notes` | Footnote citations |
 
+## Style Resolution
+
+The CSL backend resolves style names in two ways:
+
+### 1. Registry Aliases (Recommended)
+
+The styles listed above are **registry styles** with short, memorable aliases. These provide:
+- Short names (e.g., `ieee` instead of `institute-of-electrical-and-electronics-engineers`)
+- Accurate numeric vs author-date detection
+- Superscript rendering for styles like Nature
+
+### 2. Hayagriva Fallback
+
+Any style available in [hayagriva's archive](https://github.com/typst/hayagriva) (80+ styles) can be used by its full name:
+
+```toml
+csl-style = "annual-reviews"           # Numeric style
+csl-style = "american-physics-society" # Another numeric style
+csl-style = "council-of-science-editors-author-date"  # Author-date
+```
+
+**Fallback limitations:**
+- Citation format (numeric vs author-date) is detected automatically from CSL metadata
+- **Superscript styles render as bracketed** (e.g., `[1]` instead of `¹`) — superscript cannot be detected from CSL metadata alone
+
+For best results, use registry aliases when available. If you need a specific style not in the registry, the fallback will still format citations correctly, just without superscript support.
+
+### Dependent Styles
+
+Some CSL styles are "dependent" — they reference a parent style instead of defining their own formatting. These are not supported. If you encounter an error about a dependent style, use the parent style instead (e.g., use `nature` instead of `nature-communications`).
+
 ## Examples by Style
 
 ### IEEE (Numeric)

@@ -13,7 +13,10 @@ use regex::Regex;
 
 use crate::models::BibItem;
 
-use super::hayagriva_style::{find_style_info, supported_style_aliases, StyleInfo};
+use super::hayagriva_style::{
+    detect_style_format, find_style_info, supported_style_aliases, CitationStyle,
+    DetectedStyleFormat, StyleInfo,
+};
 use super::{BibliographyBackend, CitationContext};
 
 lazy_static! {
@@ -24,13 +27,23 @@ lazy_static! {
 ///
 /// This backend renders citations and bibliographies using Citation Style Language (CSL) styles.
 /// It supports both bundled styles from the hayagriva archive and custom CSL files.
+///
+/// ## Style Resolution
+///
+/// 1. **Registry styles**: Looked up by alias (e.g., "ieee", "apa") with full metadata
+///    including superscript hints.
+/// 2. **Fallback styles**: Any style available via `ArchivedStyle::by_name()`. Citation
+///    format (numeric vs author-date) is detected from CSL metadata, but superscript
+///    cannot be detected and defaults to `false`.
 pub struct CslBackend {
     #[allow(dead_code)]
     style_name: String,
     style: IndependentStyle,
     locales: Vec<Locale>,
-    /// Cached style info for quick access to numeric/superscript flags
+    /// Style info from registry (if available) - provides aliases and superscript hints
     style_info: Option<&'static StyleInfo>,
+    /// Detected format from CSL metadata (used when style_info is None)
+    detected_format: DetectedStyleFormat,
 }
 
 impl CslBackend {
@@ -53,6 +66,16 @@ impl CslBackend {
         let style_info = find_style_info(&style_name);
         let (style, resolved_info) = Self::load_style(&style_name, style_info)?;
 
+        // Detect format from CSL metadata (used as fallback when not in registry)
+        let detected_format = detect_style_format(&style);
+        if resolved_info.is_none() {
+            tracing::info!(
+                "Style '{}' not in registry, detected format: numeric={}",
+                style_name,
+                detected_format.is_numeric()
+            );
+        }
+
         let locales = locales();
 
         tracing::info!(
@@ -65,6 +88,7 @@ impl CslBackend {
             style,
             locales,
             style_info: resolved_info,
+            detected_format,
         })
     }
 
@@ -87,7 +111,7 @@ impl CslBackend {
             anyhow!(
                 "Style '{style_name}' not found. Custom .csl files not yet supported.\n\
                 Supported aliases: {}\n\
-                See https://francisco-perez-sorrosal.github.io/mdbook-bib/csl.html for the full list.",  // TODO Fix this link
+                Full list: https://github.com/typst/hayagriva (use ArchivedStyle names)",
                 aliases.join(", ")
             )
         })?;
@@ -103,41 +127,59 @@ impl CslBackend {
         }
     }
 
-    /// Check if the CSL style uses numeric citations (vs. author-date)
-    fn is_numeric_citation_style(&self) -> bool {
-        self.style_info.is_some_and(|info| info.numeric)
+    /// Get the effective citation style (registry or detected).
+    ///
+    /// Returns the `StyleInfo` if available (for registry styles), otherwise
+    /// falls back to `DetectedStyleFormat` (for fallback styles).
+    fn citation_style(&self) -> &dyn CitationStyle {
+        match &self.style_info {
+            Some(info) => *info,
+            None => &self.detected_format,
+        }
     }
 
-    /// Check if the CSL style uses superscript citations (vs. bracketed)
-    fn is_superscript_citation_style(&self) -> bool {
-        self.style_info.is_some_and(|info| info.superscript)
+    /// Check if the CSL style uses numeric citations (vs. author-date).
+    fn is_numeric(&self) -> bool {
+        self.citation_style().is_numeric()
+    }
+
+    /// Check if the CSL style uses superscript citations (vs. bracketed).
+    ///
+    /// Note: Superscript detection is only available for styles in the registry.
+    /// Fallback styles will use bracketed format even if the style requires superscript.
+    fn is_superscript(&self) -> bool {
+        self.citation_style().is_superscript()
     }
 
     /// Strip ANSI escape codes from text.
+    ///
     /// Hayagriva outputs formatted text with ANSI codes for terminal display,
-    /// which need to be removed for HTML output.
+    /// which need to be removed for HTML output. This handles both standard
+    /// escape sequences (`\x1b[...m`) and bare codes (`[0m`, `[3m`, etc.)
+    /// that hayagriva sometimes emits without the ESC prefix.
     fn strip_ansi_codes(text: &str) -> String {
+        // Standard ANSI escape sequences
         let result = ANSI_REGEX.replace_all(text, "");
 
-        // Also remove bare ANSI codes that appear without ESC (hayagriva quirk)
-        // Only match specific known ANSI codes to avoid stripping legitimate brackets
+        // Bare ANSI codes without ESC prefix (hayagriva quirk)
+        const BARE_CODES: &[&str] = &[
+            "[0m", "[1m", "[2m", "[3m", "[4m", // basic formatting
+            "[22m", "[23m", "[24m", // reset formatting
+        ];
+
+        let mut result = result.into_owned();
+        for code in BARE_CODES {
+            result = result.replace(code, "");
+        }
         result
-            .replace("[0m", "") // reset
-            .replace("[1m", "") // bold
-            .replace("[2m", "") // dim
-            .replace("[3m", "") // italic
-            .replace("[4m", "") // underline
-            .replace("[22m", "") // normal intensity
-            .replace("[23m", "") // not italic
-            .replace("[24m", "") // not underline
     }
 }
 
 impl BibliographyBackend for CslBackend {
     fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
         // Determine citation style characteristics
-        let is_numeric_style = self.is_numeric_citation_style();
-        let is_superscript_style = self.is_superscript_citation_style();
+        let is_numeric_style = self.is_numeric();
+        let is_superscript_style = self.is_superscript();
 
         let linked_citation = if is_numeric_style {
             // For numbered styles, use the assigned index
@@ -224,22 +266,23 @@ impl BibliographyBackend for CslBackend {
         let rendered = driver.finish(bib_request);
 
         // Extract the bibliography entry for this item
+        let citation_key = &item.citation_key;
         let bib_html = rendered
             .bibliography
             .map(|bib| {
                 bib.items
                     .first()
-                    .map(|item| item.content.to_string())
-                    .unwrap_or_else(|| format!("{} (no bibliography entry)", item.citation_key))
+                    .map(|bib_item| bib_item.content.to_string())
+                    .unwrap_or_else(|| format!("{citation_key} (no bibliography entry)"))
             })
-            .unwrap_or_else(|| format!("{} (no bibliography)", item.citation_key));
+            .unwrap_or_else(|| format!("{citation_key} (no bibliography)"));
 
         // Strip ANSI codes from hayagriva output
         let clean_html = Self::strip_ansi_codes(&bib_html);
 
         // For numbered styles, prepend the index number
-        let is_numeric = self.is_numeric_citation_style();
-        let is_superscript = self.is_superscript_citation_style();
+        let is_numeric = self.is_numeric();
+        let is_superscript = self.is_superscript();
         let formatted_entry = if is_numeric {
             let index = item.index.unwrap_or(1);
             if is_superscript {
@@ -512,5 +555,48 @@ mod tests {
             !result.contains("\x1b"),
             "Output should not contain ESC character"
         );
+    }
+
+    #[test]
+    fn test_fallback_style_format_detection() {
+        // Use a style that's in hayagriva but NOT in our registry
+        // "annual-reviews" is a numeric style available via ArchivedStyle::by_name()
+        let backend = CslBackend::new("annual-reviews".to_string());
+
+        // The style should load successfully via fallback
+        assert!(
+            backend.is_ok(),
+            "Should load non-registry style via fallback: {:?}",
+            backend.err()
+        );
+
+        let backend = backend.unwrap();
+
+        // style_info should be None (not in registry)
+        assert!(
+            backend.style_info.is_none(),
+            "Non-registry style should have style_info=None"
+        );
+
+        // But numeric should be detected from CSL metadata
+        // annual-reviews is a numeric style
+        assert!(
+            backend.is_numeric(),
+            "annual-reviews should be detected as numeric from CSL metadata"
+        );
+    }
+
+    #[test]
+    fn test_registry_style_has_style_info() {
+        let backend = CslBackend::new("ieee".to_string()).unwrap();
+
+        // Registry style should have style_info
+        assert!(
+            backend.style_info.is_some(),
+            "Registry style should have style_info"
+        );
+
+        // And should be numeric
+        assert!(backend.is_numeric(), "IEEE should be numeric");
     }
 }
