@@ -32,6 +32,30 @@ fn os_string_to_string(os: OsString) -> Result<String, anyhow::Error> {
         .map_err(|p| anyhow!("Path contains invalid UTF-8: {p:?}"))
 }
 
+/// Helper to load a template file or use a default, with optional content wrapping.
+fn load_template(
+    table: &Table,
+    key: &str,
+    book_src_path: &Path,
+    default_content: &str,
+    description: &str,
+    wrapper: impl Fn(&str) -> String,
+) -> Result<String, anyhow::Error> {
+    let content = match table.get(key) {
+        Some(template) => {
+            let template_path = book_src_path.join(Path::new(value_as_str(template, key)?));
+            let template_path_str = os_string_to_string(template_path.into_os_string())?;
+            info!("Using {description} from path: {template_path_str:?}...");
+            fs::read_to_string(template_path_str)?
+        }
+        None => {
+            info!("Using default {description}...");
+            default_content.to_string()
+        }
+    };
+    Ok(wrapper(&content))
+}
+
 pub static DEFAULT_JS_TEMPLATE: &str = include_str!("./render/copy2clipboard.js");
 pub static DEFAULT_CSS_TEMPLATE: &str = include_str!("./render/satancisco.css");
 pub static DEFAULT_HB_TEMPLATE: &str = include_str!("./render/references.hbs");
@@ -144,62 +168,41 @@ impl<'a> Config<'a> {
             },
         };
 
-        let bib_hb_html = match table.get("hb-tpl") {
-            Some(template) => {
-                let template_path =
-                    book_src_path.join(Path::new(value_as_str(template, "hb-tpl")?));
-                let template_path_str = os_string_to_string(template_path.into_os_string())?;
-                info!("Using HB template for bibliography from {template_path_str:?}...");
-                let template_content = fs::read_to_string(template_path_str)?;
-                format!("\n\n{template_content}\n\n")
-            }
-            None => {
-                info!("Using default HB template...");
-                format!("\n\n{DEFAULT_HB_TEMPLATE}\n\n")
-            }
-        };
+        let bib_hb_html = load_template(
+            table,
+            "hb-tpl",
+            &book_src_path,
+            DEFAULT_HB_TEMPLATE,
+            "HB template for bibliography",
+            |c| format!("\n\n{c}\n\n"),
+        )?;
 
-        let cite_hb_html = match table.get("cite-hb-tpl") {
-            Some(template) => {
-                let template_path =
-                    book_src_path.join(Path::new(value_as_str(template, "cite-hb-tpl")?));
-                let template_path_str = os_string_to_string(template_path.into_os_string())?;
-                info!("Using HB template for citations from {template_path_str:?}...");
-                fs::read_to_string(template_path_str)?
-            }
-            None => {
-                info!("Using default citation HB template...");
-                DEFAULT_CITE_HB_TEMPLATE.to_string()
-            }
-        };
+        let cite_hb_html = load_template(
+            table,
+            "cite-hb-tpl",
+            &book_src_path,
+            DEFAULT_CITE_HB_TEMPLATE,
+            "HB template for citations",
+            |c| c.to_string(),
+        )?;
 
-        let css_html = match table.get("css") {
-            Some(css) => {
-                let css_path = book_src_path.join(Path::new(value_as_str(css, "css")?));
-                let css_path_str = os_string_to_string(css_path.into_os_string())?;
-                info!("Using CSS style for bibliography from {css_path_str:?}...");
-                let css_content = fs::read_to_string(css_path_str)?;
-                format!("<style>{css_content}</style>\n\n")
-            }
-            None => {
-                info!("Using default CSS template...");
-                format!("<style>{DEFAULT_CSS_TEMPLATE}</style>\n\n")
-            }
-        };
+        let css_html = load_template(
+            table,
+            "css",
+            &book_src_path,
+            DEFAULT_CSS_TEMPLATE,
+            "CSS style for bibliography",
+            |c| format!("<style>{c}</style>\n\n"),
+        )?;
 
-        let js_html = match table.get("js") {
-            Some(js) => {
-                let js_path = book_src_path.join(Path::new(value_as_str(js, "js")?));
-                let js_path_str = os_string_to_string(js_path.into_os_string())?;
-                info!("Using JS template for bibliography from {js_path_str:?}...");
-                let js_content = fs::read_to_string(js_path_str)?;
-                format!("<script type=\"text/javascript\">\n{js_content}\n</script>\n\n")
-            }
-            None => {
-                info!("Using default JS template...");
-                format!("<script type=\"text/javascript\">\n{DEFAULT_JS_TEMPLATE}\n</script>\n\n")
-            }
-        };
+        let js_html = load_template(
+            table,
+            "js",
+            &book_src_path,
+            DEFAULT_JS_TEMPLATE,
+            "JS for bibliography",
+            |c| format!("<script type=\"text/javascript\">\n{c}\n</script>\n\n"),
+        )?;
 
         let order = match table.get("order") {
             Some(v) => SortOrder::from_str(value_as_str(v, "order")?)?,
