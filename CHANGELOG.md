@@ -4,6 +4,7 @@
 
 **Closed issues:**
 
+- Config Module Refactoring [\#73](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/73)
 - Improve tests [\#70](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/70)
 - Automate release project [\#67](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/67)
 - Improve default handlebar templates to make cites/references more appealing [\#66](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/66)
@@ -11,6 +12,7 @@
 
 **Merged pull requests:**
 
+- Refactor template loading in config.rs for improved maintainability [\#75](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/75) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Perform test re-organization for improved clarity and maintainability [\#71](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/71) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Enhance Makefile and documentation for improved release management [\#69](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/69) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Enhance manual and test\_book bibliography rendering and citation syntax [\#68](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/68) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
