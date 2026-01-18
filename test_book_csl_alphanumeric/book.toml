@@ -1,0 +1,12 @@
+[book]
+title = "Alphanumeric Style Citation Demo"
+authors = ["mdbook-bib CSL Backend"]
+language = "en"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title = "References"
+backend = "csl"
+csl-style = "alphanumeric"
+render-bib = "cited"
+order = "none"

@@ -138,9 +138,19 @@ impl CslBackend {
         }
     }
 
-    /// Check if the CSL style uses numeric citations (vs. author-date).
+    /// Check if the CSL style uses sequential numeric citations (vs. author-date).
+    ///
+    /// Returns true for IEEE, Vancouver, etc. where we manage the citation index.
+    /// Returns false for author-date and label styles.
     fn is_numeric(&self) -> bool {
         self.citation_style().is_numeric()
+    }
+
+    /// Check if the CSL style uses author-based labels (vs. sequential numbers).
+    ///
+    /// Returns true for alphanumeric style where hayagriva generates labels like `[Smi24]`.
+    fn is_label(&self) -> bool {
+        self.citation_style().is_label()
     }
 
     /// Check if the CSL style uses superscript citations (vs. bracketed).
@@ -173,12 +183,59 @@ impl CslBackend {
         }
         result
     }
+
+    /// Format a fallback bibliography entry when hayagriva doesn't provide one.
+    ///
+    /// Some CSL styles (like alphanumeric) don't define a bibliography section,
+    /// so we construct a simple entry from the BibItem metadata.
+    fn format_fallback_bibliography(item: &BibItem) -> String {
+        let mut parts = Vec::new();
+
+        // Authors (format: "LastName, F.")
+        if !item.authors.is_empty() {
+            let author_str: String = item
+                .authors
+                .iter()
+                .map(|name_parts| {
+                    if name_parts.len() >= 2 {
+                        let last = &name_parts[0];
+                        let first = &name_parts[1];
+                        let initial = first.chars().next().unwrap_or('?');
+                        format!("{last}, {initial}.")
+                    } else if !name_parts.is_empty() {
+                        name_parts[0].clone()
+                    } else {
+                        "Unknown".to_string()
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" and ");
+            parts.push(author_str);
+        }
+
+        // Title (in quotes, with period inside)
+        if !item.title.is_empty() {
+            parts.push(format!("\"{}.\"", item.title));
+        }
+
+        // Year
+        if let Some(year) = &item.pub_year {
+            parts.push(format!("{year}."));
+        }
+
+        if parts.is_empty() {
+            item.citation_key.clone()
+        } else {
+            parts.join(" ")
+        }
+    }
 }
 
 impl BibliographyBackend for CslBackend {
     fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
         // Determine citation style characteristics
         let is_numeric_style = self.is_numeric();
+        let is_label_style = self.is_label();
         let is_superscript_style = self.is_superscript();
 
         let linked_citation = if is_numeric_style {
@@ -201,6 +258,42 @@ impl BibliographyBackend for CslBackend {
                     index, context.bib_page_path, item.citation_key
                 )
             }
+        } else if is_label_style {
+            // For label styles (alphanumeric), use hayagriva to generate author-based labels
+            let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
+                anyhow!(
+                    "BibItem '{}' missing hayagriva_entry for CSL rendering",
+                    item.citation_key
+                )
+            })?;
+
+            // Create a bibliography driver for this single citation
+            let mut driver = BibliographyDriver::new();
+            let citation_item = CitationItem::with_entry(entry.as_ref());
+            let citation_request =
+                CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
+            driver.citation(citation_request);
+
+            let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
+            let rendered = driver.finish(bib_request);
+
+            // Extract and clean the citation label
+            let citation_text = rendered
+                .citations
+                .first()
+                .map(|c| c.citation.to_string())
+                .unwrap_or_else(|| format!("[{}]", item.citation_key));
+
+            let clean_citation = Self::strip_ansi_codes(&citation_text);
+
+            // Label styles render as bracketed labels like [Smi24]
+            // The hayagriva output may already include brackets
+            let label = clean_citation.trim_start_matches('[').trim_end_matches(']');
+
+            format!(
+                "[[{}]({}#{})]",
+                label, context.bib_page_path, item.citation_key
+            )
         } else {
             // For author-date styles (Chicago, APA, Harvard, etc.), use hayagriva formatting
             let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
@@ -266,34 +359,47 @@ impl BibliographyBackend for CslBackend {
         let rendered = driver.finish(bib_request);
 
         // Extract the bibliography entry for this item
-        let citation_key = &item.citation_key;
         let bib_html = rendered
             .bibliography
-            .map(|bib| {
-                bib.items
-                    .first()
-                    .map(|bib_item| bib_item.content.to_string())
-                    .unwrap_or_else(|| format!("{citation_key} (no bibliography entry)"))
-            })
-            .unwrap_or_else(|| format!("{citation_key} (no bibliography)"));
+            .and_then(|bib| bib.items.first().map(|i| i.content.to_string()));
 
-        // Strip ANSI codes from hayagriva output
-        let clean_html = Self::strip_ansi_codes(&bib_html);
+        // If no bibliography content from hayagriva, construct a fallback
+        let bib_content = match bib_html {
+            Some(html) => Self::strip_ansi_codes(&html),
+            None => Self::format_fallback_bibliography(item),
+        };
 
-        // For numbered styles, prepend the index number
+        // Determine formatting based on style type
         let is_numeric = self.is_numeric();
+        let is_label = self.is_label();
         let is_superscript = self.is_superscript();
+
         let formatted_entry = if is_numeric {
+            // For numbered styles, prepend the index number
             let index = item.index.unwrap_or(1);
             if is_superscript {
                 // Nature and similar styles use "1." format
-                format!("{index}. {clean_html}")
+                format!("{index}. {bib_content}")
             } else {
                 // IEEE and similar styles use "[1]" format
-                format!("[{index}] {clean_html}")
+                format!("[{index}] {bib_content}")
             }
+        } else if is_label {
+            // For label styles (alphanumeric), get the label from hayagriva citation
+            let citation_text = rendered
+                .citations
+                .first()
+                .map(|c| c.citation.to_string())
+                .unwrap_or_else(|| format!("[{}]", item.citation_key));
+
+            let clean_label = Self::strip_ansi_codes(&citation_text);
+            // Label may already include brackets, normalize to [label]
+            let label = clean_label.trim_start_matches('[').trim_end_matches(']');
+
+            format!("[{label}] {bib_content}")
         } else {
-            clean_html
+            // Author-date styles: no prefix
+            bib_content
         };
 
         // Wrap in a div with CSL entry class and add anchor for linking
@@ -652,11 +758,105 @@ mod tests {
         let backend =
             CslBackend::new("alphanumeric".to_string()).expect("Failed to create backend");
 
-        // Alphanumeric is numeric (uses labels like [Smi24])
-        assert!(backend.is_numeric(), "alphanumeric should be numeric");
+        // Alphanumeric uses author-based labels (not sequential numbers)
+        assert!(
+            !backend.is_numeric(),
+            "alphanumeric should not be numeric (uses hayagriva labels)"
+        );
+        assert!(backend.is_label(), "alphanumeric should be a label style");
         assert!(
             !backend.is_superscript(),
             "alphanumeric should not be superscript"
+        );
+
+        // Test citation rendering with an actual entry
+        let entry_str = r#"@article{smith2024,
+            author = {Smith, John A.},
+            title = {Modern Data Analysis},
+            journal = {Data Science Journal},
+            year = {2024},
+        }"#;
+
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "smith2024".to_string(),
+            title: "Modern Data Analysis".to_string(),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let context = CitationContext {
+            bib_page_path: "bibliography.html".to_string(),
+            chapter_path: "chapter1.md".to_string(),
+        };
+
+        let citation = backend.format_citation(&item, &context).unwrap();
+        println!("Alphanumeric citation: {citation}");
+
+        // Should contain an author-based label, not a sequential number
+        // The label format is typically [Smi24] or similar
+        assert!(
+            citation.contains("bibliography.html#smith2024"),
+            "Citation should link to bibliography"
+        );
+        // Should NOT be a plain number like [1]
+        assert!(
+            !citation.contains(">1<"),
+            "Label style should not use sequential numbers"
+        );
+    }
+
+    #[test]
+    fn test_alphanumeric_reference_rendering() {
+        let backend =
+            CslBackend::new("alphanumeric".to_string()).expect("Failed to create backend");
+
+        let entry_str = r#"@article{smith2024,
+            author = {Smith, John A.},
+            title = {Modern Data Analysis},
+            journal = {Data Science Journal},
+            year = {2024},
+            volume = {10},
+            pages = {1-20},
+        }"#;
+
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "smith2024".to_string(),
+            title: "Modern Data Analysis".to_string(),
+            authors: vec![vec!["Smith".to_string(), "John A.".to_string()]],
+            pub_year: Some("2024".to_string()),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let reference = backend.format_reference(&item).unwrap();
+        println!("Alphanumeric reference: {reference}");
+
+        // Should contain the label
+        assert!(
+            reference.contains("[Smi24]"),
+            "Reference should contain the label [Smi24]"
+        );
+
+        // Should contain the citation key anchor
+        assert!(
+            reference.contains("id='smith2024'"),
+            "Reference should have anchor for citation key"
+        );
+
+        // Should contain author and title from fallback format
+        assert!(
+            reference.contains("Smith"),
+            "Reference should contain author name"
+        );
+        assert!(
+            reference.contains("Modern Data Analysis"),
+            "Reference should contain title"
         );
     }
 

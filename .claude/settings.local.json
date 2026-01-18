@@ -39,7 +39,11 @@
       "Bash(make release-dry-run:*)",
       "Bash(make help:*)",
       "Bash(make release:*)",
-      "Bash(make update-cargo:*)"
+      "Bash(make update-cargo:*)",
+      "Bash(PATH=/Users/fperez/dev/mdbook-bib/target/release:$PATH MDBOOK_LOG=mdbook_bib=debug mdbook build:*)",
+      "Bash(PATH=/Users/fperez/dev/mdbook-bib/target/release:$PATH mdbook build:*)",
+      "Bash(PATH=/Users/fperez/dev/mdbook-bib/target/release:$PATH /Users/fperez/.cargo/bin/mdbook build:*)",
+      "Bash(/Users/fperez/.cargo/bin/mdbook build:*)"
     ]
   }
 }

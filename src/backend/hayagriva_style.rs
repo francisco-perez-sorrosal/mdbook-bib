@@ -21,8 +21,18 @@ use hayagriva::citationberg::{CitationFormat, IndependentStyle, StyleCategory};
 /// Both `StyleInfo` (from registry) and `DetectedStyleFormat` (from CSL metadata)
 /// implement this trait to provide uniform access to citation format flags.
 pub trait CitationStyle {
-    /// Whether the style uses numeric citations (e.g., `[1]`, `[2]`)
+    /// Whether the style uses sequential numeric citations (e.g., `[1]`, `[2]`)
+    ///
+    /// Returns true for IEEE, Vancouver, etc. where we manage the citation index.
+    /// Returns false for author-date and label styles where hayagriva generates the text.
     fn is_numeric(&self) -> bool;
+
+    /// Whether the style uses author-based labels (e.g., `[Smi24]`, `[JL23]`)
+    ///
+    /// Label styles generate unique identifiers from author names and publication year.
+    /// Unlike numeric styles, the citation text comes from hayagriva, not from our index.
+    fn is_label(&self) -> bool;
+
     /// Whether the style uses superscript citations (e.g., `¹`, `²`)
     fn is_superscript(&self) -> bool;
 }
@@ -37,8 +47,10 @@ pub struct StyleInfo {
     pub aliases: &'static [&'static str],
     /// The hayagriva ArchivedStyle variant
     pub archived: ArchivedStyle,
-    /// Whether this style uses numeric citations (e.g., [1], [2])
+    /// Whether this style uses sequential numeric citations (e.g., [1], [2])
     numeric: bool,
+    /// Whether this style uses author-based labels (e.g., [Smi24])
+    label: bool,
     /// Whether this style uses superscript citations (e.g., Nature)
     superscript: bool,
 }
@@ -46,6 +58,9 @@ pub struct StyleInfo {
 impl CitationStyle for StyleInfo {
     fn is_numeric(&self) -> bool {
         self.numeric
+    }
+    fn is_label(&self) -> bool {
+        self.label
     }
     fn is_superscript(&self) -> bool {
         self.superscript
@@ -59,114 +74,133 @@ static STYLE_REGISTRY: &[StyleInfo] = &[
         aliases: &["ieee"],
         archived: ArchivedStyle::InstituteOfElectricalAndElectronicsEngineers,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["apa", "american-psychological-association"],
         archived: ArchivedStyle::AmericanPsychologicalAssociation,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["chicago-author-date"],
         archived: ArchivedStyle::ChicagoAuthorDate,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["chicago-notes"],
         archived: ArchivedStyle::ChicagoNotes,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["mla", "modern-language-association"],
         archived: ArchivedStyle::ModernLanguageAssociation,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["mla8", "modern-language-association-8"],
         archived: ArchivedStyle::ModernLanguageAssociation8,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["nature"],
         archived: ArchivedStyle::Nature,
         numeric: true,
+        label: false,
         superscript: true,
     },
     StyleInfo {
         aliases: &["vancouver"],
         archived: ArchivedStyle::Vancouver,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["vancouver-superscript"],
         archived: ArchivedStyle::VancouverSuperscript,
         numeric: true,
+        label: false,
         superscript: true,
     },
     StyleInfo {
         aliases: &["harvard", "harvard-cite-them-right"],
         archived: ArchivedStyle::HarvardCiteThemRight,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["acm", "association-for-computing-machinery"],
         archived: ArchivedStyle::AssociationForComputingMachinery,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["acs", "american-chemical-society"],
         archived: ArchivedStyle::AmericanChemicalSociety,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["ama", "american-medical-association"],
         archived: ArchivedStyle::AmericanMedicalAssociation,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["springer-basic"],
         archived: ArchivedStyle::SpringerBasic,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["springer-basic-author-date"],
         archived: ArchivedStyle::SpringerBasicAuthorDate,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["cell"],
         archived: ArchivedStyle::Cell,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["elsevier-harvard"],
         archived: ArchivedStyle::ElsevierHarvard,
         numeric: false,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["elsevier-vancouver"],
         archived: ArchivedStyle::ElsevierVancouver,
         numeric: true,
+        label: false,
         superscript: false,
     },
     StyleInfo {
         aliases: &["alphanumeric"],
         archived: ArchivedStyle::Alphanumeric,
-        numeric: true,
+        numeric: false,
+        label: true,
         superscript: false,
     },
 ];
@@ -232,8 +266,10 @@ pub fn format_style_list() -> String {
 /// Superscript detection is not possible from CSL alone, so it defaults to `false`.
 #[derive(Debug, Clone, Copy)]
 pub struct DetectedStyleFormat {
-    /// Whether the style uses numeric citations (from CSL category metadata)
+    /// Whether the style uses sequential numeric citations (from CSL category metadata)
     numeric: bool,
+    /// Whether the style uses author-based labels (from CSL category metadata)
+    label: bool,
     /// Whether the style uses superscript (cannot be detected from CSL, always false)
     superscript: bool,
 }
@@ -241,6 +277,9 @@ pub struct DetectedStyleFormat {
 impl CitationStyle for DetectedStyleFormat {
     fn is_numeric(&self) -> bool {
         self.numeric
+    }
+    fn is_label(&self) -> bool {
+        self.label
     }
     fn is_superscript(&self) -> bool {
         self.superscript
@@ -250,34 +289,33 @@ impl CitationStyle for DetectedStyleFormat {
 /// Detect citation format characteristics from a CSL style's metadata.
 ///
 /// Examines the style's `info.category` to find the `CitationFormat` and determines
-/// whether the style uses numeric citations. Superscript cannot be detected from
-/// CSL metadata alone, so it always returns `false` for superscript.
+/// whether the style uses numeric or label citations. Superscript cannot be detected
+/// from CSL metadata alone, so it always returns `false` for superscript.
 ///
 /// # Arguments
 /// * `style` - The loaded CSL IndependentStyle
 ///
 /// # Returns
-/// `DetectedStyleFormat` with numeric/superscript flags based on CSL metadata.
+/// `DetectedStyleFormat` with numeric/label/superscript flags based on CSL metadata.
 ///
 /// # Citation Format Mapping
 /// - `CitationFormat::Numeric` → numeric=true (e.g., IEEE `[1]`)
-/// - `CitationFormat::Label` → numeric=true (e.g., `[Smi24]`)
-/// - `CitationFormat::AuthorDate` → numeric=false (e.g., `(Smith, 2024)`)
-/// - `CitationFormat::Author` → numeric=false (e.g., `(Smith)`)
-/// - `CitationFormat::Note` → numeric=false (footnote styles)
+/// - `CitationFormat::Label` → label=true (e.g., `[Smi24]`)
+/// - `CitationFormat::AuthorDate` → neither (e.g., `(Smith, 2024)`)
+/// - `CitationFormat::Author` → neither (e.g., `(Smith)`)
+/// - `CitationFormat::Note` → neither (footnote styles)
 pub fn detect_style_format(style: &IndependentStyle) -> DetectedStyleFormat {
-    let numeric = style
-        .info
-        .category
-        .iter()
-        .find_map(|cat| match cat {
-            StyleCategory::CitationFormat { format } => Some(format),
-            StyleCategory::Field { .. } => None,
-        })
-        .is_some_and(|format| matches!(format, CitationFormat::Numeric | CitationFormat::Label));
+    let citation_format = style.info.category.iter().find_map(|cat| match cat {
+        StyleCategory::CitationFormat { format } => Some(*format),
+        StyleCategory::Field { .. } => None,
+    });
+
+    let numeric = citation_format.is_some_and(|f| matches!(f, CitationFormat::Numeric));
+    let label = citation_format.is_some_and(|f| matches!(f, CitationFormat::Label));
 
     DetectedStyleFormat {
         numeric,
+        label,
         superscript: false, // Cannot detect from CSL metadata
     }
 }
