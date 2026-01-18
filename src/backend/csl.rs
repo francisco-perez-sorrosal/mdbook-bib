@@ -599,4 +599,149 @@ mod tests {
         // And should be numeric
         assert!(backend.is_numeric(), "IEEE should be numeric");
     }
+
+    // --- New style integration tests ---
+
+    #[test]
+    fn test_vancouver_superscript_citation() {
+        let backend =
+            CslBackend::new("vancouver-superscript".to_string()).expect("Failed to create backend");
+
+        // Should be numeric AND superscript
+        assert!(
+            backend.is_numeric(),
+            "vancouver-superscript should be numeric"
+        );
+        assert!(
+            backend.is_superscript(),
+            "vancouver-superscript should use superscript"
+        );
+
+        // Test citation rendering
+        let entry_str = r#"@article{test2024,
+            author = {Smith, John},
+            title = {Test Article},
+            journal = {Test Journal},
+            year = {2024},
+        }"#;
+
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "test2024".to_string(),
+            title: "Test Article".to_string(),
+            index: Some(1),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let context = CitationContext {
+            bib_page_path: "bibliography.html".to_string(),
+            chapter_path: "chapter1.md".to_string(),
+        };
+
+        let citation = backend.format_citation(&item, &context).unwrap();
+        // Superscript styles render as <sup><a href="...">1</a></sup>
+        assert!(citation.contains("<sup>"), "Should contain superscript tag");
+        assert!(citation.contains("</sup>"), "Should close superscript tag");
+    }
+
+    #[test]
+    fn test_alphanumeric_citation() {
+        let backend =
+            CslBackend::new("alphanumeric".to_string()).expect("Failed to create backend");
+
+        // Alphanumeric is numeric (uses labels like [Smi24])
+        assert!(backend.is_numeric(), "alphanumeric should be numeric");
+        assert!(
+            !backend.is_superscript(),
+            "alphanumeric should not be superscript"
+        );
+    }
+
+    #[test]
+    fn test_elsevier_vancouver_citation() {
+        let backend =
+            CslBackend::new("elsevier-vancouver".to_string()).expect("Failed to create backend");
+
+        assert!(backend.is_numeric(), "elsevier-vancouver should be numeric");
+        assert!(
+            !backend.is_superscript(),
+            "elsevier-vancouver should not be superscript"
+        );
+    }
+
+    #[test]
+    fn test_springer_basic_author_date_citation() {
+        let backend = CslBackend::new("springer-basic-author-date".to_string())
+            .expect("Failed to create backend");
+
+        assert!(
+            !backend.is_numeric(),
+            "springer-basic-author-date should be author-date"
+        );
+        assert!(
+            !backend.is_superscript(),
+            "springer-basic-author-date should not be superscript"
+        );
+    }
+
+    #[test]
+    fn test_mla8_citation() {
+        let backend = CslBackend::new("mla8".to_string()).expect("Failed to create backend");
+
+        assert!(!backend.is_numeric(), "mla8 should be author-date style");
+        assert!(!backend.is_superscript(), "mla8 should not be superscript");
+    }
+
+    // --- Registry integrity tests ---
+
+    #[test]
+    fn test_no_duplicate_aliases() {
+        use std::collections::HashSet;
+        let mut seen = HashSet::new();
+
+        for style in super::super::hayagriva_style::all_registry_styles() {
+            for alias in style.aliases {
+                assert!(
+                    seen.insert(*alias),
+                    "Duplicate alias found in registry: '{alias}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_registry_style_count() {
+        let count = super::super::hayagriva_style::registry_style_count();
+        assert!(
+            count >= 19,
+            "Registry should have at least 19 styles, found {count}"
+        );
+    }
+
+    #[test]
+    fn test_format_style_list() {
+        let list = super::super::hayagriva_style::format_style_list();
+
+        // Check that key styles appear in correct categories
+        assert!(list.contains("ieee"), "Should list ieee");
+        assert!(list.contains("apa"), "Should list apa");
+        assert!(list.contains("nature"), "Should list nature");
+
+        // Check structure
+        assert!(
+            list.contains("Numeric styles:"),
+            "Should have numeric section"
+        );
+        assert!(
+            list.contains("Superscript styles:"),
+            "Should have superscript section"
+        );
+        assert!(
+            list.contains("Author-date styles:"),
+            "Should have author-date section"
+        );
+    }
 }

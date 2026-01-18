@@ -147,6 +147,42 @@ Output:
 - Inline: `(Author, 2024)`
 - Bibliography: `Author, A. (2024). Title. Journal, 1, 1-10.`
 
+### Vancouver vs Vancouver-Superscript
+
+Both Vancouver styles are numeric, but differ in citation rendering:
+
+**`vancouver`** (bracketed):
+
+```text
+As shown in previous studies [1], the results [2,3] indicate...
+```
+
+**`vancouver-superscript`** (superscript):
+
+```text
+As shown in previous studies¹, the results²,³ indicate...
+```
+
+Use `vancouver` for most medical journals. Use `vancouver-superscript` when the journal specifically requires superscript numbers (less common).
+
+### Alphanumeric
+
+The alphanumeric style uses author-year labels instead of sequential numbers:
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "alphanumeric"
+```
+
+Output:
+
+- Inline: `[Smi24]`, `[JD23]` (author initials + year)
+- Bibliography: `[Smi24] Smith, A. Title. Journal, 2024.`
+
+This style is useful when you want readers to identify sources at a glance without flipping to the bibliography.
+
 ## Full Configuration Example
 
 ```toml
