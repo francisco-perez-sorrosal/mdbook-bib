@@ -184,6 +184,48 @@ pub fn supported_style_aliases() -> impl Iterator<Item = &'static str> {
     STYLE_REGISTRY.iter().map(|info| info.aliases[0])
 }
 
+/// Get all registry entries for detailed style information.
+#[cfg(test)]
+pub fn all_registry_styles() -> impl Iterator<Item = &'static StyleInfo> {
+    STYLE_REGISTRY.iter()
+}
+
+/// Get the number of styles in the registry.
+#[cfg(test)]
+pub fn registry_style_count() -> usize {
+    STYLE_REGISTRY.len()
+}
+
+/// Format a human-readable list of available styles grouped by format.
+///
+/// Returns a formatted string suitable for CLI help or documentation.
+#[cfg(test)]
+pub fn format_style_list() -> String {
+    let mut numeric = Vec::new();
+    let mut superscript = Vec::new();
+    let mut author_date = Vec::new();
+
+    for style in STYLE_REGISTRY {
+        let name = style.aliases[0];
+        if style.superscript {
+            superscript.push(name);
+        } else if style.numeric {
+            numeric.push(name);
+        } else {
+            author_date.push(name);
+        }
+    }
+
+    format!(
+        "Numeric styles: {}\n\
+         Superscript styles: {}\n\
+         Author-date styles: {}",
+        numeric.join(", "),
+        superscript.join(", "),
+        author_date.join(", ")
+    )
+}
+
 /// Runtime-detected style characteristics for styles not in the registry.
 ///
 /// Unlike `StyleInfo`, this is computed at runtime from CSL metadata.
