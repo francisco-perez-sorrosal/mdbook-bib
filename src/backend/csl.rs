@@ -14,8 +14,8 @@ use regex::Regex;
 use crate::models::BibItem;
 
 use super::hayagriva_style::{
-    detect_style_format, find_style_info, supported_style_aliases, CitationStyle,
-    DetectedStyleFormat, StyleInfo,
+    detect_style_format, find_style_info, supported_style_aliases, CitationContentType,
+    CitationFormat, CitationRendering, CitationStyle, DetectedStyleFormat, StyleInfo,
 };
 use super::{BibliographyBackend, CitationContext};
 
@@ -70,9 +70,9 @@ impl CslBackend {
         let detected_format = detect_style_format(&style);
         if resolved_info.is_none() {
             tracing::info!(
-                "Style '{}' not in registry, detected format: numeric={}",
+                "Style '{}' not in registry, detected format: {:?}",
                 style_name,
-                detected_format.is_numeric()
+                detected_format.citation_format()
             );
         }
 
@@ -127,38 +127,44 @@ impl CslBackend {
         }
     }
 
-    /// Get the effective citation style (registry or detected).
+    /// Get the effective citation format (registry or detected).
     ///
-    /// Returns the `StyleInfo` if available (for registry styles), otherwise
-    /// falls back to `DetectedStyleFormat` (for fallback styles).
-    fn citation_style(&self) -> &dyn CitationStyle {
+    /// Returns the `CitationFormat` from `StyleInfo` if available (for registry styles),
+    /// otherwise falls back to `DetectedStyleFormat` (for fallback styles).
+    fn citation_format(&self) -> CitationFormat {
         match &self.style_info {
-            Some(info) => *info,
-            None => &self.detected_format,
+            Some(info) => info.citation_format(),
+            None => self.detected_format.citation_format(),
         }
     }
 
-    /// Check if the CSL style uses sequential numeric citations (vs. author-date).
+    /// Get the citation text from hayagriva for a given item.
     ///
-    /// Returns true for IEEE, Vancouver, etc. where we manage the citation index.
-    /// Returns false for author-date and label styles.
-    fn is_numeric(&self) -> bool {
-        self.citation_style().is_numeric()
-    }
+    /// This is used for label and author-date styles where hayagriva generates the text.
+    fn get_hayagriva_citation_text(&self, item: &BibItem, fallback: &str) -> MdResult<String> {
+        let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
+            anyhow!(
+                "BibItem '{}' missing hayagriva_entry for CSL rendering",
+                item.citation_key
+            )
+        })?;
 
-    /// Check if the CSL style uses author-based labels (vs. sequential numbers).
-    ///
-    /// Returns true for alphanumeric style where hayagriva generates labels like `[Smi24]`.
-    fn is_label(&self) -> bool {
-        self.citation_style().is_label()
-    }
+        let mut driver = BibliographyDriver::new();
+        let citation_item = CitationItem::with_entry(entry.as_ref());
+        let citation_request =
+            CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
+        driver.citation(citation_request);
 
-    /// Check if the CSL style uses superscript citations (vs. bracketed).
-    ///
-    /// Note: Superscript detection is only available for styles in the registry.
-    /// Fallback styles will use bracketed format even if the style requires superscript.
-    fn is_superscript(&self) -> bool {
-        self.citation_style().is_superscript()
+        let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
+        let rendered = driver.finish(bib_request);
+
+        let citation_text = rendered
+            .citations
+            .first()
+            .map(|c| c.citation.to_string())
+            .unwrap_or_else(|| fallback.to_string());
+
+        Ok(Self::strip_ansi_codes(&citation_text))
     }
 
     /// Strip ANSI escape codes from text.
@@ -200,8 +206,13 @@ impl CslBackend {
                     if name_parts.len() >= 2 {
                         let last = &name_parts[0];
                         let first = &name_parts[1];
-                        let initial = first.chars().next().unwrap_or('?');
-                        format!("{last}, {initial}.")
+                        // Use first initial if available, otherwise full first name
+                        let initial_part = first
+                            .chars()
+                            .next()
+                            .map(|c| format!("{c}."))
+                            .unwrap_or_else(|| first.clone());
+                        format!("{last}, {initial_part}")
                     } else if !name_parts.is_empty() {
                         name_parts[0].clone()
                     } else {
@@ -233,108 +244,50 @@ impl CslBackend {
 
 impl BibliographyBackend for CslBackend {
     fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
-        // Determine citation style characteristics
-        let is_numeric_style = self.is_numeric();
-        let is_label_style = self.is_label();
-        let is_superscript_style = self.is_superscript();
+        let format = self.citation_format();
+        let link = format!("{}#{}", context.bib_page_path, item.citation_key);
 
-        let linked_citation = if is_numeric_style {
-            // For numbered styles, use the assigned index
-            // The index is set by citation/mod.rs based on order of first appearance
-            let index = item.index.unwrap_or(1);
-
-            if is_superscript_style {
-                // Superscript styles (Nature, Vancouver-superscript, etc.)
-                // Render as: <sup><a href="url">1</a></sup>
-                format!(
-                    "<sup><a href=\"{}#{}\">{}</a></sup>",
-                    context.bib_page_path, item.citation_key, index
-                )
-            } else {
-                // Bracketed numeric styles (IEEE, Vancouver, etc.)
-                // Render as: [[1](url)] → [<a href="url">1</a>]
-                format!(
-                    "[[{}]({}#{})]",
-                    index, context.bib_page_path, item.citation_key
-                )
+        // Get content based on content type
+        let content = match format.content {
+            CitationContentType::Numeric => {
+                // For numbered styles, use the assigned index
+                item.index.unwrap_or(1).to_string()
             }
-        } else if is_label_style {
-            // For label styles (alphanumeric), use hayagriva to generate author-based labels
-            let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
-                anyhow!(
-                    "BibItem '{}' missing hayagriva_entry for CSL rendering",
-                    item.citation_key
-                )
-            })?;
+            CitationContentType::Label => {
+                // For label styles (alphanumeric), use hayagriva to generate author-based labels
+                // trim_matches handles potential nested brackets like [[Smi24]]
+                self.get_hayagriva_citation_text(item, &format!("[{}]", item.citation_key))?
+                    .trim_matches(&['[', ']'] as &[char])
+                    .to_string()
+            }
+            CitationContentType::AuthorDate => {
+                // For author-date styles (Chicago, APA, Harvard, etc.), use hayagriva formatting
+                // trim_matches handles potential nested parens
+                self.get_hayagriva_citation_text(item, &format!("({})", item.citation_key))?
+                    .trim_matches(&['(', ')'] as &[char])
+                    .to_string()
+            }
+        };
 
-            // Create a bibliography driver for this single citation
-            let mut driver = BibliographyDriver::new();
-            let citation_item = CitationItem::with_entry(entry.as_ref());
-            let citation_request =
-                CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
-            driver.citation(citation_request);
-
-            let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
-            let rendered = driver.finish(bib_request);
-
-            // Extract and clean the citation label
-            let citation_text = rendered
-                .citations
-                .first()
-                .map(|c| c.citation.to_string())
-                .unwrap_or_else(|| format!("[{}]", item.citation_key));
-
-            let clean_citation = Self::strip_ansi_codes(&citation_text);
-
-            // Label styles render as bracketed labels like [Smi24]
-            // The hayagriva output may already include brackets
-            let label = clean_citation.trim_start_matches('[').trim_end_matches(']');
-
-            format!(
-                "[[{}]({}#{})]",
-                label, context.bib_page_path, item.citation_key
-            )
-        } else {
-            // For author-date styles (Chicago, APA, Harvard, etc.), use hayagriva formatting
-            let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
-                anyhow!(
-                    "BibItem '{}' missing hayagriva_entry for CSL rendering",
-                    item.citation_key
-                )
-            })?;
-
-            // Create a bibliography driver for this single citation
-            let mut driver = BibliographyDriver::new();
-            let citation_item = CitationItem::with_entry(entry.as_ref());
-            let citation_request =
-                CitationRequest::from_items(vec![citation_item], &self.style, &self.locales);
-            driver.citation(citation_request);
-
-            let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
-            let rendered = driver.finish(bib_request);
-
-            // Extract and clean the citation
-            let citation_text = rendered
-                .citations
-                .first()
-                .map(|c| c.citation.to_string())
-                .unwrap_or_else(|| format!("({})", item.citation_key));
-
-            let clean_citation = Self::strip_ansi_codes(&citation_text);
-
-            // Author-date citations are typically in parentheses
-            let citation_content = clean_citation.trim_start_matches('(').trim_end_matches(')');
-
-            format!(
-                "([{}]({}#{}))",
-                citation_content, context.bib_page_path, item.citation_key
-            )
+        // Render based on content type and rendering type
+        let linked_citation = match (format.content, format.rendering) {
+            (_, CitationRendering::Superscript) => {
+                format!("<sup><a href=\"{link}\">{content}</a></sup>")
+            }
+            (CitationContentType::AuthorDate, CitationRendering::Bracketed) => {
+                format!("([{content}]({link}))")
+            }
+            (_, CitationRendering::Bracketed) => {
+                format!("[[{content}]({link})]")
+            }
         };
 
         Ok(linked_citation)
     }
 
     fn format_reference(&self, item: &BibItem) -> MdResult<String> {
+        let format = self.citation_format();
+
         // Get the hayagriva Entry from the BibItem
         let entry = item.hayagriva_entry.as_ref().ok_or_else(|| {
             anyhow!(
@@ -369,37 +322,36 @@ impl BibliographyBackend for CslBackend {
             None => Self::format_fallback_bibliography(item),
         };
 
-        // Determine formatting based on style type
-        let is_numeric = self.is_numeric();
-        let is_label = self.is_label();
-        let is_superscript = self.is_superscript();
-
-        let formatted_entry = if is_numeric {
-            // For numbered styles, prepend the index number
-            let index = item.index.unwrap_or(1);
-            if is_superscript {
+        // Format entry based on content type and rendering
+        let formatted_entry = match (format.content, format.rendering) {
+            (CitationContentType::Numeric, CitationRendering::Superscript) => {
                 // Nature and similar styles use "1." format
+                let index = item.index.unwrap_or(1);
                 format!("{index}. {bib_content}")
-            } else {
+            }
+            (CitationContentType::Numeric, CitationRendering::Bracketed) => {
                 // IEEE and similar styles use "[1]" format
+                let index = item.index.unwrap_or(1);
                 format!("[{index}] {bib_content}")
             }
-        } else if is_label {
-            // For label styles (alphanumeric), get the label from hayagriva citation
-            let citation_text = rendered
-                .citations
-                .first()
-                .map(|c| c.citation.to_string())
-                .unwrap_or_else(|| format!("[{}]", item.citation_key));
+            (CitationContentType::Label, _) => {
+                // For label styles (alphanumeric), get the label from hayagriva citation
+                let citation_text = rendered
+                    .citations
+                    .first()
+                    .map(|c| c.citation.to_string())
+                    .unwrap_or_else(|| format!("[{}]", item.citation_key));
 
-            let clean_label = Self::strip_ansi_codes(&citation_text);
-            // Label may already include brackets, normalize to [label]
-            let label = clean_label.trim_start_matches('[').trim_end_matches(']');
+                let clean_label = Self::strip_ansi_codes(&citation_text);
+                // trim_matches handles potential nested brackets
+                let label = clean_label.trim_matches(&['[', ']'] as &[char]);
 
-            format!("[{label}] {bib_content}")
-        } else {
-            // Author-date styles: no prefix
-            bib_content
+                format!("[{label}] {bib_content}")
+            }
+            (CitationContentType::AuthorDate, _) => {
+                // Author-date styles: no prefix
+                bib_content
+            }
         };
 
         // Wrap in a div with CSL entry class and add anchor for linking
@@ -686,8 +638,9 @@ mod tests {
 
         // But numeric should be detected from CSL metadata
         // annual-reviews is a numeric style
-        assert!(
-            backend.is_numeric(),
+        assert_eq!(
+            backend.citation_format().content,
+            CitationContentType::Numeric,
             "annual-reviews should be detected as numeric from CSL metadata"
         );
     }
@@ -703,7 +656,11 @@ mod tests {
         );
 
         // And should be numeric
-        assert!(backend.is_numeric(), "IEEE should be numeric");
+        assert_eq!(
+            backend.citation_format().content,
+            CitationContentType::Numeric,
+            "IEEE should be numeric"
+        );
     }
 
     // --- New style integration tests ---
@@ -714,12 +671,15 @@ mod tests {
             CslBackend::new("vancouver-superscript".to_string()).expect("Failed to create backend");
 
         // Should be numeric AND superscript
-        assert!(
-            backend.is_numeric(),
+        let format = backend.citation_format();
+        assert_eq!(
+            format.content,
+            CitationContentType::Numeric,
             "vancouver-superscript should be numeric"
         );
-        assert!(
-            backend.is_superscript(),
+        assert_eq!(
+            format.rendering,
+            CitationRendering::Superscript,
             "vancouver-superscript should use superscript"
         );
 
@@ -759,14 +719,16 @@ mod tests {
             CslBackend::new("alphanumeric".to_string()).expect("Failed to create backend");
 
         // Alphanumeric uses author-based labels (not sequential numbers)
-        assert!(
-            !backend.is_numeric(),
-            "alphanumeric should not be numeric (uses hayagriva labels)"
+        let format = backend.citation_format();
+        assert_eq!(
+            format.content,
+            CitationContentType::Label,
+            "alphanumeric should be a label style"
         );
-        assert!(backend.is_label(), "alphanumeric should be a label style");
-        assert!(
-            !backend.is_superscript(),
-            "alphanumeric should not be superscript"
+        assert_eq!(
+            format.rendering,
+            CitationRendering::Bracketed,
+            "alphanumeric should be bracketed"
         );
 
         // Test citation rendering with an actual entry
@@ -865,10 +827,16 @@ mod tests {
         let backend =
             CslBackend::new("elsevier-vancouver".to_string()).expect("Failed to create backend");
 
-        assert!(backend.is_numeric(), "elsevier-vancouver should be numeric");
-        assert!(
-            !backend.is_superscript(),
-            "elsevier-vancouver should not be superscript"
+        let format = backend.citation_format();
+        assert_eq!(
+            format.content,
+            CitationContentType::Numeric,
+            "elsevier-vancouver should be numeric"
+        );
+        assert_eq!(
+            format.rendering,
+            CitationRendering::Bracketed,
+            "elsevier-vancouver should be bracketed"
         );
     }
 
@@ -877,13 +845,16 @@ mod tests {
         let backend = CslBackend::new("springer-basic-author-date".to_string())
             .expect("Failed to create backend");
 
-        assert!(
-            !backend.is_numeric(),
+        let format = backend.citation_format();
+        assert_eq!(
+            format.content,
+            CitationContentType::AuthorDate,
             "springer-basic-author-date should be author-date"
         );
-        assert!(
-            !backend.is_superscript(),
-            "springer-basic-author-date should not be superscript"
+        assert_eq!(
+            format.rendering,
+            CitationRendering::Bracketed,
+            "springer-basic-author-date should be bracketed"
         );
     }
 
@@ -891,8 +862,17 @@ mod tests {
     fn test_mla8_citation() {
         let backend = CslBackend::new("mla8".to_string()).expect("Failed to create backend");
 
-        assert!(!backend.is_numeric(), "mla8 should be author-date style");
-        assert!(!backend.is_superscript(), "mla8 should not be superscript");
+        let format = backend.citation_format();
+        assert_eq!(
+            format.content,
+            CitationContentType::AuthorDate,
+            "mla8 should be author-date style"
+        );
+        assert_eq!(
+            format.rendering,
+            CitationRendering::Bracketed,
+            "mla8 should be bracketed"
+        );
     }
 
     // --- Registry integrity tests ---
@@ -929,6 +909,7 @@ mod tests {
         assert!(list.contains("ieee"), "Should list ieee");
         assert!(list.contains("apa"), "Should list apa");
         assert!(list.contains("nature"), "Should list nature");
+        assert!(list.contains("alphanumeric"), "Should list alphanumeric");
 
         // Check structure
         assert!(
@@ -939,6 +920,7 @@ mod tests {
             list.contains("Superscript styles:"),
             "Should have superscript section"
         );
+        assert!(list.contains("Label styles:"), "Should have label section");
         assert!(
             list.contains("Author-date styles:"),
             "Should have author-date section"
