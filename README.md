@@ -2,6 +2,7 @@
 
 A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliography & citations in your books.
 
+
 [![Test status](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml/badge.svg)](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml)
 [![MPL-2.0 License](https://img.shields.io/github/license/francisco-perez-sorrosal/mdbook-bib)](https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE)
 [![Manual](https://img.shields.io/badge/book-master-blue.svg)](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
@@ -16,8 +17,47 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 - **Two rendering backends**:
   - **Custom (Handlebars)**: Full template customization with custom CSS/JS
   - **CSL (Citation Style Language)**: Standard academic citation styles (IEEE, Chicago, Nature, APA, and 80+ more)
+  
+## TL;DR
 
-## Basic Install
+Create an example mdbook:
+
+```sh
+cargo install mdbook mdbook-bib
+mdbook init mybook && cd mybook
+```
+
+Add mdbook-bib config to `book.toml`:
+
+```toml
+[preprocessor.bib]
+bibliography = "refs.bib"
+```
+
+Create example bibliography `refs.bib`:
+
+```bibtex
+@article{hello,
+  author = {World, Hello},
+  title = {My First Citation},
+  year = {2024}
+}
+```
+
+Cite in `src/chapter_1.md`:
+
+```markdown
+As shown in @@hello, citations are easy!
+```
+
+Build book: `mdbook build`
+
+Serve the book: `mdbook serve`
+
+Then open http://localhost:3000 in your browser to view your book.
+
+
+## Install
 
 If you have [mdbook](https://github.com/rust-lang/mdBook) installed just do:
 
