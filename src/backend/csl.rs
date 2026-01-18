@@ -158,11 +158,16 @@ impl CslBackend {
         let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
         let rendered = driver.finish(bib_request);
 
-        let citation_text = rendered
-            .citations
-            .first()
-            .map(|c| c.citation.to_string())
-            .unwrap_or_else(|| fallback.to_string());
+        let citation_text = match rendered.citations.first() {
+            Some(c) => c.citation.to_string(),
+            None => {
+                tracing::warn!(
+                    "Hayagriva returned no citation for '{}', using fallback",
+                    item.citation_key
+                );
+                fallback.to_string()
+            }
+        };
 
         Ok(Self::strip_ansi_codes(&citation_text))
     }

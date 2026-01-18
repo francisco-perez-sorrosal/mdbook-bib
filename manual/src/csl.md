@@ -241,6 +241,12 @@ The CSL backend does not support:
 
 For these features, use the [Custom Backend](./custom.md).
 
+### Citation Text Processing
+
+For label and author-date styles, hayagriva generates citation text that may include surrounding brackets or parentheses (e.g., `[Smi24]` or `(Smith, 2024)`). The CSL backend strips these delimiters before re-wrapping them with markdown links.
+
+**Note:** This stripping removes *all* leading/trailing brackets `[]` and parentheses `()` from the citation text. In the unlikely event that a citation naturally contains these characters at its boundaries (e.g., a citation key that renders as `[[Special]]`), they would be removed. Standard bibliography entries are unaffected by this behavior.
+
 ## Tips
 
 - Choose numeric styles (IEEE, Vancouver) for technical papers
