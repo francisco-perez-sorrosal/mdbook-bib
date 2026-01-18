@@ -167,7 +167,7 @@ Use `vancouver` for most medical journals. Use `vancouver-superscript` when the 
 
 ### Alphanumeric
 
-The alphanumeric style uses author-year labels instead of sequential numbers:
+The alphanumeric style uses author-based labels instead of sequential numbers:
 
 ```toml
 [preprocessor.bib]
@@ -178,8 +178,13 @@ csl-style = "alphanumeric"
 
 Output:
 
-- Inline: `[Smi24]`, `[JD23]` (author initials + year)
-- Bibliography: `[Smi24] Smith, A. Title. Journal, 2024.`
+- Inline: `[Smi24]`, `[JL23]` (author-derived label + 2-digit year)
+- Bibliography: `[Smi24] Smith, J. "Title." 2024.`
+
+Label format:
+
+- Single author: First 3 letters of surname + year (e.g., `[Smi24]`)
+- Two authors: Initials of both authors + year (e.g., `[JL23]` for Jones & Lee)
 
 This style is useful when you want readers to identify sources at a glance without flipping to the bibliography.
 
