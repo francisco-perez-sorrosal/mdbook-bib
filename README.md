@@ -14,6 +14,7 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 
 - Add citations from your BibLaTeX or YAML bibliography files
 - Automatically download your public bibliography from Zotero and cite it
+- **Pandoc-compatible citation syntax** for cross-tool workflows (generate HTML with mdBook and PDF with Pandoc from the same source)
 - **Two rendering backends**:
   - **Custom (Handlebars)**: Full template customization with custom CSS/JS
   - **CSL (Citation Style Language)**: Standard academic citation styles (IEEE, Chicago, Nature, APA, and 80+ more)
@@ -84,6 +85,26 @@ Now you can cite entries using either syntax:
 {{#cite my-citation-key}}
 @@my-citation-key
 ```
+
+### Pandoc-Compatible Syntax
+
+Enable Pandoc citation syntax for cross-tool workflows:
+
+```toml
+[preprocessor.bib]
+...
+citation-syntax = "pandoc"
+```
+
+Then use standard Pandoc citations:
+
+```markdown
+@key              # Author-in-text: "Smith (2024)"
+[@key]            # Parenthetical: "(Smith, 2024)"
+[-@key]           # Suppress author: "(2024)"
+```
+
+This lets you use the same source files with both mdBook (HTML) and Pandoc (PDF).
 
 ## Rendering Backends
 

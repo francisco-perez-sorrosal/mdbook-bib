@@ -37,6 +37,7 @@ impl<'a> BibliographyBackend for CustomBackend<'a> {
         let citation = Citation {
             item: item.clone(),
             path: context.bib_page_path.clone(),
+            variant: context.variant.as_template_str().to_string(),
         };
 
         self.handlebars.render("citation", &citation).map_err(|e| {
@@ -80,6 +81,8 @@ mod tests {
 
     #[test]
     fn test_custom_backend_format_citation() {
+        use crate::backend::CitationVariant;
+
         let mut handlebars = Handlebars::new();
         handlebars
             .register_template_string("citation", "[{{item.citation_key}}]")
@@ -94,6 +97,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let result = backend.format_citation(&item, &context);

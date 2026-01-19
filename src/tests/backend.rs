@@ -9,8 +9,8 @@
 use super::common::{
     create_citation_backend, create_references_backend, dummy_bibliography, yaml_bibliography,
 };
-use crate::backend::{BibliographyBackend, CitationContext, CslBackend};
-use crate::config::SortOrder;
+use crate::backend::{BibliographyBackend, CitationContext, CitationVariant, CslBackend};
+use crate::config::{CitationSyntax, SortOrder};
 use crate::parser::{self, BibFormat};
 use mdbook_preprocessor::book::Chapter;
 use rstest::rstest;
@@ -42,6 +42,7 @@ fn regression_custom_citation_format() {
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     // Custom format: <a class="bib-cite" href="bibliography.html#key">key</a>
@@ -145,6 +146,7 @@ fn backend_custom_vs_csl_citation_format_differs() {
     let context = CitationContext {
         bib_page_path: "bibliography.html".to_string(),
         chapter_path: "chapter.md".to_string(),
+        variant: CitationVariant::Standard,
     };
 
     // Custom backend
@@ -200,6 +202,7 @@ fn backend_csl_citation_links_to_bibliography(#[case] style: &str) {
     let context = CitationContext {
         bib_page_path: "bibliography.html".to_string(),
         chapter_path: "chapter.md".to_string(),
+        variant: CitationVariant::Standard,
     };
 
     let backend = CslBackend::new(style.to_string()).unwrap();
@@ -243,6 +246,7 @@ fn backend_csl_nature_uses_superscript() {
     let context = CitationContext {
         bib_page_path: "bibliography.html".to_string(),
         chapter_path: "chapter.md".to_string(),
+        variant: CitationVariant::Standard,
     };
 
     let nature_backend = CslBackend::new("nature".to_string()).unwrap();

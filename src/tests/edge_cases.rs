@@ -8,6 +8,7 @@
 //! - Unicode support
 
 use super::common::{create_citation_backend, dummy_bibliography};
+use crate::config::CitationSyntax;
 use crate::parser::{self, BibFormat};
 use mdbook_preprocessor::book::Chapter;
 use std::collections::HashSet;
@@ -87,6 +88,7 @@ fn citation_to_nonexistent_key() {
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     // Should contain error message for unknown key

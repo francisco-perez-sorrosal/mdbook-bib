@@ -17,7 +17,7 @@ use super::hayagriva_style::{
     detect_style_format, find_style_info, supported_style_aliases, CitationContentType,
     CitationFormat, CitationRendering, CitationStyle, DetectedStyleFormat, StyleInfo,
 };
-use super::{BibliographyBackend, CitationContext};
+use super::{BibliographyBackend, CitationContext, CitationVariant};
 
 lazy_static! {
     static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
@@ -251,39 +251,65 @@ impl BibliographyBackend for CslBackend {
     fn format_citation(&self, item: &BibItem, context: &CitationContext) -> MdResult<String> {
         let format = self.citation_format();
         let link = format!("{}#{}", context.bib_page_path, item.citation_key);
+        let variant = context.variant;
 
-        // Get content based on content type
-        let content = match format.content {
+        // For numeric and label styles, variant doesn't affect content
+        // For author-date styles, we need to handle variants differently
+        let linked_citation = match format.content {
             CitationContentType::Numeric => {
-                // For numbered styles, use the assigned index
-                item.index.unwrap_or(1).to_string()
+                let content = item.index.unwrap_or(1).to_string();
+                match format.rendering {
+                    CitationRendering::Superscript => {
+                        format!("<sup><a href=\"{link}\">{content}</a></sup>")
+                    }
+                    CitationRendering::Bracketed => {
+                        format!("[[{content}]({link})]")
+                    }
+                }
             }
             CitationContentType::Label => {
                 // For label styles (alphanumeric), use hayagriva to generate author-based labels
-                // trim_matches handles potential nested brackets like [[Smi24]]
-                self.get_hayagriva_citation_text(item, &format!("[{}]", item.citation_key))?
-                    .trim_matches(&['[', ']'] as &[char])
-                    .to_string()
+                let content =
+                    self.get_hayagriva_citation_text(item, &format!("[{}]", item.citation_key))?;
+                let label = content.trim_matches(&['[', ']'] as &[char]);
+                format!("[[{label}]({link})]")
             }
             CitationContentType::AuthorDate => {
-                // For author-date styles (Chicago, APA, Harvard, etc.), use hayagriva formatting
-                // trim_matches handles potential nested parens
-                self.get_hayagriva_citation_text(item, &format!("({})", item.citation_key))?
-                    .trim_matches(&['(', ')'] as &[char])
-                    .to_string()
-            }
-        };
+                // For author-date styles, handle Pandoc citation variants
+                let full_citation =
+                    self.get_hayagriva_citation_text(item, &format!("({})", item.citation_key))?;
+                let full_text = full_citation.trim_matches(&['(', ')'] as &[char]);
 
-        // Render based on content type and rendering type
-        let linked_citation = match (format.content, format.rendering) {
-            (_, CitationRendering::Superscript) => {
-                format!("<sup><a href=\"{link}\">{content}</a></sup>")
-            }
-            (CitationContentType::AuthorDate, CitationRendering::Bracketed) => {
-                format!("([{content}]({link}))")
-            }
-            (_, CitationRendering::Bracketed) => {
-                format!("[[{content}]({link})]")
+                match variant {
+                    CitationVariant::Standard | CitationVariant::Parenthetical => {
+                        // Standard and parenthetical: "(Smith, 2024)" or "(Smith 2024)"
+                        format!("([{full_text}]({link}))")
+                    }
+                    CitationVariant::AuthorInText => {
+                        // Author-in-text: "Smith (2024)" - author outside parens, year linked
+                        // Try to split on ", " first (APA style), then space (other styles)
+                        if let Some((author, year)) = full_text.split_once(", ") {
+                            format!("{author} ([{year}]({link}))")
+                        } else if let Some((author, year)) = full_text.split_once(' ') {
+                            format!("{author} ([{year}]({link}))")
+                        } else {
+                            // Fallback if can't split
+                            format!("([{full_text}]({link}))")
+                        }
+                    }
+                    CitationVariant::SuppressAuthor => {
+                        // Suppress author: "(2024)" - only year, author suppressed
+                        // Try to extract just the year part
+                        if let Some((_, year)) = full_text.split_once(", ") {
+                            format!("([{year}]({link}))")
+                        } else if let Some((_, year)) = full_text.split_once(' ') {
+                            format!("([{year}]({link}))")
+                        } else {
+                            // Fallback: just link the whole thing
+                            format!("([{full_text}]({link}))")
+                        }
+                    }
+                }
             }
         };
 
@@ -441,6 +467,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let citation = backend.format_citation(&item, &context);
@@ -522,6 +549,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let citation = backend.format_citation(&item, &context);
@@ -606,6 +634,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let result = backend.format_citation(&item, &context).unwrap();
@@ -710,6 +739,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let citation = backend.format_citation(&item, &context).unwrap();
@@ -757,6 +787,7 @@ mod tests {
         let context = CitationContext {
             bib_page_path: "bibliography.html".to_string(),
             chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Standard,
         };
 
         let citation = backend.format_citation(&item, &context).unwrap();

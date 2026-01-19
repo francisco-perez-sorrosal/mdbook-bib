@@ -192,10 +192,15 @@ impl Preprocessor for Bibliography {
         };
 
         tracing::info!("Backend initialized: {}", backend.name());
+        tracing::info!("Citation syntax: {:?}", config.citation_syntax);
 
         // First, expand citations to assign indices to BibItems
-        let citation_result =
-            citation::expand_cite_references_in_book(&mut book, &mut bib, backend.as_ref());
+        let citation_result = citation::expand_cite_references_in_book(
+            &mut book,
+            &mut bib,
+            backend.as_ref(),
+            &config.citation_syntax,
+        );
 
         // Then add per-chapter bibliographies (now items have correct indices)
         if config.add_bib_in_each_chapter {

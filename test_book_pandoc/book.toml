@@ -1,0 +1,18 @@
+[book]
+authors = ["Francisco Perez-Sorrosal"]
+language = "en"
+src = "src"
+title = "Pandoc Citation Syntax Demo"
+
+[build]
+build-dir = "public"
+
+[output.html]
+default-theme = "light"
+
+[preprocessor.bib]
+bibliography = "refs.bib"
+citation-syntax = "pandoc"
+backend = "csl"
+# csl-style = "apa"
+title = "References"

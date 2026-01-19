@@ -23,6 +23,38 @@ pub enum BackendMode {
     Csl,
 }
 
+/// Citation variant determines how a citation should be rendered.
+///
+/// Different citation syntaxes express different intents:
+/// - Standard: `{{#cite key}}` or `@@key` - default rendering
+/// - AuthorInText: `@key` - author name in text, year in parens (Pandoc)
+/// - Parenthetical: `[@key]` - both author and year in parens (Pandoc)
+/// - SuppressAuthor: `[-@key]` - only year, author suppressed (Pandoc)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CitationVariant {
+    /// Standard citation: `{{#cite key}}` or `@@key`
+    #[default]
+    Standard,
+    /// Author-in-text: `@key` renders as "Smith (2024)"
+    AuthorInText,
+    /// Parenthetical: `[@key]` renders as "(Smith, 2024)"
+    Parenthetical,
+    /// Suppress author: `[-@key]` renders as "(2024)"
+    SuppressAuthor,
+}
+
+impl CitationVariant {
+    /// Convert to a string suitable for use in Handlebars templates.
+    pub fn as_template_str(&self) -> &'static str {
+        match self {
+            CitationVariant::Standard => "standard",
+            CitationVariant::AuthorInText => "author_in_text",
+            CitationVariant::Parenthetical => "parenthetical",
+            CitationVariant::SuppressAuthor => "suppress_author",
+        }
+    }
+}
+
 /// Citation context provides information needed to render inline citations.
 #[derive(Debug, Clone)]
 pub struct CitationContext {
@@ -30,6 +62,8 @@ pub struct CitationContext {
     pub bib_page_path: String,
     /// Path to current chapter (for logging/debugging).
     pub chapter_path: String,
+    /// How the citation should be rendered (standard, author-in-text, etc.)
+    pub variant: CitationVariant,
 }
 
 /// Trait for bibliography rendering backends.
