@@ -142,7 +142,9 @@ fn restore_code_blocks(content: &str, blocks: &[String]) -> String {
     let mut result = content.to_string();
     for (idx, block) in blocks.iter().enumerate() {
         let placeholder = format!("{CODE_BLOCK_PLACEHOLDER}{idx}\u{E001}");
-        result = result.replace(&placeholder, block);
+        // Use replacen to replace only the first occurrence, preventing cascade
+        // if the code block content happens to contain the placeholder pattern
+        result = result.replacen(&placeholder, block, 1);
     }
     result
 }

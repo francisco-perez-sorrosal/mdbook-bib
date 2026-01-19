@@ -204,6 +204,7 @@ impl CslBackend {
     /// - 2 authors: "Smith & Jones"
     /// - 3+ authors: "Smith et al."
     ///
+    /// Returns "Unknown" for entries without authors or with only empty names.
     /// This avoids fragile string parsing of formatted citations.
     fn format_authors_for_citation(authors: &[Vec<String>]) -> String {
         if authors.is_empty() {
@@ -211,9 +212,15 @@ impl CslBackend {
         }
 
         // Extract last names (first element of each author's name parts)
+        // Filter out empty name parts and empty strings
         let last_names: Vec<&str> = authors
             .iter()
-            .filter_map(|name_parts| name_parts.first().map(|s| s.as_str()))
+            .filter_map(|name_parts| {
+                name_parts
+                    .first()
+                    .map(|s| s.as_str())
+                    .filter(|s| !s.is_empty())
+            })
             .collect();
 
         match last_names.len() {
@@ -977,5 +984,63 @@ mod tests {
             list.contains("Author-date styles:"),
             "Should have author-date section"
         );
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_single_author() {
+        let authors = vec![vec!["Smith".to_string(), "John".to_string()]];
+        assert_eq!(CslBackend::format_authors_for_citation(&authors), "Smith");
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_two_authors() {
+        let authors = vec![
+            vec!["Smith".to_string(), "John".to_string()],
+            vec!["Jones".to_string(), "Jane".to_string()],
+        ];
+        assert_eq!(
+            CslBackend::format_authors_for_citation(&authors),
+            "Smith & Jones"
+        );
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_three_plus_authors() {
+        let authors = vec![
+            vec!["Smith".to_string(), "John".to_string()],
+            vec!["Jones".to_string(), "Jane".to_string()],
+            vec!["Brown".to_string(), "Bob".to_string()],
+        ];
+        assert_eq!(
+            CslBackend::format_authors_for_citation(&authors),
+            "Smith et al."
+        );
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_empty_authors() {
+        let authors: Vec<Vec<String>> = vec![];
+        assert_eq!(CslBackend::format_authors_for_citation(&authors), "Unknown");
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_empty_name_parts() {
+        // Authors with empty name parts should be filtered
+        let authors = vec![vec!["".to_string()], vec!["Smith".to_string()]];
+        assert_eq!(CslBackend::format_authors_for_citation(&authors), "Smith");
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_all_empty_names() {
+        // All authors with empty names should return "Unknown"
+        let authors = vec![vec!["".to_string()], vec!["".to_string()]];
+        assert_eq!(CslBackend::format_authors_for_citation(&authors), "Unknown");
+    }
+
+    #[test]
+    fn test_format_authors_for_citation_empty_vec_in_authors() {
+        // Authors list with empty inner vec should be filtered
+        let authors = vec![vec![], vec!["Smith".to_string()]];
+        assert_eq!(CslBackend::format_authors_for_citation(&authors), "Smith");
     }
 }
