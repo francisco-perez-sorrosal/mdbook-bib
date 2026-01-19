@@ -75,7 +75,13 @@ Contact: user\@example.com
 **Notes:**
 - Default syntax (`{{#cite key}}` and `@@key`) continues to work alongside Pandoc syntax
 - Citations inside code blocks are NOT processed
-- Email addresses are NOT matched
+- Email addresses and URL mentions (e.g., `https://twitter.com/@user`) are NOT matched
+
+**Citation key format:**
+- Native patterns (`{{#cite}}`, `@@`): Allow keys starting with digits (e.g., `@@2024smith`) — BibLaTeX-compliant
+- Pandoc patterns (`@key`, `[@key]`, `[-@key]`): Require letter or underscore at start (e.g., `@smith2024`) — Pandoc spec
+
+This difference is by design for cross-tool compatibility. If you need digit-prefixed keys with Pandoc syntax, use the native `{{#cite 123key}}` form instead.
 
 ---
 
