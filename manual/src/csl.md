@@ -62,6 +62,51 @@ Some styles use footnotes or endnotes:
 |-------|--------|
 | `chicago-notes` | Footnote citations |
 
+## Citation Variants and Style Types
+
+When using Pandoc citation syntax (`@key`, `[@key]`, `[-@key]`), the behavior depends on the style type:
+
+### Numeric Styles (IEEE, Vancouver, Nature)
+
+Citation variants have **no effect** on numeric styles. All variants render identically because numeric citations don't include author/year information:
+
+| Syntax | Result |
+|--------|--------|
+| `@smith2024` | `[1]` |
+| `[@smith2024]` | `[1]` |
+| `[-@smith2024]` | `[1]` |
+
+### Author-Date Styles (APA, Chicago, Harvard)
+
+Citation variants **do affect** author-date styles:
+
+| Syntax | Variant | Result (APA) |
+|--------|---------|--------------|
+| `@smith2024` | Author-in-text | Smith (2024) |
+| `[@smith2024]` | Parenthetical | (Smith, 2024) |
+| `[-@smith2024]` | Suppress author | (2024) |
+
+Use author-in-text (`@key`) when the author is grammatically part of your sentence:
+> @smith2024 demonstrated that...
+
+Use parenthetical (`[@key]`) for citations at the end of a statement:
+> ...as shown in previous work [@smith2024].
+
+Use suppress-author (`[-@key]`) when you've already named the author:
+> Smith [-@smith2024] argues that...
+
+### Label Styles (Alphanumeric)
+
+Citation variants have **no effect** on label styles. The label is always rendered the same way:
+
+| Syntax | Result |
+|--------|--------|
+| `@smith2024` | `[Smi24]` |
+| `[@smith2024]` | `[Smi24]` |
+| `[-@smith2024]` | `[Smi24]` |
+
+---
+
 ## Style Resolution
 
 The CSL backend resolves style names in two ways:
