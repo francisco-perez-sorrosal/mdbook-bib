@@ -83,6 +83,11 @@ Contact: user\@example.com
 
 This difference is by design for cross-tool compatibility. If you need digit-prefixed keys with Pandoc syntax, use the native `{{#cite 123key}}` form instead.
 
+**Unsupported Pandoc features:**
+- Multi-citation: `[@smith2024; @jones2023]` — use separate citations instead
+- Locators: `[@smith2024, p. 42]` — page numbers not supported
+- Prefixes/suffixes: `[see @smith2024, ch. 3]` — use surrounding text instead
+
 ---
 
 ## Backend Selection
