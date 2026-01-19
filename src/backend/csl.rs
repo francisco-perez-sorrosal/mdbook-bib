@@ -197,6 +197,33 @@ impl CslBackend {
 
     /// Format a fallback bibliography entry when hayagriva doesn't provide one.
     ///
+    /// Format authors for inline citations.
+    ///
+    /// Uses structured author data to produce citation-style author strings:
+    /// - 1 author: "Smith"
+    /// - 2 authors: "Smith & Jones"
+    /// - 3+ authors: "Smith et al."
+    ///
+    /// This avoids fragile string parsing of formatted citations.
+    fn format_authors_for_citation(authors: &[Vec<String>]) -> String {
+        if authors.is_empty() {
+            return "Unknown".to_string();
+        }
+
+        // Extract last names (first element of each author's name parts)
+        let last_names: Vec<&str> = authors
+            .iter()
+            .filter_map(|name_parts| name_parts.first().map(|s| s.as_str()))
+            .collect();
+
+        match last_names.len() {
+            0 => "Unknown".to_string(),
+            1 => last_names[0].to_string(),
+            2 => format!("{} & {}", last_names[0], last_names[1]),
+            _ => format!("{} et al.", last_names[0]),
+        }
+    }
+
     /// Some CSL styles (like alphanumeric) don't define a bibliography section,
     /// so we construct a simple entry from the BibItem metadata.
     fn format_fallback_bibliography(item: &BibItem) -> String {
@@ -287,27 +314,16 @@ impl BibliographyBackend for CslBackend {
                     }
                     CitationVariant::AuthorInText => {
                         // Author-in-text: "Smith (2024)" - author outside parens, year linked
-                        // Try to split on ", " first (APA style), then space (other styles)
-                        if let Some((author, year)) = full_text.split_once(", ") {
-                            format!("{author} ([{year}]({link}))")
-                        } else if let Some((author, year)) = full_text.split_once(' ') {
-                            format!("{author} ([{year}]({link}))")
-                        } else {
-                            // Fallback if can't split
-                            format!("([{full_text}]({link}))")
-                        }
+                        // Use structured data from BibItem to avoid fragile string parsing
+                        let author = Self::format_authors_for_citation(&item.authors);
+                        let year = item.pub_year.as_deref().unwrap_or("n.d.");
+                        format!("{author} ([{year}]({link}))")
                     }
                     CitationVariant::SuppressAuthor => {
                         // Suppress author: "(2024)" - only year, author suppressed
-                        // Try to extract just the year part
-                        if let Some((_, year)) = full_text.split_once(", ") {
-                            format!("([{year}]({link}))")
-                        } else if let Some((_, year)) = full_text.split_once(' ') {
-                            format!("([{year}]({link}))")
-                        } else {
-                            // Fallback: just link the whole thing
-                            format!("([{full_text}]({link}))")
-                        }
+                        // Use structured data from BibItem
+                        let year = item.pub_year.as_deref().unwrap_or("n.d.");
+                        format!("([{year}]({link}))")
                     }
                 }
             }

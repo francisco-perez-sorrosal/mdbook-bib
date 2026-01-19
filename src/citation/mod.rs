@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::path::{Component, Path};
 
-use fancy_regex::Regex as FancyRegex;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
@@ -15,10 +14,11 @@ use crate::renderer;
 
 static BIB_OUT_FILE: &str = "bibliography";
 
-// Placeholder used to protect escaped @ symbols during processing
-const ESCAPED_AT_PLACEHOLDER: &str = "\x00ESCAPED_AT\x00";
-// Placeholder prefix for protected code blocks
-const CODE_BLOCK_PLACEHOLDER: &str = "\x00CODEBLOCK";
+// Placeholder used to protect escaped @ symbols during processing.
+// Uses Unicode private use area characters to avoid conflicts with normal text.
+const ESCAPED_AT_PLACEHOLDER: &str = "\u{E000}MDBIB_ESCAPED_AT\u{E001}";
+// Placeholder prefix for protected code blocks.
+const CODE_BLOCK_PLACEHOLDER: &str = "\u{E000}MDBIB_CODEBLOCK";
 
 // Regex patterns for citation placeholders
 // BibLaTeX-compliant character class for citation keys:
@@ -49,10 +49,12 @@ pub const PANDOC_SUPPRESS_AUTHOR_PATTERN: &str =
 pub const PANDOC_BRACKETED_PATTERN: &str =
     r"\[@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)\]";
 
-// Pandoc author-in-text: @key (not preceded by \, @, or word char, not followed by word char or @)
-// This is the most permissive pattern and must be processed last
+// Pandoc author-in-text: @key (not preceded by \, @, word char, or /)
+// Captures prefix char (group 1) to preserve it in replacement, key is in group 2.
+// The / exclusion prevents matching @mentions in URLs like https://twitter.com/@user
+// This is the most permissive pattern and must be processed last.
 pub const PANDOC_CITE_PATTERN: &str =
-    r"(?<![\\@\w])@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)(?![a-zA-Z0-9_@])";
+    r"(^|[^\\@\w/])@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)";
 
 // Code block patterns for protection
 const FENCED_CODE_PATTERN: &str = r"(?s)```[^\n]*\n.*?```|~~~[^\n]*\n.*?~~~";
@@ -61,12 +63,12 @@ const INLINE_CODE_PATTERN: &str = r"`[^`\n]+`";
 lazy_static! {
     static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap();
     static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
-    // Pandoc patterns (PANDOC_CITE_REGEX uses fancy-regex for lookaround support)
+    // Pandoc patterns
     static ref ESCAPED_AT_REGEX: Regex = Regex::new(ESCAPED_AT_PATTERN).unwrap();
     static ref PANDOC_SUPPRESS_AUTHOR_REGEX: Regex =
         Regex::new(PANDOC_SUPPRESS_AUTHOR_PATTERN).unwrap();
     static ref PANDOC_BRACKETED_REGEX: Regex = Regex::new(PANDOC_BRACKETED_PATTERN).unwrap();
-    static ref PANDOC_CITE_FANCY_REGEX: FancyRegex = FancyRegex::new(PANDOC_CITE_PATTERN).unwrap();
+    static ref PANDOC_CITE_REGEX: Regex = Regex::new(PANDOC_CITE_PATTERN).unwrap();
     // Code block patterns
     static ref FENCED_CODE_REGEX: Regex = Regex::new(FENCED_CODE_PATTERN).unwrap();
     static ref INLINE_CODE_REGEX: Regex = Regex::new(INLINE_CODE_PATTERN).unwrap();
@@ -78,30 +80,6 @@ pub struct CitationResult {
     pub all_cited: HashSet<String>,
     /// Citations found per chapter, keyed by chapter path.
     pub per_chapter: IndexMap<String, HashSet<String>>,
-}
-
-/// Helper to perform replace_all with fancy-regex (which has a different API than regex crate).
-///
-/// This function iterates through all matches and applies a replacement function.
-fn fancy_regex_replace_all<F>(regex: &FancyRegex, text: &str, replacer: F) -> String
-where
-    F: Fn(&fancy_regex::Captures) -> String,
-{
-    let mut result = String::new();
-    let mut last_end = 0;
-
-    for caps in regex.captures_iter(text).flatten() {
-        if let Some(m) = caps.get(0) {
-            // Add text before this match
-            result.push_str(&text[last_end..m.start()]);
-            // Add the replacement
-            result.push_str(&replacer(&caps));
-            last_end = m.end();
-        }
-    }
-    // Add remaining text after last match
-    result.push_str(&text[last_end..]);
-    result
 }
 
 /// Protect code blocks from citation processing by replacing them with placeholders.
@@ -118,7 +96,7 @@ fn protect_code_blocks(content: &str) -> (String, Vec<String>) {
             let block = caps.get(0).unwrap().as_str().to_string();
             let idx = blocks.len();
             blocks.push(block);
-            format!("{CODE_BLOCK_PLACEHOLDER}{idx}\x00")
+            format!("{CODE_BLOCK_PLACEHOLDER}{idx}\u{E001}")
         })
         .into_owned();
 
@@ -128,7 +106,7 @@ fn protect_code_blocks(content: &str) -> (String, Vec<String>) {
             let block = caps.get(0).unwrap().as_str().to_string();
             let idx = blocks.len();
             blocks.push(block);
-            format!("{CODE_BLOCK_PLACEHOLDER}{idx}\x00")
+            format!("{CODE_BLOCK_PLACEHOLDER}{idx}\u{E001}")
         })
         .into_owned();
 
@@ -139,7 +117,7 @@ fn protect_code_blocks(content: &str) -> (String, Vec<String>) {
 fn restore_code_blocks(content: &str, blocks: &[String]) -> String {
     let mut result = content.to_string();
     for (idx, block) in blocks.iter().enumerate() {
-        let placeholder = format!("{CODE_BLOCK_PLACEHOLDER}{idx}\x00");
+        let placeholder = format!("{CODE_BLOCK_PLACEHOLDER}{idx}\u{E001}");
         result = result.replace(&placeholder, block);
     }
     result
@@ -390,19 +368,23 @@ pub fn replace_all_placeholders(
             .into_owned();
 
         // Process @key (author-in-text) - must be last as it's most permissive
-        // Uses fancy-regex for lookaround support (to avoid matching emails, @@, etc.)
-        content = fancy_regex_replace_all(&PANDOC_CITE_FANCY_REGEX, &content, |caps| {
-            let citation_key = caps.get(1).map(|m| m.as_str()).unwrap_or("");
-            replace_citation_placeholder(
-                citation_key,
-                chapter_path,
-                &bib,
-                &cited_set,
-                &idx,
-                backend,
-                CitationVariant::AuthorInText,
-            )
-        });
+        // Pattern captures prefix char (group 1) to avoid matching emails; key is in group 2
+        content = PANDOC_CITE_REGEX
+            .replace_all(&content, |caps: &regex::Captures| {
+                let prefix = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+                let citation_key = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+                let replacement = replace_citation_placeholder(
+                    citation_key,
+                    chapter_path,
+                    &bib,
+                    &cited_set,
+                    &idx,
+                    backend,
+                    CitationVariant::AuthorInText,
+                );
+                format!("{prefix}{replacement}")
+            })
+            .into_owned();
 
         // Restore escaped @ symbols
         content = content.replace(ESCAPED_AT_PLACEHOLDER, "@");

@@ -516,11 +516,12 @@ fn test_ref_pattern_excludes_mdbook_expressions(#[case] input: &str) {
 #[test]
 fn test_pandoc_author_in_text_citation() {
     use crate::citation::PANDOC_CITE_PATTERN;
-    use fancy_regex::Regex;
+    use regex::Regex;
 
     let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
 
     // Should match @key at word boundaries
+    // Pattern captures: group 1 = prefix (empty or char), group 2 = key
     let cases = vec![
         ("@Smith2024", "Smith2024"),
         ("See @Jones2020 for details", "Jones2020"),
@@ -528,9 +529,9 @@ fn test_pandoc_author_in_text_citation() {
     ];
 
     for (input, expected_key) in cases {
-        let caps = re.captures(input).unwrap();
+        let caps = re.captures(input);
         assert!(caps.is_some(), "Should match: {input}");
-        let key = caps.unwrap().get(1).unwrap().as_str();
+        let key = caps.unwrap().get(2).unwrap().as_str();
         assert_eq!(key, expected_key, "Should capture key from: {input}");
     }
 }
@@ -538,11 +539,12 @@ fn test_pandoc_author_in_text_citation() {
 #[test]
 fn test_pandoc_pattern_does_not_match_emails() {
     use crate::citation::PANDOC_CITE_PATTERN;
-    use fancy_regex::Regex;
+    use regex::Regex;
 
     let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
 
     // Email addresses should NOT be matched
+    // The pattern requires a non-word char before @, so "user@..." won't match
     let non_matches = vec![
         "user@example.com",
         "email@domain.org",
@@ -551,34 +553,52 @@ fn test_pandoc_pattern_does_not_match_emails() {
     ];
 
     for input in non_matches {
-        assert!(
-            !re.is_match(input).unwrap(),
-            "Should NOT match email: {input}"
-        );
+        assert!(!re.is_match(input), "Should NOT match email: {input}");
+    }
+}
+
+#[test]
+fn test_pandoc_pattern_does_not_match_url_mentions() {
+    use crate::citation::PANDOC_CITE_PATTERN;
+    use regex::Regex;
+
+    let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
+
+    // URLs with @ mentions should NOT be matched
+    // The pattern excludes / before @ to handle URL paths
+    let non_matches = vec![
+        "https://twitter.com/@rustlang",
+        "https://github.com/@user",
+        "http://example.com/@mention",
+        "git@github.com:user/repo.git", // Also git URLs
+    ];
+
+    for input in non_matches {
+        assert!(!re.is_match(input), "Should NOT match URL mention: {input}");
     }
 }
 
 #[test]
 fn test_pandoc_pattern_does_not_match_double_at() {
     use crate::citation::PANDOC_CITE_PATTERN;
-    use fancy_regex::Regex;
+    use regex::Regex;
 
     let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
 
-    // @@key should NOT be matched by Pandoc single-@ pattern (processed separately)
-    let non_matches = vec!["@@Smith2024", "@@key", "text @@citation more"];
+    // @@key should NOT be matched by Pandoc single-@ pattern
+    // The pattern requires non-@ char before @, so @@ won't match
+    let non_matches = vec!["@@Smith2024", "@@key"];
 
     for input in non_matches {
-        let result = re.find(input).unwrap();
-        // If it matches, it should NOT be at the @@ position
-        if let Some(m) = result {
-            let prefix = &input[..m.start()];
-            assert!(
-                !prefix.ends_with('@'),
-                "Should not match @@key pattern: {input}"
-            );
-        }
+        assert!(!re.is_match(input), "Should NOT match double-at: {input}");
     }
+
+    // "text @@citation" - the @ before @citation excludes matching @citation
+    let input = "text @@citation more";
+    assert!(
+        !re.is_match(input),
+        "Should NOT match @citation after @@ prefix"
+    );
 }
 
 #[test]
