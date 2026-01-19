@@ -11,6 +11,7 @@ use super::common::{
     BibItemBuilder, DUMMY_TEXT_WITH_2_VALID_CITE_PLACEHOLDERS,
     DUMMY_TEXT_WITH_A_VALID_AND_AN_INVALID_CITE_PLACEHOLDERS,
 };
+use crate::config::CitationSyntax;
 use indexmap::IndexMap;
 use mdbook_preprocessor::book::Chapter;
 use rstest::rstest;
@@ -41,6 +42,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     assert!(text_with_citations.contains(r#"href="bibliography.html#fps""#));
@@ -60,6 +62,7 @@ fn valid_and_invalid_citations_are_replaced_properly_in_book_text() {
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
     assert!(text_with_citations.contains(">fps</a>"));
     assert!(text_with_citations.contains("[Unknown bib ref:"));
@@ -88,6 +91,7 @@ fn citations_in_subfolders_link_properly(#[case] chapter_path: &str, #[case] exp
         &mut HashSet::new(),
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     assert!(
@@ -115,6 +119,7 @@ fn citations_in_draft_chapter_link_properly() {
         &mut HashSet::new(),
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     assert!(text_with_citations.contains(r#"href="bibliography.html#fps""#));
@@ -178,6 +183,7 @@ This is a reference to {{#cite DUMMY:1}}
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 }
 
@@ -225,6 +231,7 @@ This is another reference @@simple_key that should also work.
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     // Check that both citations were found and added to cited set
@@ -331,6 +338,7 @@ Citations in parentheses (see @@Jones2019).
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     // Check that all citations were found
@@ -465,6 +473,7 @@ User citation @@user@domain is valid.
         &mut cited,
         &backend,
         &mut last_index,
+        &CitationSyntax::Default,
     );
 
     // Verify all citations were found
@@ -498,4 +507,421 @@ fn test_ref_pattern_excludes_mdbook_expressions(#[case] input: &str) {
         !re.is_match(input),
         "Pattern should NOT match mdBook expression: {input}"
     );
+}
+
+// =============================================================================
+// Pandoc Citation Syntax Tests
+// =============================================================================
+
+#[test]
+fn test_pandoc_author_in_text_citation() {
+    use crate::citation::PANDOC_CITE_PATTERN;
+    use fancy_regex::Regex;
+
+    let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
+
+    // Should match @key at word boundaries
+    let cases = vec![
+        ("@Smith2024", "Smith2024"),
+        ("See @Jones2020 for details", "Jones2020"),
+        ("As @Author_Name argues", "Author_Name"),
+    ];
+
+    for (input, expected_key) in cases {
+        let caps = re.captures(input).unwrap();
+        assert!(caps.is_some(), "Should match: {input}");
+        let key = caps.unwrap().get(1).unwrap().as_str();
+        assert_eq!(key, expected_key, "Should capture key from: {input}");
+    }
+}
+
+#[test]
+fn test_pandoc_pattern_does_not_match_emails() {
+    use crate::citation::PANDOC_CITE_PATTERN;
+    use fancy_regex::Regex;
+
+    let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
+
+    // Email addresses should NOT be matched
+    let non_matches = vec![
+        "user@example.com",
+        "email@domain.org",
+        "test@email.co.uk",
+        "name@company.io",
+    ];
+
+    for input in non_matches {
+        assert!(
+            !re.is_match(input).unwrap(),
+            "Should NOT match email: {input}"
+        );
+    }
+}
+
+#[test]
+fn test_pandoc_pattern_does_not_match_double_at() {
+    use crate::citation::PANDOC_CITE_PATTERN;
+    use fancy_regex::Regex;
+
+    let re = Regex::new(PANDOC_CITE_PATTERN).unwrap();
+
+    // @@key should NOT be matched by Pandoc single-@ pattern (processed separately)
+    let non_matches = vec!["@@Smith2024", "@@key", "text @@citation more"];
+
+    for input in non_matches {
+        let result = re.find(input).unwrap();
+        // If it matches, it should NOT be at the @@ position
+        if let Some(m) = result {
+            let prefix = &input[..m.start()];
+            assert!(
+                !prefix.ends_with('@'),
+                "Should not match @@key pattern: {input}"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_pandoc_bracketed_citation() {
+    use crate::citation::PANDOC_BRACKETED_PATTERN;
+    use regex::Regex;
+
+    let re = Regex::new(PANDOC_BRACKETED_PATTERN).unwrap();
+
+    let cases = vec![
+        ("[@Smith2024]", "Smith2024"),
+        ("see [@Jones2020]", "Jones2020"),
+        ("documented [@Author_Name].", "Author_Name"),
+    ];
+
+    for (input, expected_key) in cases {
+        let caps = re.captures(input);
+        assert!(caps.is_some(), "Should match: {input}");
+        let key = caps.unwrap().get(1).unwrap().as_str();
+        assert_eq!(key, expected_key, "Should capture key from: {input}");
+    }
+}
+
+#[test]
+fn test_pandoc_suppress_author_citation() {
+    use crate::citation::PANDOC_SUPPRESS_AUTHOR_PATTERN;
+    use regex::Regex;
+
+    let re = Regex::new(PANDOC_SUPPRESS_AUTHOR_PATTERN).unwrap();
+
+    let cases = vec![
+        ("[-@Smith2024]", "Smith2024"),
+        ("Smith argues [-@Smith2024]", "Smith2024"),
+        ("As noted [-@Author_Name].", "Author_Name"),
+    ];
+
+    for (input, expected_key) in cases {
+        let caps = re.captures(input);
+        assert!(caps.is_some(), "Should match: {input}");
+        let key = caps.unwrap().get(1).unwrap().as_str();
+        assert_eq!(key, expected_key, "Should capture key from: {input}");
+    }
+}
+
+#[test]
+fn test_pandoc_bracketed_does_not_match_markdown_links() {
+    use crate::citation::PANDOC_BRACKETED_PATTERN;
+    use regex::Regex;
+
+    let re = Regex::new(PANDOC_BRACKETED_PATTERN).unwrap();
+
+    // Markdown links [text](url) should NOT be matched
+    let non_matches = vec![
+        "[link text](https://example.com)",
+        "[Documentation](../docs/index.html)",
+        "[See here](./local.md)",
+    ];
+
+    for input in non_matches {
+        assert!(
+            !re.is_match(input),
+            "Should NOT match markdown link: {input}"
+        );
+    }
+}
+
+#[test]
+fn test_pandoc_syntax_full_replacement() {
+    let content = r#"
+According to @Smith2024, this is important.
+This has been documented [@Jones2020].
+Smith argues [-@Smith2024] that...
+Legacy syntax still works: @@legacy_key and {{#cite another_key}}.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    for key in ["Smith2024", "Jones2020", "legacy_key", "another_key"] {
+        bibliography.insert(
+            key.to_string(),
+            BibItemBuilder::article(key)
+                .title(&format!("Title for {key}"))
+                .authors(&["Author"])
+                .year("2024")
+                .build(),
+        );
+    }
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("{{item.citation_key}}");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    // All citations should be found
+    assert!(cited.contains("Smith2024"), "Should find Smith2024");
+    assert!(cited.contains("Jones2020"), "Should find Jones2020");
+    assert!(cited.contains("legacy_key"), "Should find legacy_key");
+    assert!(cited.contains("another_key"), "Should find another_key");
+
+    // Original patterns should be gone
+    assert!(!result.contains("@Smith2024"), "Should replace @Smith2024");
+    assert!(
+        !result.contains("[@Jones2020]"),
+        "Should replace [@Jones2020]"
+    );
+    assert!(
+        !result.contains("[-@Smith2024]"),
+        "Should replace [-@Smith2024]"
+    );
+    assert!(
+        !result.contains("@@legacy_key"),
+        "Should replace @@legacy_key"
+    );
+    assert!(
+        !result.contains("{{#cite another_key}}"),
+        "Should replace {{#cite}}"
+    );
+}
+
+#[test]
+fn test_code_block_protection() {
+    let content = r#"
+Regular citation @Smith2024 should be replaced.
+
+```rust
+// This @NotACitation should NOT be replaced
+let x = 1;
+```
+
+Inline code `@AlsoNotACitation` should be protected.
+
+~~~python
+# @AnotherNonCitation in fenced block
+print("hello")
+~~~
+
+Back to regular text with @Jones2020.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    for key in [
+        "Smith2024",
+        "Jones2020",
+        "NotACitation",
+        "AlsoNotACitation",
+        "AnotherNonCitation",
+    ] {
+        bibliography.insert(
+            key.to_string(),
+            BibItemBuilder::article(key)
+                .title(&format!("Title for {key}"))
+                .authors(&["Author"])
+                .year("2024")
+                .build(),
+        );
+    }
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("[CITE:{{item.citation_key}}]");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    // Only regular citations should be found
+    assert!(cited.contains("Smith2024"), "Should find Smith2024");
+    assert!(cited.contains("Jones2020"), "Should find Jones2020");
+
+    // Code block citations should NOT be found
+    assert!(
+        !cited.contains("NotACitation"),
+        "Should NOT find citation in code block"
+    );
+    assert!(
+        !cited.contains("AlsoNotACitation"),
+        "Should NOT find citation in inline code"
+    );
+    assert!(
+        !cited.contains("AnotherNonCitation"),
+        "Should NOT find citation in ~~~ block"
+    );
+
+    // Code blocks should be preserved with original @ symbols
+    assert!(
+        result.contains("@NotACitation"),
+        "Code block content should be preserved"
+    );
+    assert!(
+        result.contains("`@AlsoNotACitation`"),
+        "Inline code should be preserved"
+    );
+    assert!(
+        result.contains("@AnotherNonCitation"),
+        "Fenced block content should be preserved"
+    );
+
+    // Regular citations should be replaced
+    assert!(
+        result.contains("[CITE:Smith2024]"),
+        "Regular citation should be replaced"
+    );
+    assert!(
+        result.contains("[CITE:Jones2020]"),
+        "Regular citation should be replaced"
+    );
+}
+
+#[test]
+fn test_escaped_at_symbol() {
+    let content = r#"
+Contact me at user\@example.com for more info.
+Citation @Smith2024 should still work.
+Another escaped: admin\@server.local
+"#;
+
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "Smith2024".to_string(),
+        BibItemBuilder::article("Smith2024")
+            .title("Test Paper")
+            .authors(&["Smith"])
+            .year("2024")
+            .build(),
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("[CITE:{{item.citation_key}}]");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    // Citation should be found and replaced
+    assert!(cited.contains("Smith2024"), "Should find Smith2024");
+    assert!(
+        result.contains("[CITE:Smith2024]"),
+        "Should replace citation"
+    );
+
+    // Escaped @ should become literal @
+    assert!(
+        result.contains("user@example.com"),
+        "Escaped @ should become literal: {result}"
+    );
+    assert!(
+        result.contains("admin@server.local"),
+        "Escaped @ should become literal"
+    );
+
+    // No \@ should remain
+    assert!(
+        !result.contains(r"\@"),
+        "No escaped @ patterns should remain"
+    );
+}
+
+#[test]
+fn test_pandoc_syntax_disabled_by_default() {
+    let content = r#"
+This @citation should NOT be replaced when Pandoc syntax is disabled.
+But @@legacy_key should still work.
+And {{#cite another_key}} too.
+"#;
+
+    let mut bibliography = IndexMap::new();
+    for key in ["citation", "legacy_key", "another_key"] {
+        bibliography.insert(
+            key.to_string(),
+            BibItemBuilder::article(key)
+                .title(&format!("Title for {key}"))
+                .authors(&["Author"])
+                .year("2024")
+                .build(),
+        );
+    }
+
+    let chapter = Chapter::new(
+        "Test",
+        content.to_string(),
+        std::path::PathBuf::new(),
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("[{{item.citation_key}}]");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Default, // Default syntax, Pandoc disabled
+    );
+
+    // @citation should NOT be replaced (Pandoc syntax disabled)
+    assert!(
+        !cited.contains("citation"),
+        "Pandoc @citation should NOT be processed in default mode"
+    );
+    assert!(
+        result.contains("@citation"),
+        "@citation should remain unchanged"
+    );
+
+    // Legacy syntax should still work
+    assert!(cited.contains("legacy_key"), "@@legacy_key should work");
+    assert!(cited.contains("another_key"), "{{#cite}} should work");
 }

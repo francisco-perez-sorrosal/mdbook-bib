@@ -21,6 +21,7 @@ handlebars = { version = "6.3.2", features = ["dir_source"] }
 hayagriva = { version = "0.9", features = ["archive"] }
 lazy_static = "1.0"
 regex = "1.0.0"
+fancy-regex = "0.14"
 reqwest = { version = "0.12.24", features = ["blocking", "json"] }
 serde = { version = "1.0.121", features = ["derive"] }
 serde_json = "1.0"

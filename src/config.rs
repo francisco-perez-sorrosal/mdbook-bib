@@ -85,6 +85,32 @@ pub enum SortOrder {
     Index,
 }
 
+/// Citation syntax determines which patterns are recognized in markdown.
+///
+/// - `Default`: Recognizes `{{#cite key}}` and `@@key` (mdbook-bib native syntax)
+/// - `Pandoc`: Additionally recognizes `@key`, `[@key]`, `[-@key]` for Pandoc compatibility
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum CitationSyntax {
+    /// Default mdbook-bib syntax: `{{#cite key}}` and `@@key`
+    #[default]
+    Default,
+    /// Pandoc-compatible syntax: adds `@key`, `[@key]`, `[-@key]`
+    Pandoc,
+}
+
+impl FromStr for CitationSyntax {
+    type Err = ParseEnumError;
+    fn from_str(input: &str) -> Result<CitationSyntax, Self::Err> {
+        match input {
+            "default" => Ok(CitationSyntax::Default),
+            "pandoc" => Ok(CitationSyntax::Pandoc),
+            _ => Err(ParseEnumError(format!(
+                "Unknown citation syntax '{input}'. Must be one of [default, pandoc]",
+            ))),
+        }
+    }
+}
+
 impl FromStr for SortOrder {
     type Err = ParseEnumError;
     fn from_str(input: &str) -> Result<SortOrder, Self::Err> {
@@ -126,6 +152,8 @@ pub struct Config<'a> {
     pub backend: BackendMode,
     /// CSL style name (only used when backend = CSL)
     pub csl_style: Option<String>,
+    /// Citation syntax: which patterns are recognized in markdown
+    pub citation_syntax: CitationSyntax,
 }
 
 impl<'a> Config<'a> {
@@ -237,6 +265,11 @@ impl<'a> Config<'a> {
             .map(|v| value_as_str(v, "csl-style").map(|s| s.to_string()))
             .transpose()?;
 
+        let citation_syntax = match table.get("citation-syntax") {
+            Some(v) => CitationSyntax::from_str(value_as_str(v, "citation-syntax")?)?,
+            None => CitationSyntax::Default,
+        };
+
         Ok(Self {
             title,
             bibliography,
@@ -250,6 +283,7 @@ impl<'a> Config<'a> {
             order,
             backend,
             csl_style,
+            citation_syntax,
         })
     }
 }

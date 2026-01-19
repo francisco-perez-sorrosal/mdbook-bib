@@ -131,4 +131,7 @@ impl BibItem {
 pub struct Citation {
     pub item: BibItem,
     pub path: String,
+    /// Citation variant as string for template use: "standard", "author_in_text", "parenthetical", "suppress_author"
+    #[serde(default)]
+    pub variant: String,
 }
