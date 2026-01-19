@@ -5,9 +5,9 @@ This guide helps you upgrade from mdbook-bib v0.5.x to v1.0.0.
 ## What's New in v1.0.0
 
 - **Dual backend system**: Choose between Custom (Handlebars) or CSL rendering
-- **hayagriva-powered parsing**: Better BibTeX/BibLaTeX handling, YAML support
+- **Improved parsing**: hayagriva-powered BibTeX/BibLaTeX parsing, plus YAML support
 - **80+ CSL styles**: IEEE, Chicago, Nature, APA, and many more
-- **Expanded bibliography fields**: DOI, keywords, volume, issue, and more
+- **Extended fields**: DOI, volume, issue, pages, publisher, and more
 
 ## Backwards Compatibility
 
@@ -142,5 +142,4 @@ The new fields are additive—existing templates should work unchanged.
 
 ## Getting Help
 
-- [GitHub Issues](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues)
-- Debug with `MDBOOK_LOG=mdbook_bib=debug mdbook build`
+Report issues on [GitHub](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues). Debug with `MDBOOK_LOG=mdbook_bib=debug mdbook build`.

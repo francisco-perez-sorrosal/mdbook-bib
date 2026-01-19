@@ -1,6 +1,6 @@
-# CSL Backend (hayagriva)
+# CSL Backend
 
-The CSL backend uses [hayagriva](https://github.com/typst/hayagriva) to render citations and bibliographies in standard academic formats. This provides properly formatted output for IEEE, Chicago, APA, Nature, and 80+ other citation styles.
+The CSL backend uses [hayagriva](https://github.com/typst/hayagriva) to render citations and bibliographies in standard academic formats: IEEE, Chicago, APA, Nature, and 80+ other styles.
 
 ## When to Use CSL Backend
 
@@ -278,13 +278,7 @@ Citations automatically link to their bibliography entries. The bibliography pag
 
 ## Limitations
 
-The CSL backend does not support:
-
-- Custom HTML templates (use Custom backend for this)
-- Copy buttons or interactive elements
-- Custom JavaScript integration
-
-For these features, use the [Custom Backend](./custom.md).
+The CSL backend does not support custom HTML templates, copy buttons, or JavaScript integration. For these features, use the [Custom Backend](./custom.md).
 
 ### Citation Text Processing
 

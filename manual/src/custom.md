@@ -34,7 +34,7 @@ Available variables for rendering each bibliography entry:
 |----------|------|-------------|
 | `citation_key` | String | Unique identifier for the entry |
 | `title` | String | Entry title |
-| `authors` | Array | List of authors, each as `[Last, First]` |
+| `authors` | Array | List of authors as `[[Last, First], ...]` |
 | `pub_year` | String | Publication year |
 | `pub_month` | String | Publication month |
 | `url` | String | URL if available |
@@ -173,7 +173,7 @@ js = "render/bib.js"
 ## Tips
 
 - Use `{{#if field}}...{{/if}}` to conditionally render optional fields
-- Use `{{#each authors}}...{{/each}}` to iterate over author lists
-- Access array elements with `{{this.[0]}}` (last name) and `{{this.[1]}}` (first name)
+- Use `{{#each authors}}...{{/each}}` to iterate over the author list
+- Inside `{{#each authors}}`, access `{{this.[0]}}` (last name) and `{{this.[1]}}` (first name)
 - Add `id="{{citation_key}}"` to entries for citation linking
-- Use the `index` field for numbered citations
+- Use `{{index}}` for numbered citations

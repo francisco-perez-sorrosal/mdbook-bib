@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-Add a bibliography file to your mdbook source directory:
+Add a bibliography file (BibTeX or YAML) to your mdbook source directory:
 
 ```
 my_book/
@@ -195,8 +195,8 @@ add-bib-in-chapters = true  # Default: false
 | Option | Description | Default |
 |--------|-------------|---------|
 | **Source** | | |
-| `bibliography` | Path to `.bib` or `.yaml` file | - |
-| `zotero-uid` | Zotero user ID (alternative to file) | - |
+| `bibliography` | Path to `.bib` (BibTeX) or `.yaml` (hayagriva) file | - |
+| `zotero-uid` | Zotero user ID (alternative to local file) | - |
 | **Citation Syntax** | | |
 | `citation-syntax` | Input syntax: `default` or `pandoc` | `default` |
 | **Backend** | | |
@@ -277,14 +277,9 @@ zotero-uid = "<your_zotero_user_id>"
 
 ### Debugging
 
-Enable debug logging to troubleshoot issues:
+Enable debug logging to troubleshoot parsing or rendering issues:
 
 ```bash
-MDBOOK_LOG=mdbook_bib=debug mdbook build
-```
-
-For more verbose output:
-
-```bash
-MDBOOK_LOG=debug mdbook build
+MDBOOK_LOG=mdbook_bib=debug mdbook build   # mdbook-bib only
+MDBOOK_LOG=debug mdbook build               # All components
 ```

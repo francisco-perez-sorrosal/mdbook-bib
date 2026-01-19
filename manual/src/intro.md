@@ -5,7 +5,7 @@
 [![Test status](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml/badge.svg)](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml)
 [![MPL-2.0 License](https://img.shields.io/github/license/francisco-perez-sorrosal/mdbook-bib)](https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE)
 
-**mdbook-bib** is a {{#cite mdBook}} plugin for creating a bibliography and referencing citations in your books. mdBook is written in the Rust language @@Klabnik2018.
+**mdbook-bib** is an {{#cite mdBook}} preprocessor for adding citations and bibliographies to your books. mdBook is written in Rust @@Klabnik2018.
 
 ## Two Rendering Backends
 
@@ -36,22 +36,21 @@ See [CSL Backend](./csl.md) for details.
 
 ## Quick Start
 
-Configure your book in the `book.toml` file:
+Configure the preprocessor in `book.toml`:
 
 ```toml
 [preprocessor.bib]
+bibliography = "refs.bib"      # BibTeX or YAML
 # Custom mode by default
-bibliography = "refs.bib"
-# For CSL mode, add:
-# backend = "csl"
-# csl-style = "ieee"
+# backend = "csl"              # Optional: use CSL instead of custom
+# csl-style = "ieee"           # Required when backend = "csl"
 ```
 
-Cite entries with **\{\{#cite key\}\}** or **\@\@key**.
+Cite entries with `{{#cite key}}` or `@@key`. For Pandoc compatibility, enable `citation-syntax = "pandoc"` to also use `@key`, `[@key]`, and `[-@key]`.
 
 ## Upgrading from v0.5.x
 
-Version 1.0.0 introduces the dual backend system while maintaining full backwards compatibility. Your existing books will build without any changes. If you want to explore the new CSL backend or learn about new template variables, see the [Migration Guide](./migration.md).
+Version 1.0.0 introduces dual backends while maintaining full backwards compatibility—existing books build without changes. See the [Migration Guide](./migration.md) for new features like CSL styles and additional template variables.
 
 ### GitHub project
 

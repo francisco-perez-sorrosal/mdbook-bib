@@ -12,12 +12,12 @@ A [mdBook](https://github.com/rust-lang/mdBook) plugin for creating a bibliograp
 
 ## Features
 
-- Add citations from your BibLaTeX or YAML bibliography files
-- Automatically download your public bibliography from Zotero and cite it
-- **Pandoc-compatible citation syntax** for cross-tool workflows (generate HTML with mdBook and PDF with Pandoc from the same source)
+- Add citations from **BibTeX/BibLaTeX** or **YAML** bibliography files
+- Automatically download your public bibliography from **Zotero**
+- **Pandoc-compatible syntax** for cross-tool workflows (generate HTML with mdBook and PDF with Pandoc from the same sources)
 - **Two rendering backends**:
-  - **Custom (Handlebars)**: Full template customization with custom CSS/JS
-  - **CSL (Citation Style Language)**: Standard academic citation styles (IEEE, Chicago, Nature, APA, and 80+ more)
+  - **Custom (Handlebars)**: Full template customization with CSS/JS
+  - **CSL**: Standard academic styles (IEEE, Chicago, Nature, APA, and 80+ more)
   
 ## TL;DR
 
@@ -70,9 +70,9 @@ Make sure your PATH env var contains Cargo's `/bin` directory where the plugin w
 
 See all options in the [Install section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/install.html).
 
-## Add a Bibliography and Cite your Entries
+## Add a Bibliography and Cite Your Entries
 
-Add a bibliography file in [BibLaTeX format](https://www.ctan.org/pkg/biblatex) (or YAML) to the root of your mdbook and configure the plugin in your `book.toml`:
+Add a bibliography file in [BibTeX/BibLaTeX](https://www.ctan.org/pkg/biblatex) or [YAML](https://github.com/typst/hayagriva) format to your mdbook's `src/` directory and configure in `book.toml`:
 
 ```toml
 [preprocessor.bib]
@@ -108,9 +108,12 @@ This lets you use the same source files with both mdBook (HTML) and Pandoc (PDF)
 
 ## Rendering Backends
 
-mdbook-bib provides two rendering backends. The **Custom backend** (default) gives you full control over citation and bibliography formatting through Handlebars templates, custom CSS, and JavaScript. The **CSL backend** uses [hayagriva](https://github.com/typst/hayagriva) to render citations in standard academic formats (IEEE, APA, Chicago, Nature, and 80+ more) without any template configuration.
+mdbook-bib provides two rendering backends:
 
-Choose Custom if you need custom layouts or interactive elements. Choose CSL if you want standard academic formatting with minimal setup.
+- **Custom (default)**: Full control via Handlebars templates, CSS, and JavaScript
+- **CSL**: Standard academic formats (IEEE, APA, Chicago, Nature, 80+ more) via [hayagriva](https://github.com/typst/hayagriva)
+
+Choose **Custom** for custom layouts or interactive elements. Choose **CSL** for standard academic formatting with minimal setup.
 
 ### Custom Backend (Default)
 

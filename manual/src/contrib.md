@@ -1,7 +1,9 @@
-# Contribute to mdbook-bib
+# Contribute
 
-**mdbook-bib** is OSS, so contributions are welcome, specially in the form of new requests for features that may be useful for you, issues found, bug fixes, and any other PR.
+Contributions are welcome! You can help by:
 
-Use Github's [issue tracker](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues) to track the list of current issues.
+- **Reporting issues**: Found a bug or have a feature request? [Open an issue](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues)
+- **Submitting PRs**: Bug fixes, improvements, and documentation updates
+- **Suggesting features**: Ideas for new citation styles, syntax, or integrations
 
-Not sure how to contribute? [Check this guide](https://opensource.guide/how-to-contribute/)
+See the [Dev](./dev.md) page for build and test instructions. New to open source? Check [How to Contribute](https://opensource.guide/how-to-contribute/).

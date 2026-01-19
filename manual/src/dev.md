@@ -85,7 +85,7 @@ MDBOOK_LOG=mdbook_bib=debug,handlebars=warn mdbook build # Debug specific module
 
 ## Commits
 
-Before submitting the commit, format code with:
+Before committing, format and lint:
 
 ```sh
 # Format all code in the project
@@ -96,15 +96,11 @@ cargo clippy --fix
 cargo clippy --fix --tests
 ```
 
-Commits will exercise the pre-commit hook in `.rusty-hook.toml` and will prevent the commit if formating errors are found
-
-When committing to the `master` branch, the github workflow `test.yml` will be exercised. Look for problems in the [github actions](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions).
-
-After successful test pass, the `CHANGELOG.md` is updated.
+Pre-commit hooks (`.rusty-hook.toml`) block commits with formatting errors. Github's `test.yml` workflow runs on pushes to `master`, and `CHANGELOG.md` is updated automatically on success. Look for problems in the [github actions](https://github.com/francisco-perez-sorrosal/mdbook-bib/actions).
 
 ## Versioning
 
-**From version 0.5.0, moving the minor version of mdbook-bib to match the minor version of the mdbook project.**
+From version 0.5.0, mdbook-bib's minor version tracks mdbook's minor version for compatibility.
 
 ## Release
 
@@ -171,6 +167,3 @@ The tag push triggers these workflows:
 - `release.yml` - Creates binary packages in [Releases](https://github.com/francisco-perez-sorrosal/mdbook-bib/releases)
 - `doc.yml` - Publishes documentation to [GitHub Pages](https://francisco-perez-sorrosal.github.io/mdbook-bib/)
 
-## ToDo
-
-Improve the process above when bored or when you want to improve friction points (e.g. the Changelog is updated post release, etc.)
