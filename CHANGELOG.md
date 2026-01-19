@@ -38,6 +38,7 @@
 - Single handlebar registry for storing the plugin templates [\#61](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/61) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix render of @@ citations with a dot \(.\) at the end [\#60](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/60) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix override of mdBook's default built-in {{\#...}} expressions [\#59](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/59) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
+- Add Claude Code GitHub Workflow [\#58](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/58) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 
 ## [v0.5.0](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.0) (2025-12-06)
 
@@ -117,7 +118,6 @@
 
 **Merged pull requests:**
 
-- Add Claude Code GitHub Workflow [\#58](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/58) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Allow citations with @@citation-key [\#33](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/33) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Fix location of .bib in book scaffold and fix \#24 [\#30](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/30) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
 - Allow custom reference styles [\#29](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/29) ([francisco-perez-sorrosal](https://github.com/francisco-perez-sorrosal))
