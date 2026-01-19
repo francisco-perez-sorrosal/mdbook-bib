@@ -20,7 +20,28 @@ const ESCAPED_AT_PLACEHOLDER: &str = "\u{E000}MDBIB_ESCAPED_AT\u{E001}";
 // Placeholder prefix for protected code blocks.
 const CODE_BLOCK_PLACEHOLDER: &str = "\u{E000}MDBIB_CODEBLOCK";
 
-// Regex patterns for citation placeholders
+// =============================================================================
+// Citation Key Patterns
+// =============================================================================
+//
+// IMPORTANT: The patterns below have intentionally different key formats:
+//
+// 1. mdbook-bib native patterns (REF_PATTERN, AT_REF_PATTERN):
+//    - Key format: [a-zA-Z0-9_\-:./@]+
+//    - Allows keys starting with digits (e.g., {{#cite 123key}}, @@2024smith)
+//    - Follows BibLaTeX's permissive key rules
+//
+// 2. Pandoc-style patterns (PANDOC_*_PATTERN):
+//    - Key format: [a-zA-Z_][a-zA-Z0-9_]* (must start with letter or underscore)
+//    - Follows Pandoc's citation key specification for compatibility
+//    - Keys like @123key will NOT match (use @key123 instead)
+//
+// This difference is intentional: Pandoc patterns match Pandoc's spec for
+// cross-tool compatibility, while native patterns remain backward-compatible
+// with existing mdbook-bib usage.
+// =============================================================================
+
+// Native mdbook-bib patterns
 // BibLaTeX-compliant character class for citation keys:
 // - Allowed: alphanumeric, underscore, hyphen, colon, dot, slash, at-symbol
 // - Forbidden: spaces, comma, quotes, hash, braces, percent, tilde, parentheses, equals
@@ -31,12 +52,15 @@ pub const REF_PATTERN: &str = r"
 \{\{\s*                      # placeholder opening parens and whitespace
 \#cite                       # explicitly match #cite (only, not other mdBook helpers like #include, #title)
 \s+                          # separating whitespace
-([a-zA-Z0-9_\-:./@]+)        # citation key (capture group 1) - BibLaTeX compliant
+([a-zA-Z0-9_\-:./@]+)        # citation key (capture group 1) - BibLaTeX compliant, allows digit start
 \s*\}\}                      # whitespace and placeholder closing parens";
 
 pub const AT_REF_PATTERN: &str = r##"(@@)([a-zA-Z0-9_\-/@]+(?:[.:][a-zA-Z0-9_\-/@]+)*)"##;
 
 // Pandoc-style citation patterns (only used when citation-syntax = "pandoc")
+// These follow Pandoc's citation key spec: must start with letter or underscore.
+// See: https://pandoc.org/MANUAL.html#citation-syntax
+
 // Escaped @ - will be replaced with placeholder before processing
 pub const ESCAPED_AT_PATTERN: &str = r"\\@";
 
