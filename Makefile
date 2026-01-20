@@ -1,6 +1,6 @@
 # Makefile for mdbook-bib version management
 
-.PHONY: help update-version update-cargo update-doc release show-version
+.PHONY: help update-version update-cargo update-doc release show-version check-release update-lockfile update-changelog
 
 # Get current version from Cargo.toml
 CURRENT_VERSION := $(shell grep '^version' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
@@ -38,6 +38,9 @@ help:
 	@echo "  update-version                - Update version in Cargo.toml and doc.yml"
 	@echo "  update-cargo                  - Update version only in Cargo.toml"
 	@echo "  update-doc                    - Update version only in doc.yml"
+	@echo "  update-lockfile               - Regenerate Cargo.lock after version update"
+	@echo "  update-changelog              - Generate CHANGELOG.md using git-cliff"
+	@echo "  check-release                 - Validate release preconditions"
 	@echo "  release                       - Complete release (update, commit, tag, push)"
 	@echo ""
 	@echo "Options:"
@@ -87,22 +90,69 @@ else
 endif
 	@echo "$(DRY_RUN_MSG)✓ doc.yml updated"
 
+# Regenerate Cargo.lock after version update
+update-lockfile:
+	@echo "$(DRY_RUN_MSG)Regenerating Cargo.lock..."
+ifdef DRY_RUN
+	@echo "[DRY-RUN] cargo update --workspace"
+else
+	@cargo update --workspace
+endif
+	@echo "$(DRY_RUN_MSG)✓ Cargo.lock updated"
+
+# Generate CHANGELOG using git-cliff
+update-changelog:
+	@echo "$(DRY_RUN_MSG)Generating CHANGELOG.md for v$(VERSION)..."
+ifdef DRY_RUN
+	@echo "[DRY-RUN] git-cliff --tag v$(VERSION) -o CHANGELOG.md"
+else
+	@if ! command -v git-cliff >/dev/null 2>&1; then \
+		echo "Error: git-cliff not found. Install with: cargo install git-cliff"; \
+		exit 1; \
+	fi
+	@git-cliff --tag v$(VERSION) -o CHANGELOG.md
+endif
+	@echo "$(DRY_RUN_MSG)✓ CHANGELOG.md updated"
+
+# Check release preconditions
+check-release:
+ifndef DRY_RUN
+	@echo "Checking release preconditions..."
+	@if ! echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$'; then \
+		echo "Error: Invalid version format '$(VERSION)'. Expected: x.y.z"; \
+		exit 1; \
+	fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: Working directory has uncommitted changes."; \
+		echo "Please commit or stash changes before releasing."; \
+		git status --short; \
+		exit 1; \
+	fi
+	@echo "✓ All preconditions passed"
+else
+	@echo "[DRY-RUN] Would check: version format, clean working directory"
+endif
+
 # Complete release process
-release: update-version
+release: check-release update-version update-lockfile update-changelog
 	@echo ""
 	@echo "$(DRY_RUN_MSG)Starting release process for version $(VERSION)..."
 	@echo ""
 	@echo "$(DRY_RUN_MSG)[1/4] Staging changes..."
-	$(RUN) git add Cargo.toml .github/workflows/doc.yml
+	$(RUN) git add Cargo.toml Cargo.lock .github/workflows/doc.yml CHANGELOG.md
 	@echo "$(DRY_RUN_MSG)[2/4] Committing..."
 	$(RUN) git commit -m "Prepare for release v$(VERSION)"
 	@echo "$(DRY_RUN_MSG)[3/4] Creating tag v$(VERSION)..."
 	$(RUN) git tag -a v$(VERSION) -m "Version v$(VERSION)"
-	@echo "$(DRY_RUN_MSG)[4/4] Pushing to origin..."
-	$(RUN) git push origin master
-	$(RUN) git push origin v$(VERSION)
+	@echo "$(DRY_RUN_MSG)[4/4] Pushing to origin (atomic)..."
+	$(RUN) git push origin master v$(VERSION)
 	@echo ""
 	@echo "$(DRY_RUN_MSG)✓ Release v$(VERSION) completed!"
+	@echo ""
+	@echo "$(DRY_RUN_MSG)GitHub Actions will now run sequentially:"
+	@echo "$(DRY_RUN_MSG)  1. Release  → Build binaries (Linux/Win/macOS)"
+	@echo "$(DRY_RUN_MSG)  2. Publish  → Publish to crates.io (if builds pass)"
+	@echo "$(DRY_RUN_MSG)  3. Docs     → Deploy to GitHub Pages (if publish passes)"
 ifdef DRY_RUN
 	@echo ""
 	@echo "Run 'make release' or 'make release VERSION=$(VERSION)' to execute for real."

@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v0.*.*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 # Uncomment this just in case we have to manually do the release
 # on:
@@ -35,7 +35,7 @@ jobs:
             os_name: "macos-amd64"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Get tag
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
         shell: bash

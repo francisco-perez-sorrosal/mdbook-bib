@@ -29,6 +29,24 @@ cargo clippy --fix --tests  # Run clippy with auto-fixes for tests
 
 **Important**: Pre-commit hooks in `.rusty-hook.toml` automatically enforce formatting and clippy checks. Commits will be blocked if formatting errors exist.
 
+### Commit Messages
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/). Use these prefixes:
+
+- `feat:` - New features → Features section in CHANGELOG
+- `fix:` - Bug fixes → Bug Fixes section
+- `docs:` - Documentation → Documentation section
+- `refactor:` - Code refactoring → Refactoring section
+- `test:` - Tests → Testing section
+- `chore:` - Maintenance → Miscellaneous section
+
+Examples:
+```bash
+feat(parser): add YAML bibliography support
+fix: handle empty author fields gracefully
+docs: update installation instructions
+```
+
 ### Debugging
 Use the `MDBOOK_LOG` environment variable to enable debug logging:
 ```bash
@@ -49,17 +67,27 @@ mdbook build
 ```
 
 ### Release Process
-Use the Makefile for version management:
+
+**Prerequisite**: Install [git-cliff](https://git-cliff.org/) for changelog generation:
 ```bash
-make update-version VERSION=x.y.z  # Update version in Cargo.toml and doc.yml
-make release VERSION=x.y.z         # Complete release: update, commit, tag, and push
+cargo install git-cliff
 ```
 
-The release process automatically:
-1. Updates version in `Cargo.toml` and `.github/workflows/doc.yml`
-2. Commits with message "Prepare for release vX.Y.Z"
-3. Creates and pushes git tag `vX.Y.Z`
-4. Triggers GitHub workflows for publishing, binary release, and documentation
+Use the Makefile for releases:
+```bash
+make release                  # Auto-increment patch version (0.5.1 → 0.5.2)
+make release VERSION=x.y.z    # Specific version
+make release DRY_RUN=1        # Preview without making changes
+```
+
+The release process:
+1. **check-release** - Validates version format and clean working directory
+2. **update-version** - Updates `Cargo.toml` and `.github/workflows/doc.yml`
+3. **update-lockfile** - Regenerates `Cargo.lock`
+4. **update-changelog** - Generates `CHANGELOG.md` using git-cliff
+5. Commits all changes with message "Prepare for release vX.Y.Z"
+6. Creates annotated tag `vX.Y.Z`
+7. Pushes commit and tag atomically to origin
 
 ## Architecture
 
@@ -92,8 +120,8 @@ The release process automatically:
 
 ### Citation Processing Flow
 
-1. **Bibliography Loading**: Load from .bib file or download from Zotero API
-2. **Parsing**: Use `nom-bibtex` crate to parse BibLaTeX into `BibItem` structures
+1. **Bibliography Loading**: Load from .bib/.yaml file or download from Zotero API
+2. **Parsing**: Use `hayagriva` crate to parse BibTeX/YAML into `BibItem` structures
 3. **Citation Replacement**: Scan chapters for citation patterns using regex:
    - `{{#cite citation-key}}` - Handlebars-style
    - `@@citation-key` - Shorthand notation
@@ -132,10 +160,18 @@ Tests are in `src/tests.rs` and use:
 
 ## GitHub Workflows
 
-- **test.yml** - Runs on commits to master; auto-updates CHANGELOG.md
-- **publish.yml** - Publishes to crates.io on new tags
-- **release.yml** - Creates binary packages for GitHub releases
-- **doc.yml** - Publishes documentation to GitHub Pages
+Workflows run sequentially with failure gates after a tag push:
+
+1. **release.yml** - Builds binaries for Linux, Windows, macOS
+   - If any build fails → stops (no publish)
+2. **publish.yml** - Publishes to crates.io
+   - Only runs if Release succeeded
+   - If publish fails → stops (no docs)
+3. **doc.yml** - Deploys documentation to GitHub Pages
+   - Only runs if Publish succeeded
+
+Additionally:
+- **test.yml** - Runs on commits/PRs to master (format, clippy, build, test)
 
 ## Versioning
 

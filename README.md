@@ -35,7 +35,7 @@ Add mdbook-bib config to `book.toml`:
 bibliography = "refs.bib"
 ```
 
-Create example bibliography `refs.bib`:
+Create example bibliography `src/refs.bib`:
 
 ```bibtex
 @article{hello,

@@ -1,64 +1,25 @@
 name: Publish
 
 on:
-  push:
-    tags:
-      - "v0.*.*"
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
 
 jobs:
-
-  changelog:
-    name: Update Changelog
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get version from tag
-        env:
-          GITHUB_REF: $
-        run: |
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: master
-      - name: Update Changelog
-        uses: heinrichreimer/github-changelog-generator-action@v2.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          author: true
-          headerLabel: '# mdbook-bib Changelog'
-          issues: true
-          issuesWoLabels: true
-          pullRequests: true
-          prWoLabels: true
-          addSections: '{ "documentation":{"prefix":"**Documentation:**","labels":["documentation"]},
-                          "feature": {"prefix": "**Feature:**", "labels": ["Feature"]} }'
-          enhancementLabels: 'Type: enhancement,Type: feature'
-          exclude-labels: 'duplicate,question,invalid,wontfix,Type: Help Needed,Type: Idea,Type: Question,Status: Invalid,Status: Wontfix'
-          releaseBranch: 'master'
-      - name: Commit Changelog
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          branch: master
-          commit_message: Update Changelog for Version ${{ steps.branch_name.outputs.SOURCE_TAG }}
-          file_pattern: CHANGELOG.md
-
   publish:
-    name: Publish
-    needs: changelog
+    name: Publish to crates.io
     runs-on: ubuntu-latest
+    # Only run if Release workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
+        uses: dtolnay/rust-toolchain@nightly
 
       - name: Publish
-        uses: actions-rs/cargo@v1
-        with:
-          command: publish
-          args: --verbose --all-features --token ${{ secrets.CRATES }}
+        run: cargo publish --verbose --all-features --token ${{ secrets.CRATES }}
