@@ -3,6 +3,7 @@
 <details data-key="{{citation_key}}" class="ref">
 <summary class="citation">
 <span class="bib-key">{{citation_key}}</span>{{#if index}}<span class="bib-index">{{index}}</span>{{/if}}
+<button class="bib-copy-btn" onclick="copyToClipboard('@@{{citation_key}}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);" title="Copy citation to clipboard">Copy</button>
 {{#if title}}<cite class="bib-title">{{#if url}}<a href="{{url}}" target="_blank" rel="noopener noreferrer">{{title}}</a>{{else}}{{title}}{{/if}}</cite>{{/if}}
 <div class="bib-meta">
 {{#if authors}}<span class="bib-meta-item bib-authors">{{#each authors as |author|}}{{#each author as |name|}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}; {{/unless}}{{/each}}</span>{{/if}}
