@@ -48,11 +48,7 @@ bibliography = "refs.bib"      # BibTeX or YAML
 
 Cite entries with `{{#cite key}}` or `@@key`. For Pandoc compatibility, enable `citation-syntax = "pandoc"` to also use `@key`, `[@key]`, and `[-@key]`.
 
-## Upgrading from v0.5.x
-
-Version 1.0.0 introduces dual backends while maintaining full backwards compatibility—existing books build without changes. See the [Migration Guide](./migration.md) for new features like CSL styles and additional template variables.
-
-### GitHub project
+## GitHub project
 
 mdbook-bib is Open Source and available [on GitHub](https://github.com/francisco-perez-sorrosal/mdbook-bib).
 
