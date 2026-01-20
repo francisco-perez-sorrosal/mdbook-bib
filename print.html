@@ -1,0 +1,1959 @@
+<!DOCTYPE HTML>
+<html lang="en" class="theme sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>mdbook-bib Manual</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "theme";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-552a0ffe.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-7478ee4d.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('theme')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">mdbook-bib Manual</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <style>/* ==========================================================================
+   mdbook-bib: Modern Bibliography Styles
+   Designed to work with mdBook's light and dark themes
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties - Theme Integration
+   Uses mdBook's CSS variables for seamless theme switching
+   -------------------------------------------------------------------------- */
+:root {
+  --bib-accent: #3b82f6;
+  --bib-accent-hover: #2563eb;
+  --bib-cite-bg: rgba(59, 130, 246, 0.1);
+  --bib-cite-border: rgba(59, 130, 246, 0.3);
+  --bib-abstract-bg: rgba(0, 0, 0, 0.03);
+  --bib-divider: rgba(0, 0, 0, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.08);
+  --bib-text-secondary: #6b7280;
+}
+
+/* Dark theme adjustments */
+.coal .bib-entry,
+.navy .bib-entry,
+.ayu .bib-entry {
+  --bib-abstract-bg: rgba(255, 255, 255, 0.03);
+  --bib-divider: rgba(255, 255, 255, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.3);
+  --bib-text-secondary: #9ca3af;
+}
+
+/* --------------------------------------------------------------------------
+   Inline Citations - The clickable reference markers in text
+   -------------------------------------------------------------------------- */
+.bib-cite {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.45em;
+  margin: 0 0.1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: none;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  vertical-align: baseline;
+}
+
+.bib-cite:hover {
+  background: var(--bib-accent);
+  color: white;
+  border-color: var(--bib-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--bib-shadow);
+  text-decoration: none;
+}
+
+.bib-cite:active {
+  transform: translateY(0);
+}
+
+/* Superscript variant (optional - add class "bib-cite-sup" to use) */
+.bib-cite-sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  padding: 0.05em 0.3em;
+}
+
+/* --------------------------------------------------------------------------
+   Bibliography Entry Container
+   -------------------------------------------------------------------------- */
+.bib-entry {
+  position: relative;
+  margin: 1.25rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg);
+  border-left: 3px solid var(--bib-accent);
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 1px 3px var(--bib-shadow);
+  transition: all 0.2s ease;
+}
+
+.bib-entry:hover {
+  box-shadow: 0 4px 12px var(--bib-shadow);
+  transform: translateX(2px);
+}
+
+/* --------------------------------------------------------------------------
+   Reference Header (the clickable summary)
+   -------------------------------------------------------------------------- */
+.bib-entry details {
+  margin: 0;
+}
+
+.bib-entry summary {
+  cursor: pointer;
+  list-style: none;
+  display: block;
+}
+
+.bib-entry summary::-webkit-details-marker {
+  display: none;
+}
+
+.bib-entry summary::marker {
+  display: none;
+}
+
+/* Citation key badge */
+.bib-key {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  margin-right: 0.75rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Index number - for ordered bibliographies */
+.bib-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0.5rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: white;
+  background: var(--bib-accent);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* Title styling */
+.bib-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--fg);
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.bib-title a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--bib-accent);
+  transition: border-color 0.2s ease;
+}
+
+.bib-title a:hover {
+  color: var(--bib-accent);
+  border-bottom-style: solid;
+}
+
+/* External link icon */
+.bib-title a::after {
+  content: " ↗";
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Metadata Row (authors, year, etc.)
+   -------------------------------------------------------------------------- */
+.bib-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.9em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-meta-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.bib-authors {
+  font-style: italic;
+}
+
+/* Expand indicator */
+.bib-expand-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.2em 0.5em;
+  font-size: 0.75em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.bib-entry:hover .bib-expand-hint {
+  opacity: 1;
+}
+
+.bib-expand-arrow {
+  transition: transform 0.3s ease;
+}
+
+details[open] .bib-expand-arrow {
+  transform: rotate(180deg);
+}
+
+/* --------------------------------------------------------------------------
+   Abstract Section (expandable content)
+   -------------------------------------------------------------------------- */
+.bib-abstract {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bib-divider);
+  animation: bib-fade-in 0.3s ease;
+}
+
+@keyframes bib-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bib-abstract-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-abstract-content {
+  padding: 1rem;
+  font-size: 0.95em;
+  line-height: 1.7;
+  background: var(--bib-abstract-bg);
+  border-radius: 6px;
+  text-align: justify;
+}
+
+/* --------------------------------------------------------------------------
+   Copy Button
+   -------------------------------------------------------------------------- */
+.bib-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35em 0.7em;
+  margin-left: 0.75rem;
+  font-size: 0.75em;
+  font-weight: 500;
+  color: var(--bib-text-secondary);
+  background: transparent;
+  border: 1px solid var(--bib-divider);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bib-copy-btn:hover {
+  color: var(--bib-accent);
+  border-color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+}
+
+.bib-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* --------------------------------------------------------------------------
+   Chapter References Section
+   -------------------------------------------------------------------------- */
+.bib-chapter-separator {
+  height: 0;
+  margin: 3rem 0 1.5rem 0;
+  border: none;
+  border-top: 2px solid var(--bib-divider);
+}
+
+.bib-chapter-refs-header {
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--bib-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .bib-entry {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .bib-meta {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-title {
+    font-size: 1em;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles
+   -------------------------------------------------------------------------- */
+@media print {
+  .bib-entry {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .bib-copy-btn,
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-entry details {
+    pointer-events: none;
+  }
+
+  .bib-entry details[open] .bib-abstract {
+    display: block;
+  }
+}
+</style>
+<h1 id="mdbook-bib"><a class="header" href="#mdbook-bib">mdbook-bib</a></h1>
+<p><a href="https://github.com/francisco-perez-sorrosal/mdbook-bib"><img src="https://img.shields.io/badge/github-repo-blue?logo=github" alt="GitHub"></a>
+<a href="https://crates.io/crates/mdbook-bib"><img src="https://img.shields.io/crates/v/mdbook-bib.svg" alt="Crate"></a>
+<a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml"><img src="https://github.com/francisco-perez-sorrosal/mdbook-bib/actions/workflows/test.yml/badge.svg" alt="Test status"></a>
+<a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE"><img src="https://img.shields.io/github/license/francisco-perez-sorrosal/mdbook-bib" alt="MPL-2.0 License"></a></p>
+<p><strong>mdbook-bib</strong> is an <a class="bib-cite" href="#mdBook-1" title="mdBook Documentation">mdBook</a> preprocessor for adding citations and bibliographies to your books. mdBook is written in Rust <a class="bib-cite" href="#Klabnik2018-1" title="The Rust Programming Language">Klabnik2018</a>.</p>
+<h2 id="two-rendering-backends"><a class="header" href="#two-rendering-backends">Two Rendering Backends</a></h2>
+<p>mdbook-bib offers two rendering backends to suit different needs:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Custom (Handlebars)</th><th>CSL</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Use case</strong></td><td>Full customization</td><td>Standard academic formats</td></tr>
+<tr><td><strong>Citation styles</strong></td><td>Custom templates</td><td>IEEE, Chicago, Nature, APA, 80+ more</td></tr>
+<tr><td><strong>Interactive elements</strong></td><td>Copy buttons, collapsible details</td><td>Basic (links only)</td></tr>
+<tr><td><strong>Configuration</strong></td><td>More flexible</td><td>Simpler</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="custom-backend-default"><a class="header" href="#custom-backend-default">Custom Backend (Default)</a></h3>
+<p>The <strong>Custom backend</strong> uses <a href="https://handlebarsjs.com/">Handlebars</a> templates for maximum flexibility. You control exactly how citations and bibliography entries are rendered, including custom HTML, CSS, and JavaScript.</p>
+<p>Best for: Power users who need custom layouts, interactive elements, or non-standard citation formats.</p>
+<p>See <a href="#custom-backend-handlebars">Custom Backend</a> for details.</p>
+<h3 id="csl-backend"><a class="header" href="#csl-backend">CSL Backend</a></h3>
+<p>The <strong>CSL backend</strong> uses <a href="https://github.com/typst/hayagriva">hayagriva</a> to render citations in standard academic formats. Simply specify a style name and get properly formatted output.</p>
+<p>Best for: Academic writing where you need standard citation styles like IEEE, APA, or Chicago.</p>
+<p>See <a href="#csl-backend-2">CSL Backend</a> for details.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<p>Configure the preprocessor in <code>book.toml</code>:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"      # BibTeX or YAML
+# Custom mode by default
+# backend = "csl"              # Optional: use CSL instead of custom
+# csl-style = "ieee"           # Required when backend = "csl"
+</code></pre>
+<p>Cite entries with <code>{{#cite key}}</code> or <code>@@key</code>. For Pandoc compatibility, enable <code>citation-syntax = "pandoc"</code> to also use <code>@key</code>, <code>[@key]</code>, and <code>[-@key]</code>.</p>
+<h2 id="github-project"><a class="header" href="#github-project">GitHub project</a></h2>
+<p>mdbook-bib is Open Source and available <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib">on GitHub</a>.</p>
+<h3 id="license"><a class="header" href="#license">License</a></h3>
+<p>mdbook-bib is released under the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/blob/master/LICENSE">MPL-2.0 License</a>.</p>
+<div class="bib-chapter-separator"></div>
+
+<div class="bib-chapter-refs-header">Chapter References</div>
+
+<article class="bib-entry" id="mdBook">
+<details data-key="mdBook" class="ref">
+<summary class="citation">
+<span class="bib-key">mdBook</span><span class="bib-index">1</span>
+<cite class="bib-title"><a href="https://rust-lang.github.io/mdBook/" target="_blank" rel="noopener noreferrer">mdBook Documentation</a></cite>
+<div class="bib-meta">
+<span class="bib-meta-item bib-authors">Contributors, Various</span>
+<span class="bib-meta-item bib-date" style="white-space:nowrap">— 2015</span>
+<span class="bib-expand-hint"><span class="bib-expand-arrow">▼</span> Abstract</span>
+</div>
+
+</summary>
+<section class="bib-abstract">
+<header class="bib-abstract-header">Abstract</header>
+<div class="bib-abstract-content">mdBook is a command line tool and Rust crate to create books using Markdown (as by the CommonMark specification) files. It's very similar to Gitbook but written in Rust.</div>
+
+</section>
+</details>
+</article>
+<article class="bib-entry" id="Klabnik2018">
+<details data-key="Klabnik2018" class="ref">
+<summary class="citation">
+<span class="bib-key">Klabnik2018</span><span class="bib-index">2</span>
+<cite class="bib-title"><a href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener noreferrer">The Rust Programming Language</a></cite>
+<div class="bib-meta">
+<span class="bib-meta-item bib-authors">Klabnik, Steve; Nichols, Carol</span>
+<span class="bib-meta-item bib-date" style="white-space:nowrap">— 2018</span>
+</div>
+
+</summary>
+</details>
+</article>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<p><strong>mdbook-bib</strong> requires <a href="https://github.com/rust-lang/mdBook#installation">mdbook</a> to be installed.</p>
+<h2 id="install-with-cargo-recommended"><a class="header" href="#install-with-cargo-recommended">Install with Cargo (Recommended)</a></h2>
+<p>Once mdbook is installed, if you are a <a href="https://www.rust-lang.org/">Rustacean</a> and you have <code>Rust/Cargo</code> installed, you can get <strong>mdbook-bib</strong> from <a href="https://crates.io/crates/mdbook-bib">Crates</a> simply with:</p>
+<pre><code class="language-sh">cargo install mdbook-bib
+</code></pre>
+<h2 id="install-from-binaries"><a class="header" href="#install-from-binaries">Install from Binaries</a></h2>
+<ol>
+<li>Download the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/releases">binary</a> for your OS (Linux, Windows, macOS)</li>
+<li>Add the executable’s directory to your <code>PATH</code></li>
+</ol>
+<h2 id="install-from-source"><a class="header" href="#install-from-source">Install from Source</a></h2>
+<pre><code class="language-sh">git clone git@github.com:francisco-perez-sorrosal/mdbook-bib.git
+cd mdbook-bib
+cargo install --path .
+</code></pre>
+<p>Ensure Cargo’s <code>bin/</code> directory is in your <code>PATH</code>. Then see <a href="#configuration">Configuration</a> to start using the plugin.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<h2 id="quick-start-1"><a class="header" href="#quick-start-1">Quick Start</a></h2>
+<p>Add a bibliography file (BibTeX or YAML) to your mdbook source directory:</p>
+<pre><code>my_book/
+├── book.toml
+└── src
+    ├── refs.bib
+    ├── chapter_1.md
+    └── SUMMARY.md
+</code></pre>
+<p>Configure in <code>book.toml</code>:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+</code></pre>
+<p>That’s it! The bibliography appears as a section in your book’s table of contents.</p>
+<hr>
+<h2 id="citation-syntax"><a class="header" href="#citation-syntax">Citation Syntax</a></h2>
+<p>Citation syntax controls <strong>how you write citations</strong> in your markdown files.</p>
+<h3 id="default-syntax"><a class="header" href="#default-syntax">Default Syntax</a></h3>
+<p>Use either the Handlebars-style or double-at notation:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Pattern</th><th>Example</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>{{#cite key}}</code></td><td><code>{{#cite smith2024}}</code></td><td>Handlebars-style</td></tr>
+<tr><td><code>@@key</code></td><td><code>@@smith2024</code></td><td>Shorthand notation</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<pre><code class="language-markdown">According to {{#cite smith2024}}, the results show...
+The experiment confirmed earlier findings @@jones2023.
+</code></pre>
+<h3 id="pandoc-syntax-opt-in"><a class="header" href="#pandoc-syntax-opt-in">Pandoc Syntax (Opt-in)</a></h3>
+<p>Enable Pandoc-compatible syntax for cross-tool workflows (e.g., generating both HTML via mdBook and PDF via Pandoc):</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+citation-syntax = "pandoc"
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@key</code></td><td><code>@smith2024 says...</code></td><td>Author-in-text</td></tr>
+<tr><td><code>[@key]</code></td><td><code>This is true [@smith2024]</code></td><td>Parenthetical</td></tr>
+<tr><td><code>[-@key]</code></td><td><code>Smith says [-@smith2024]</code></td><td>Suppress author (year only)</td></tr>
+<tr><td><code>\@</code></td><td><code>user\@example.com</code></td><td>Literal @ (escaped)</td></tr>
+</tbody>
+</table>
+</div>
+<p>This lets you use the same source files with both mdBook (HTML) and Pandoc (PDF).</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-markdown">According to @smith2024, the results show significant improvement.
+This has been documented [@jones2023].
+Jones argues [-@jones2023] that further research is needed.
+Contact: user\@example.com
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Default syntax (<code>{{#cite key}}</code> and <code>@@key</code>) continues to work alongside Pandoc syntax</li>
+<li>Citations inside code blocks are NOT processed</li>
+<li>Email addresses and URL mentions (e.g., <code>https://twitter.com/@user</code>) are NOT matched</li>
+</ul>
+<p><strong>Citation key format:</strong></p>
+<ul>
+<li>Native patterns (<code>{{#cite}}</code>, <code>@@</code>): Allow keys starting with digits (e.g., <code>@@2024smith</code>) — BibLaTeX-compliant</li>
+<li>Pandoc patterns (<code>@key</code>, <code>[@key]</code>, <code>[-@key]</code>): Require letter or underscore at start (e.g., <code>@smith2024</code>) — Pandoc spec</li>
+</ul>
+<p>This difference is by design for cross-tool compatibility. If you need digit-prefixed keys with Pandoc syntax, use the native <code>{{#cite 123key}}</code> form instead.</p>
+<p><strong>Unsupported Pandoc features:</strong></p>
+<ul>
+<li>Multi-citation: <code>[@smith2024; @jones2023]</code> — use separate citations instead</li>
+<li>Locators: <code>[@smith2024, p. 42]</code> — page numbers not supported</li>
+<li>Prefixes/suffixes: <code>[see @smith2024, ch. 3]</code> — use surrounding text instead</li>
+</ul>
+<hr>
+<h2 id="backend-selection"><a class="header" href="#backend-selection">Backend Selection</a></h2>
+<p>The backend controls <strong>how citations are rendered</strong> in the output.</p>
+<h3 id="understanding-the-pipeline"><a class="header" href="#understanding-the-pipeline">Understanding the Pipeline</a></h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                    YOUR MARKDOWN SOURCE                         │
+│  "According to @smith2024, this is true [@jones2023]."          │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │   citation-syntax     │  ← How citations are WRITTEN
+              │   "default" | "pandoc"│     (input parsing)
+              └───────────┬───────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │       backend         │  ← How citations are RENDERED
+              │   "custom" | "csl"    │     (output engine)
+              └───────────┬───────────┘
+                          │
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+   ┌─────────────────┐        ┌─────────────────┐
+   │ backend="custom"│        │  backend="csl"  │
+   │                 │        │                 │
+   │ Handlebars      │        │ CSL styles via  │
+   │ templates       │        │ hayagriva       │
+   └─────────────────┘        │  • csl-style    │
+                              └─────────────────┘
+</code></pre>
+<h3 id="custom-backend-default-1"><a class="header" href="#custom-backend-default-1">Custom Backend (Default)</a></h3>
+<p>Uses Handlebars templates for full customization of citation and bibliography appearance.</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+# backend = "custom"  # This is the default
+</code></pre>
+<p>See <a href="#custom-backend-handlebars">Custom Backend</a> for template options.</p>
+<h3 id="csl-backend-1"><a class="header" href="#csl-backend-1">CSL Backend</a></h3>
+<p>Uses <a href="https://github.com/typst/hayagriva">hayagriva</a> for standardized academic citation styles (IEEE, APA, Chicago, etc.).</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"
+</code></pre>
+<p>See <a href="#csl-backend-2">CSL Backend</a> for available styles.</p>
+<hr>
+<h2 id="bibliography-options"><a class="header" href="#bibliography-options">Bibliography Options</a></h2>
+<h3 id="section-title"><a class="header" href="#section-title">Section Title</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+title = "References"  # Default: "Bibliography"
+</code></pre>
+<h3 id="which-entries-to-show"><a class="header" href="#which-entries-to-show">Which Entries to Show</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+render-bib = "cited"  # Only show cited entries (default)
+render-bib = "all"    # Show all entries from the bibliography file
+</code></pre>
+<h3 id="sort-order"><a class="header" href="#sort-order">Sort Order</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+order = "none"    # Original order from file (default)
+order = "key"     # Alphabetical by citation key
+order = "author"  # Alphabetical by author name
+order = "index"   # Order of first citation in the book
+</code></pre>
+<h3 id="per-chapter-bibliographies"><a class="header" href="#per-chapter-bibliographies">Per-Chapter Bibliographies</a></h3>
+<p>Add a bibliography section at the end of each chapter:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+add-bib-in-chapters = true  # Default: false
+</code></pre>
+<hr>
+<h2 id="configuration-reference"><a class="header" href="#configuration-reference">Configuration Reference</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Description</th><th>Default</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Source</strong></td><td></td><td></td></tr>
+<tr><td><code>bibliography</code></td><td>Path to <code>.bib</code> (BibTeX) or <code>.yaml</code> (hayagriva) file</td><td>-</td></tr>
+<tr><td><code>zotero-uid</code></td><td>Zotero user ID (alternative to local file)</td><td>-</td></tr>
+<tr><td><strong>Citation Syntax</strong></td><td></td><td></td></tr>
+<tr><td><code>citation-syntax</code></td><td>Input syntax: <code>default</code> or <code>pandoc</code></td><td><code>default</code></td></tr>
+<tr><td><strong>Backend</strong></td><td></td><td></td></tr>
+<tr><td><code>backend</code></td><td>Rendering engine: <code>custom</code> or <code>csl</code></td><td><code>custom</code></td></tr>
+<tr><td><code>csl-style</code></td><td>CSL style name (when <code>backend = "csl"</code>)</td><td>-</td></tr>
+<tr><td><strong>Bibliography Output</strong></td><td></td><td></td></tr>
+<tr><td><code>title</code></td><td>Bibliography section title</td><td><code>Bibliography</code></td></tr>
+<tr><td><code>render-bib</code></td><td>Show <code>all</code> entries or only <code>cited</code></td><td><code>cited</code></td></tr>
+<tr><td><code>order</code></td><td>Sort: <code>none</code>, <code>key</code>, <code>author</code>, <code>index</code></td><td><code>none</code></td></tr>
+<tr><td><code>add-bib-in-chapters</code></td><td>Add bibliography per chapter</td><td><code>false</code></td></tr>
+<tr><td><strong>Custom Backend Templates</strong></td><td></td><td></td></tr>
+<tr><td><code>hb-tpl</code></td><td>Handlebars template for entries</td><td>-</td></tr>
+<tr><td><code>cite-hb-tpl</code></td><td>Handlebars template for citations</td><td>-</td></tr>
+<tr><td><code>css</code></td><td>Custom CSS file</td><td>-</td></tr>
+<tr><td><code>js</code></td><td>Custom JavaScript file</td><td>-</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<h3 id="minimal-setup"><a class="header" href="#minimal-setup">Minimal Setup</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+</code></pre>
+<h3 id="academic-paper-with-ieee-style"><a class="header" href="#academic-paper-with-ieee-style">Academic Paper with IEEE Style</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"
+title = "References"
+</code></pre>
+<h3 id="pandoc-compatible-workflow"><a class="header" href="#pandoc-compatible-workflow">Pandoc-Compatible Workflow</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+citation-syntax = "pandoc"
+backend = "csl"
+csl-style = "apa"
+</code></pre>
+<h3 id="fully-customized"><a class="header" href="#fully-customized">Fully Customized</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+title = "Bibliography"
+render-bib = "cited"
+order = "index"
+add-bib-in-chapters = true
+hb-tpl = "templates/references.hbs"
+cite-hb-tpl = "templates/citation.hbs"
+css = "templates/style.css"
+</code></pre>
+<hr>
+<h2 id="advanced-options"><a class="header" href="#advanced-options">Advanced Options</a></h2>
+<h3 id="using-zotero"><a class="header" href="#using-zotero">Using Zotero</a></h3>
+<p>Download a public bibliography from <a href="https://www.zotero.org/">Zotero</a> instead of a local file:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+zotero-uid = "&lt;your_zotero_user_id&gt;"
+</code></pre>
+<p><strong>Setup:</strong></p>
+<ol>
+<li>Find your User ID in <a href="https://www.zotero.org/settings/keys">Zotero Feeds/API settings</a></li>
+<li>Make your library public in <a href="https://www.zotero.org/settings/privacy">Privacy Settings</a></li>
+</ol>
+<h3 id="debugging"><a class="header" href="#debugging">Debugging</a></h3>
+<p>Enable debug logging to troubleshoot parsing or rendering issues:</p>
+<pre><code class="language-bash">MDBOOK_LOG=mdbook_bib=debug mdbook build   # mdbook-bib only
+MDBOOK_LOG=debug mdbook build               # All components
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="custom-backend-handlebars"><a class="header" href="#custom-backend-handlebars">Custom Backend (Handlebars)</a></h1>
+<p>The Custom backend uses <a href="https://handlebarsjs.com/">Handlebars</a> templates to render citations and bibliography entries. This gives you full control over the HTML output, including custom layouts, interactive elements, and styling.</p>
+<h2 id="when-to-use-custom-backend"><a class="header" href="#when-to-use-custom-backend">When to Use Custom Backend</a></h2>
+<ul>
+<li>You need custom HTML layouts for bibliography entries</li>
+<li>You want interactive elements (copy buttons, collapsible details, tooltips)</li>
+<li>You need to match a specific visual style not available in standard CSL formats</li>
+<li>You want to embed custom JavaScript functionality</li>
+</ul>
+<h2 id="configuration-1"><a class="header" href="#configuration-1">Configuration</a></h2>
+<p>The Custom backend is the default. No <code>backend</code> option is needed:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+
+# Optional customization
+hb-tpl = "render/references.hbs"      # Bibliography entry template
+cite-hb-tpl = "render/citation.hbs"   # Inline citation template
+css = "render/style.css"              # Custom CSS
+js = "render/script.js"               # Custom JavaScript
+</code></pre>
+<h2 id="template-variables"><a class="header" href="#template-variables">Template Variables</a></h2>
+<h3 id="bibliography-entry-template-hb-tpl"><a class="header" href="#bibliography-entry-template-hb-tpl">Bibliography Entry Template (<code>hb-tpl</code>)</a></h3>
+<p>Available variables for rendering each bibliography entry:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>citation_key</code></td><td>String</td><td>Unique identifier for the entry</td></tr>
+<tr><td><code>title</code></td><td>String</td><td>Entry title</td></tr>
+<tr><td><code>authors</code></td><td>Array</td><td>List of authors as <code>[[Last, First], ...]</code></td></tr>
+<tr><td><code>pub_year</code></td><td>String</td><td>Publication year</td></tr>
+<tr><td><code>pub_month</code></td><td>String</td><td>Publication month</td></tr>
+<tr><td><code>url</code></td><td>String</td><td>URL if available</td></tr>
+<tr><td><code>summary</code></td><td>String</td><td>Abstract/summary</td></tr>
+<tr><td><code>index</code></td><td>Number</td><td>Citation order (1-based)</td></tr>
+<tr><td><code>entry_type</code></td><td>String</td><td>Type: article, book, inproceedings, etc.</td></tr>
+<tr><td><code>doi</code></td><td>String</td><td>DOI if available</td></tr>
+<tr><td><code>pages</code></td><td>String</td><td>Page numbers</td></tr>
+<tr><td><code>volume</code></td><td>String</td><td>Volume number</td></tr>
+<tr><td><code>issue</code></td><td>String</td><td>Issue number</td></tr>
+<tr><td><code>publisher</code></td><td>String</td><td>Publisher name</td></tr>
+<tr><td><code>address</code></td><td>String</td><td>Publisher location</td></tr>
+<tr><td><code>editor</code></td><td>Array</td><td>Editors (same format as authors)</td></tr>
+<tr><td><code>edition</code></td><td>String</td><td>Edition</td></tr>
+<tr><td><code>series</code></td><td>String</td><td>Series name</td></tr>
+<tr><td><code>note</code></td><td>String</td><td>Additional notes</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="citation-template-cite-hb-tpl"><a class="header" href="#citation-template-cite-hb-tpl">Citation Template (<code>cite-hb-tpl</code>)</a></h3>
+<p>Available variables for inline citations:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>path</code></td><td>String</td><td>Relative path to bibliography page</td></tr>
+<tr><td><code>item.citation_key</code></td><td>String</td><td>Citation key</td></tr>
+<tr><td><code>item.title</code></td><td>String</td><td>Entry title</td></tr>
+<tr><td><code>item.authors</code></td><td>Array</td><td>Authors</td></tr>
+<tr><td><code>item.pub_year</code></td><td>String</td><td>Year</td></tr>
+<tr><td><code>item.index</code></td><td>Number</td><td>Citation order</td></tr>
+<tr><td>(all other <code>item.*</code> fields)</td><td></td><td>Same as bibliography template</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="example-templates"><a class="header" href="#example-templates">Example Templates</a></h2>
+<h3 id="simple-bibliography-entry"><a class="header" href="#simple-bibliography-entry">Simple Bibliography Entry</a></h3>
+<pre><code class="language-handlebars">&lt;div class="bib-entry" id="{{citation_key}}"&gt;
+  &lt;span class="bib-index"&gt;[{{index}}]&lt;/span&gt;
+  &lt;span class="bib-authors"&gt;
+    {{#each authors}}{{#unless @first}}, {{/unless}}{{this.[1]}} {{this.[0]}}{{/each}}
+  &lt;/span&gt;
+  &lt;span class="bib-title"&gt;"{{title}}"&lt;/span&gt;
+  {{#if pub_year}}&lt;span class="bib-year"&gt;({{pub_year}})&lt;/span&gt;{{/if}}
+  {{#if url}}&lt;a href="{{url}}"&gt;[link]&lt;/a&gt;{{/if}}
+&lt;/div&gt;
+</code></pre>
+<h3 id="simple-citation"><a class="header" href="#simple-citation">Simple Citation</a></h3>
+<pre><code class="language-handlebars">&lt;a href="{{path}}#{{item.citation_key}}"&gt;[{{item.index}}]&lt;/a&gt;
+</code></pre>
+<h3 id="citation-with-hover-preview"><a class="header" href="#citation-with-hover-preview">Citation with Hover Preview</a></h3>
+<pre><code class="language-handlebars">&lt;a href="{{path}}#{{item.citation_key}}"
+   class="citation"
+   title="{{item.title}} ({{item.pub_year}})"&gt;
+  [{{item.index}}]
+&lt;/a&gt;
+</code></pre>
+<h3 id="bibliography-entry-with-copy-button"><a class="header" href="#bibliography-entry-with-copy-button">Bibliography Entry with Copy Button</a></h3>
+<pre><code class="language-handlebars">&lt;div class="bib-entry" id="{{citation_key}}"&gt;
+  &lt;div class="bib-header"&gt;
+    &lt;span class="bib-index"&gt;[{{index}}]&lt;/span&gt;
+    &lt;button class="copy-btn" onclick="copyBib('{{citation_key}}')"&gt;Copy&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class="bib-content"&gt;
+    &lt;strong&gt;{{title}}&lt;/strong&gt;&lt;br&gt;
+    {{#each authors}}{{this.[1]}} {{this.[0]}}{{#unless @last}}, {{/unless}}{{/each}}
+    {{#if pub_year}}({{pub_year}}){{/if}}
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<h2 id="custom-css"><a class="header" href="#custom-css">Custom CSS</a></h2>
+<p>Style your bibliography with CSS:</p>
+<pre><code class="language-css">.bib-entry {
+  margin: 1em 0;
+  padding: 0.5em;
+  border-left: 3px solid #4a9eff;
+}
+
+.bib-index {
+  font-weight: bold;
+  color: #4a9eff;
+}
+
+.bib-title {
+  font-style: italic;
+}
+
+.citation {
+  color: #4a9eff;
+  text-decoration: none;
+}
+
+.citation:hover {
+  text-decoration: underline;
+}
+</code></pre>
+<h2 id="custom-javascript"><a class="header" href="#custom-javascript">Custom JavaScript</a></h2>
+<p>Add interactivity with JavaScript:</p>
+<pre><code class="language-javascript">function copyBib(key) {
+  const entry = document.getElementById(key);
+  const text = entry.querySelector('.bib-content').innerText;
+  navigator.clipboard.writeText(text);
+}
+</code></pre>
+<h2 id="full-configuration-example"><a class="header" href="#full-configuration-example">Full Configuration Example</a></h2>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "references.bib"
+title = "References"
+render-bib = "cited"          # Only show cited entries
+order = "index"               # Order by citation appearance
+hb-tpl = "render/refs.hbs"
+cite-hb-tpl = "render/cite.hbs"
+css = "render/bib.css"
+js = "render/bib.js"
+</code></pre>
+<h2 id="tips"><a class="header" href="#tips">Tips</a></h2>
+<ul>
+<li>Use <code>{{#if field}}...{{/if}}</code> to conditionally render optional fields</li>
+<li>Use <code>{{#each authors}}...{{/each}}</code> to iterate over the author list</li>
+<li>Inside <code>{{#each authors}}</code>, access <code>{{this.[0]}}</code> (last name) and <code>{{this.[1]}}</code> (first name)</li>
+<li>Add <code>id="{{citation_key}}"</code> to entries for citation linking</li>
+<li>Use <code>{{index}}</code> for numbered citations</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="csl-backend-2"><a class="header" href="#csl-backend-2">CSL Backend</a></h1>
+<p>The CSL backend uses <a href="https://github.com/typst/hayagriva">hayagriva</a> to render citations and bibliographies in standard academic formats: IEEE, Chicago, APA, Nature, and 80+ other styles.</p>
+<h2 id="when-to-use-csl-backend"><a class="header" href="#when-to-use-csl-backend">When to Use CSL Backend</a></h2>
+<ul>
+<li>You need standard academic citation formatting</li>
+<li>You want numbered citations (IEEE, Vancouver) or author-date citations (Chicago, APA)</li>
+<li>You need superscript citations (Nature)</li>
+<li>You want consistent formatting without manual template work</li>
+</ul>
+<h2 id="configuration-2"><a class="header" href="#configuration-2">Configuration</a></h2>
+<p>Enable the CSL backend by setting <code>backend = "csl"</code>:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"
+</code></pre>
+<h2 id="supported-styles"><a class="header" href="#supported-styles">Supported Styles</a></h2>
+<h3 id="numeric-styles"><a class="header" href="#numeric-styles">Numeric Styles</a></h3>
+<p>Citations appear as numbers in brackets or superscripts:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Style</th><th>Citation Format</th><th>Example</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ieee</code></td><td><code>[1]</code>, <code>[2]</code></td><td>IEEE transactions</td></tr>
+<tr><td><code>vancouver</code></td><td><code>[1]</code>, <code>[2]</code></td><td>Medical journals</td></tr>
+<tr><td><code>vancouver-superscript</code></td><td><code>¹</code>, <code>²</code> (superscript)</td><td>Vancouver superscript variant</td></tr>
+<tr><td><code>nature</code></td><td><code>¹</code>, <code>²</code> (superscript)</td><td>Nature journal</td></tr>
+<tr><td><code>acm</code></td><td><code>[1]</code>, <code>[2]</code></td><td>ACM publications</td></tr>
+<tr><td><code>acs</code></td><td><code>[1]</code>, <code>[2]</code></td><td>American Chemical Society</td></tr>
+<tr><td><code>ama</code></td><td><code>[1]</code>, <code>[2]</code></td><td>American Medical Association</td></tr>
+<tr><td><code>cell</code></td><td><code>[1]</code>, <code>[2]</code></td><td>Cell journal</td></tr>
+<tr><td><code>springer-basic</code></td><td><code>[1]</code>, <code>[2]</code></td><td>Springer publications</td></tr>
+<tr><td><code>elsevier-vancouver</code></td><td><code>[1]</code>, <code>[2]</code></td><td>Elsevier Vancouver</td></tr>
+<tr><td><code>alphanumeric</code></td><td><code>[Smi24]</code></td><td>Alphanumeric labels</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="author-date-styles"><a class="header" href="#author-date-styles">Author-Date Styles</a></h3>
+<p>Citations include author name and year:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Style</th><th>Citation Format</th><th>Example</th></tr>
+</thead>
+<tbody>
+<tr><td><code>chicago-author-date</code></td><td>(Author Year)</td><td>Chicago Manual of Style</td></tr>
+<tr><td><code>apa</code></td><td>(Author, Year)</td><td>APA 7th edition</td></tr>
+<tr><td><code>mla</code></td><td>(Author Page)</td><td>MLA 9th edition</td></tr>
+<tr><td><code>mla8</code></td><td>(Author Page)</td><td>MLA 8th edition</td></tr>
+<tr><td><code>harvard</code></td><td>(Author Year)</td><td>Harvard referencing</td></tr>
+<tr><td><code>elsevier-harvard</code></td><td>(Author, Year)</td><td>Elsevier journals</td></tr>
+<tr><td><code>springer-basic-author-date</code></td><td>(Author Year)</td><td>Springer author-date</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="note-styles"><a class="header" href="#note-styles">Note Styles</a></h3>
+<p>Some styles use footnotes or endnotes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Style</th><th>Format</th></tr>
+</thead>
+<tbody>
+<tr><td><code>chicago-notes</code></td><td>Footnote citations</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="citation-variants-and-style-types"><a class="header" href="#citation-variants-and-style-types">Citation Variants and Style Types</a></h2>
+<p>When using Pandoc citation syntax (<code>@key</code>, <code>[@key]</code>, <code>[-@key]</code>), the behavior depends on the style type:</p>
+<h3 id="numeric-styles-ieee-vancouver-nature"><a class="header" href="#numeric-styles-ieee-vancouver-nature">Numeric Styles (IEEE, Vancouver, Nature)</a></h3>
+<p>Citation variants have <strong>no effect</strong> on numeric styles. All variants render identically because numeric citations don’t include author/year information:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Syntax</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@smith2024</code></td><td><code>[1]</code></td></tr>
+<tr><td><code>[@smith2024]</code></td><td><code>[1]</code></td></tr>
+<tr><td><code>[-@smith2024]</code></td><td><code>[1]</code></td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="author-date-styles-apa-chicago-harvard"><a class="header" href="#author-date-styles-apa-chicago-harvard">Author-Date Styles (APA, Chicago, Harvard)</a></h3>
+<p>Citation variants <strong>do affect</strong> author-date styles:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Syntax</th><th>Variant</th><th>Result (APA)</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@smith2024</code></td><td>Author-in-text</td><td>Smith (2024)</td></tr>
+<tr><td><code>[@smith2024]</code></td><td>Parenthetical</td><td>(Smith, 2024)</td></tr>
+<tr><td><code>[-@smith2024]</code></td><td>Suppress author</td><td>(2024)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Use author-in-text (<code>@key</code>) when the author is grammatically part of your sentence:</p>
+<blockquote>
+<p>@smith2024 demonstrated that…</p>
+</blockquote>
+<p>Use parenthetical (<code>[@key]</code>) for citations at the end of a statement:</p>
+<blockquote>
+<p>…as shown in previous work [@smith2024].</p>
+</blockquote>
+<p>Use suppress-author (<code>[-@key]</code>) when you’ve already named the author:</p>
+<blockquote>
+<p>Smith [-@smith2024] argues that…</p>
+</blockquote>
+<h3 id="label-styles-alphanumeric"><a class="header" href="#label-styles-alphanumeric">Label Styles (Alphanumeric)</a></h3>
+<p>Citation variants have <strong>no effect</strong> on label styles. The label is always rendered the same way:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Syntax</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@smith2024</code></td><td><code>[Smi24]</code></td></tr>
+<tr><td><code>[@smith2024]</code></td><td><code>[Smi24]</code></td></tr>
+<tr><td><code>[-@smith2024]</code></td><td><code>[Smi24]</code></td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="style-resolution"><a class="header" href="#style-resolution">Style Resolution</a></h2>
+<p>The CSL backend resolves style names in two ways:</p>
+<h3 id="1-registry-aliases-recommended"><a class="header" href="#1-registry-aliases-recommended">1. Registry Aliases (Recommended)</a></h3>
+<p>The styles listed above are <strong>registry styles</strong> with short, memorable aliases. These provide:</p>
+<ul>
+<li>Short names (e.g., <code>ieee</code> instead of <code>institute-of-electrical-and-electronics-engineers</code>)</li>
+<li>Accurate numeric vs author-date detection</li>
+<li>Superscript rendering for styles like Nature</li>
+</ul>
+<h3 id="2-hayagriva-fallback"><a class="header" href="#2-hayagriva-fallback">2. Hayagriva Fallback</a></h3>
+<p>Any style available in <a href="https://github.com/typst/hayagriva">hayagriva’s archive</a> (80+ styles) can be used by its full name:</p>
+<pre><code class="language-toml">csl-style = "annual-reviews"           # Numeric style
+csl-style = "american-physics-society" # Another numeric style
+csl-style = "council-of-science-editors-author-date"  # Author-date
+</code></pre>
+<p><strong>Fallback limitations:</strong></p>
+<ul>
+<li>Citation format (numeric vs author-date) is detected automatically from CSL metadata</li>
+<li><strong>Superscript styles render as bracketed</strong> (e.g., <code>[1]</code> instead of <code>¹</code>) — superscript cannot be detected from CSL metadata alone</li>
+</ul>
+<p>For best results, use registry aliases when available. If you need a specific style not in the registry, the fallback will still format citations correctly, just without superscript support.</p>
+<h3 id="dependent-styles"><a class="header" href="#dependent-styles">Dependent Styles</a></h3>
+<p>Some CSL styles are “dependent” — they reference a parent style instead of defining their own formatting. These are not supported. If you encounter an error about a dependent style, use the parent style instead (e.g., use <code>nature</code> instead of <code>nature-communications</code>).</p>
+<h2 id="examples-by-style"><a class="header" href="#examples-by-style">Examples by Style</a></h2>
+<h3 id="ieee-numeric"><a class="header" href="#ieee-numeric">IEEE (Numeric)</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "ieee"
+</code></pre>
+<p>Output:</p>
+<ul>
+<li>Inline: <code>[1]</code>, <code>[2]</code>, <code>[3]</code></li>
+<li>Bibliography: <code>[1] A. Author, "Title," Journal, vol. 1, pp. 1-10, 2024.</code></li>
+</ul>
+<h3 id="chicago-author-date"><a class="header" href="#chicago-author-date">Chicago Author-Date</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "chicago-author-date"
+</code></pre>
+<p>Output:</p>
+<ul>
+<li>Inline: <code>(Smith 2024)</code>, <code>(Jones and Lee 2023)</code></li>
+<li>Bibliography: <code>Smith, John. 2024. "Title." Journal 1: 1-10.</code></li>
+</ul>
+<h3 id="nature-superscript"><a class="header" href="#nature-superscript">Nature (Superscript)</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "nature"
+</code></pre>
+<p>Output:</p>
+<ul>
+<li>Inline: <code>¹</code>, <code>²</code>, <code>³</code> (as superscripts)</li>
+<li>Bibliography: <code>1. Author, A. Title. Journal 1, 1-10 (2024).</code></li>
+</ul>
+<h3 id="apa"><a class="header" href="#apa">APA</a></h3>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "apa"
+</code></pre>
+<p>Output:</p>
+<ul>
+<li>Inline: <code>(Author, 2024)</code></li>
+<li>Bibliography: <code>Author, A. (2024). Title. Journal, 1, 1-10.</code></li>
+</ul>
+<h3 id="vancouver-vs-vancouver-superscript"><a class="header" href="#vancouver-vs-vancouver-superscript">Vancouver vs Vancouver-Superscript</a></h3>
+<p>Both Vancouver styles are numeric, but differ in citation rendering:</p>
+<p><strong><code>vancouver</code></strong> (bracketed):</p>
+<pre><code class="language-text">As shown in previous studies [1], the results [2,3] indicate...
+</code></pre>
+<p><strong><code>vancouver-superscript</code></strong> (superscript):</p>
+<pre><code class="language-text">As shown in previous studies¹, the results²,³ indicate...
+</code></pre>
+<p>Use <code>vancouver</code> for most medical journals. Use <code>vancouver-superscript</code> when the journal specifically requires superscript numbers (less common).</p>
+<h3 id="alphanumeric"><a class="header" href="#alphanumeric">Alphanumeric</a></h3>
+<p>The alphanumeric style uses author-based labels instead of sequential numbers:</p>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.bib"
+backend = "csl"
+csl-style = "alphanumeric"
+</code></pre>
+<p>Output:</p>
+<ul>
+<li>Inline: <code>[Smi24]</code>, <code>[JL23]</code> (author-derived label + 2-digit year)</li>
+<li>Bibliography: <code>[Smi24] Smith, J. "Title." 2024.</code></li>
+</ul>
+<p>Label format:</p>
+<ul>
+<li>Single author: First 3 letters of surname + year (e.g., <code>[Smi24]</code>)</li>
+<li>Two authors: Initials of both authors + year (e.g., <code>[JL23]</code> for Jones &amp; Lee)</li>
+</ul>
+<p>This style is useful when you want readers to identify sources at a glance without flipping to the bibliography.</p>
+<h2 id="full-configuration-example-1"><a class="header" href="#full-configuration-example-1">Full Configuration Example</a></h2>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "references.bib"
+backend = "csl"
+csl-style = "chicago-author-date"
+title = "References"
+render-bib = "cited"    # Only show cited entries
+order = "author"        # Sort by author name
+</code></pre>
+<h2 id="yaml-bibliography-support"><a class="header" href="#yaml-bibliography-support">YAML Bibliography Support</a></h2>
+<p>The CSL backend also supports YAML bibliography files (hayagriva’s native format):</p>
+<pre><code class="language-yaml"># refs.yaml
+smith2024:
+  type: article
+  title: Example Article
+  author:
+    - Smith, John
+    - Jones, Jane
+  date: 2024
+  parent:
+    - type: periodical
+      title: Journal of Examples
+      volume: 1
+      page: 1-10
+</code></pre>
+<pre><code class="language-toml">[preprocessor.bib]
+bibliography = "refs.yaml"
+backend = "csl"
+csl-style = "apa"
+</code></pre>
+<h2 id="citation-linking"><a class="header" href="#citation-linking">Citation Linking</a></h2>
+<p>Citations automatically link to their bibliography entries. The bibliography page includes anchor IDs matching the citation keys.</p>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<p>The CSL backend does not support custom HTML templates, copy buttons, or JavaScript integration. For these features, use the <a href="#custom-backend-handlebars">Custom Backend</a>.</p>
+<h3 id="citation-text-processing"><a class="header" href="#citation-text-processing">Citation Text Processing</a></h3>
+<p>For label and author-date styles, hayagriva generates citation text that may include surrounding brackets or parentheses (e.g., <code>[Smi24]</code> or <code>(Smith, 2024)</code>). The CSL backend strips these delimiters before re-wrapping them with markdown links.</p>
+<p><strong>Note:</strong> This stripping removes <em>all</em> leading/trailing brackets <code>[]</code> and parentheses <code>()</code> from the citation text. In the unlikely event that a citation naturally contains these characters at its boundaries (e.g., a citation key that renders as <code>[[Special]]</code>), they would be removed. Standard bibliography entries are unaffected by this behavior.</p>
+<h2 id="tips-1"><a class="header" href="#tips-1">Tips</a></h2>
+<ul>
+<li>Choose numeric styles (IEEE, Vancouver) for technical papers</li>
+<li>Choose author-date styles (Chicago, APA) for humanities and social sciences</li>
+<li>Use Nature style for scientific journals requiring superscript citations</li>
+<li>Check your target journal’s requirements before selecting a style</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="dev"><a class="header" href="#dev">Dev</a></h1>
+<h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
+<h3 id="running-tests"><a class="header" href="#running-tests">Running Tests</a></h3>
+<pre><code class="language-sh">cargo test              # Run all tests
+cargo test --workspace  # Run tests for the entire workspace
+</code></pre>
+<h3 id="test-organization"><a class="header" href="#test-organization">Test Organization</a></h3>
+<p>Tests are organized into logical modules under <code>src/tests/</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Module</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>common.rs</code></td><td>Shared fixtures, helpers, and <code>BibItemBuilder</code></td></tr>
+<tr><td><code>parser.rs</code></td><td>BibTeX/YAML parsing, date extraction, extended fields</td></tr>
+<tr><td><code>citation.rs</code></td><td>Citation placeholder replacement, regex patterns</td></tr>
+<tr><td><code>config.rs</code></td><td>Configuration parsing, Zotero, per-chapter settings</td></tr>
+<tr><td><code>backend.rs</code></td><td>Custom and CSL backend formatting, regression tests</td></tr>
+<tr><td><code>integration.rs</code></td><td>Full book builds (test_book, CSL style variants)</td></tr>
+<tr><td><code>edge_cases.rs</code></td><td>Error handling, malformed input, unicode support</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="test-utilities"><a class="header" href="#test-utilities">Test Utilities</a></h3>
+<p>The <code>common</code> module provides reusable test infrastructure:</p>
+<ul>
+<li><strong><code>BibItemBuilder</code></strong> - Fluent builder for creating test <code>BibItem</code> instances</li>
+<li><strong><code>dummy_bibliography()</code> / <code>yaml_bibliography()</code></strong> - Pre-parsed bibliographies (lazy-loaded)</li>
+<li><strong><code>create_*_backend()</code> functions</strong> - Factory functions for backend instances</li>
+<li><strong>Test fixtures</strong> - <code>DUMMY_BIB_SRC</code>, sample text with citations</li>
+</ul>
+<p>Example using the builder:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let item = BibItemBuilder::article("smith2024")
+    .title("Test Article")
+    .authors(&amp;["Smith, John"])
+    .year("2024")
+    .build();
+<span class="boring">}</span></code></pre>
+<h3 id="parametrized-tests"><a class="header" href="#parametrized-tests">Parametrized Tests</a></h3>
+<p>Tests use the <code>rstest</code> crate for parametrization. Example:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[rstest]
+#[case::ieee("ieee")]
+#[case::apa("apa")]
+#[case::chicago("chicago-author-date")]
+fn test_csl_style(#[case] style: &amp;str) {
+    let backend = CslBackend::new(style.to_string()).unwrap();
+    // test logic...
+}
+<span class="boring">}</span></code></pre>
+<p>Each case runs as a separate test, making it easy to identify failures.</p>
+<h2 id="debug"><a class="header" href="#debug">Debug</a></h2>
+<p>The preprocessor uses the <code>tracing</code> library for logging. To enable debug output, use the <code>MDBOOK_LOG</code> environment variable:</p>
+<pre><code class="language-sh">MDBOOK_LOG=mdbook_bib=debug mdbook build
+</code></pre>
+<h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
+<pre><code class="language-sh">MDBOOK_LOG=debug mdbook build # **Set globally for all targets**
+</code></pre>
+<pre><code class="language-sh">MDBOOK_LOG=mdbook_bib=debug,handlebars=warn mdbook build # Debug specific modules like ours (mdbook_bib)
+</code></pre>
+<h3 id="tips-2"><a class="header" href="#tips-2">Tips</a></h3>
+<ul>
+<li>The default log level is <code>info</code> if <code>MDBOOK_LOG</code> is not set</li>
+<li>Noisy dependencies (<code>handlebars</code>, <code>html5ever</code>) are automatically silenced to <code>warn</code> unless explicitly specified</li>
+<li>Module paths (targets) are only displayed when <code>MDBOOK_LOG</code> is set</li>
+</ul>
+<h2 id="commits"><a class="header" href="#commits">Commits</a></h2>
+<p>This project follows the <a href="https://www.conventionalcommits.org/">Conventional Commits</a> specification for commit messages. This enables automatic changelog generation with proper categorization.</p>
+<h3 id="commit-format"><a class="header" href="#commit-format">Commit Format</a></h3>
+<pre><code>&lt;type&gt;[optional scope]: &lt;description&gt;
+
+[optional body]
+
+[optional footer(s)]
+</code></pre>
+<h3 id="common-types"><a class="header" href="#common-types">Common Types</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Description</th><th>Changelog Section</th></tr>
+</thead>
+<tbody>
+<tr><td><code>feat</code></td><td>New feature</td><td>Features</td></tr>
+<tr><td><code>fix</code></td><td>Bug fix</td><td>Bug Fixes</td></tr>
+<tr><td><code>docs</code></td><td>Documentation only</td><td>Documentation</td></tr>
+<tr><td><code>refactor</code></td><td>Code change (no new feature or fix)</td><td>Refactoring</td></tr>
+<tr><td><code>test</code></td><td>Adding/updating tests</td><td>Testing</td></tr>
+<tr><td><code>perf</code></td><td>Performance improvement</td><td>Performance</td></tr>
+<tr><td><code>chore</code></td><td>Maintenance tasks</td><td>Miscellaneous</td></tr>
+<tr><td><code>ci</code></td><td>CI/CD changes</td><td>CI/CD</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="examples-1-1"><a class="header" href="#examples-1-1">Examples</a></h3>
+<pre><code class="language-sh">feat(parser): add YAML bibliography support
+fix: handle empty author fields gracefully
+docs: update installation instructions
+refactor(render): extract template loading into separate module
+test: add integration tests for CSL backend
+</code></pre>
+<h3 id="before-committing"><a class="header" href="#before-committing">Before Committing</a></h3>
+<p>Format and lint your code:</p>
+<pre><code class="language-sh">cargo fmt --              # Format all code
+cargo clippy --fix        # Run clippy with auto-fixes
+cargo clippy --fix --tests  # Run clippy for tests
+</code></pre>
+<p>Pre-commit hooks (<code>.rusty-hook.toml</code>) block commits with formatting errors. GitHub’s <code>test.yml</code> workflow runs on pushes to <code>master</code>. Look for problems in the <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/actions">GitHub Actions</a>.</p>
+<h2 id="versioning"><a class="header" href="#versioning">Versioning</a></h2>
+<p>From version 0.5.0, mdbook-bib’s minor version tracks mdbook’s minor version for compatibility.</p>
+<h2 id="release"><a class="header" href="#release">Release</a></h2>
+<p>The release process is managed via <code>make</code>. Run <code>make help</code> to see all options:</p>
+<pre><code class="language-sh">make help
+</code></pre>
+<h3 id="quick-release"><a class="header" href="#quick-release">Quick Release</a></h3>
+<p>To release the next patch version (auto-incremented):</p>
+<pre><code class="language-sh">make release              # Releases 0.5.1 → 0.5.2 automatically
+</code></pre>
+<p>To release a specific version:</p>
+<pre><code class="language-sh">make release VERSION=1.0.0
+</code></pre>
+<h3 id="dry-run-mode"><a class="header" href="#dry-run-mode">Dry-Run Mode</a></h3>
+<p>Add <code>DRY_RUN=1</code> to any command to simulate without making changes:</p>
+<pre><code class="language-sh">make release DRY_RUN=1              # Simulate with auto-version
+make release DRY_RUN=1 VERSION=1.0.0  # Simulate specific version
+make update-cargo DRY_RUN=1         # Simulate just Cargo.toml update
+</code></pre>
+<h3 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h3>
+<p>Install <a href="https://git-cliff.org/">git-cliff</a> for changelog generation:</p>
+<pre><code class="language-sh">cargo install git-cliff
+</code></pre>
+<h3 id="available-targets"><a class="header" href="#available-targets">Available Targets</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Target</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>release</code></td><td>Complete release (update, commit, tag, push)</td></tr>
+<tr><td><code>update-version</code></td><td>Update version in Cargo.toml and doc.yml</td></tr>
+<tr><td><code>update-cargo</code></td><td>Update version only in Cargo.toml</td></tr>
+<tr><td><code>update-doc</code></td><td>Update version only in doc.yml</td></tr>
+<tr><td><code>update-lockfile</code></td><td>Regenerate Cargo.lock after version update</td></tr>
+<tr><td><code>update-changelog</code></td><td>Generate CHANGELOG.md using git-cliff</td></tr>
+<tr><td><code>check-release</code></td><td>Validate release preconditions</td></tr>
+<tr><td><code>show-version</code></td><td>Show current and next version</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="release-steps"><a class="header" href="#release-steps">Release Steps</a></h3>
+<p>The release process performs these steps locally:</p>
+<ol>
+<li><strong>check-release</strong> - Validate version format and clean working directory</li>
+<li><strong>update-version</strong> - Update <code>Cargo.toml</code> and <code>.github/workflows/doc.yml</code></li>
+<li><strong>update-lockfile</strong> - Regenerate <code>Cargo.lock</code></li>
+<li><strong>update-changelog</strong> - Generate <code>CHANGELOG.md</code> using git-cliff</li>
+<li>Commit all changes with message <code>Prepare for release vX.Y.Z</code></li>
+<li>Create annotated tag <code>vX.Y.Z</code></li>
+<li>Push commit and tag atomically to origin</li>
+</ol>
+<h3 id="github-workflows-sequential"><a class="header" href="#github-workflows-sequential">GitHub Workflows (Sequential)</a></h3>
+<p>After the push, GitHub Actions run in sequence with failure gates:</p>
+<ol>
+<li>
+<p><strong>release.yml</strong> - Builds binaries for Linux, Windows, and macOS</p>
+<ul>
+<li>Uploads to <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/releases">GitHub Releases</a></li>
+<li>If any platform fails → stops here (no publish)</li>
+</ul>
+</li>
+<li>
+<p><strong>publish.yml</strong> - Publishes to <a href="https://crates.io/crates/mdbook-bib">crates.io</a></p>
+<ul>
+<li>Only runs if all Release builds succeeded</li>
+<li>If publish fails → stops here (no docs)</li>
+</ul>
+</li>
+<li>
+<p><strong>doc.yml</strong> - Deploys documentation to <a href="https://francisco-perez-sorrosal.github.io/mdbook-bib/">GitHub Pages</a></p>
+<ul>
+<li>Only runs if Publish succeeded</li>
+</ul>
+</li>
+</ol>
+<p>This ensures you never publish a crate that fails to build on any platform.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="contribute"><a class="header" href="#contribute">Contribute</a></h1>
+<p>Contributions are welcome! You can help by:</p>
+<ul>
+<li><strong>Reporting issues</strong>: Found a bug or have a feature request? <a href="https://github.com/francisco-perez-sorrosal/mdbook-bib/issues">Open an issue</a></li>
+<li><strong>Submitting PRs</strong>: Bug fixes, improvements, and documentation updates</li>
+<li><strong>Suggesting features</strong>: Ideas for new citation styles, syntax, or integrations</li>
+</ul>
+<p>See the <a href="#dev">Dev</a> page for build and test instructions. New to open source? Check <a href="https://opensource.guide/how-to-contribute/">How to Contribute</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="references"><a class="header" href="#references">References</a></h1>
+<script type="text/javascript">
+function defaultCopyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        var ok = document.execCommand('copy');
+        var msg = ok ? 'was ok' : 'failed';
+        console.log('Backing copy: Text copy was ' + msg);
+    } catch (err) {
+        console.error('Backing copy: Unable to copy text', err);
+    }
+
+    document.body.removeChild(textArea);
+}
+
+function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+        defaultCopyTextToClipboard(text);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(function() {
+        console.log('Text copied to clipboard');
+    }, function(err) {
+        console.error('Error copying text: ', err);
+    });
+}
+
+</script>
+<style>/* ==========================================================================
+   mdbook-bib: Modern Bibliography Styles
+   Designed to work with mdBook's light and dark themes
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties - Theme Integration
+   Uses mdBook's CSS variables for seamless theme switching
+   -------------------------------------------------------------------------- */
+:root {
+  --bib-accent: #3b82f6;
+  --bib-accent-hover: #2563eb;
+  --bib-cite-bg: rgba(59, 130, 246, 0.1);
+  --bib-cite-border: rgba(59, 130, 246, 0.3);
+  --bib-abstract-bg: rgba(0, 0, 0, 0.03);
+  --bib-divider: rgba(0, 0, 0, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.08);
+  --bib-text-secondary: #6b7280;
+}
+
+/* Dark theme adjustments */
+.coal .bib-entry,
+.navy .bib-entry,
+.ayu .bib-entry {
+  --bib-abstract-bg: rgba(255, 255, 255, 0.03);
+  --bib-divider: rgba(255, 255, 255, 0.1);
+  --bib-shadow: rgba(0, 0, 0, 0.3);
+  --bib-text-secondary: #9ca3af;
+}
+
+/* --------------------------------------------------------------------------
+   Inline Citations - The clickable reference markers in text
+   -------------------------------------------------------------------------- */
+.bib-cite {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.45em;
+  margin: 0 0.1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: none;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  vertical-align: baseline;
+}
+
+.bib-cite:hover {
+  background: var(--bib-accent);
+  color: white;
+  border-color: var(--bib-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--bib-shadow);
+  text-decoration: none;
+}
+
+.bib-cite:active {
+  transform: translateY(0);
+}
+
+/* Superscript variant (optional - add class "bib-cite-sup" to use) */
+.bib-cite-sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  padding: 0.05em 0.3em;
+}
+
+/* --------------------------------------------------------------------------
+   Bibliography Entry Container
+   -------------------------------------------------------------------------- */
+.bib-entry {
+  position: relative;
+  margin: 1.25rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg);
+  border-left: 3px solid var(--bib-accent);
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 1px 3px var(--bib-shadow);
+  transition: all 0.2s ease;
+}
+
+.bib-entry:hover {
+  box-shadow: 0 4px 12px var(--bib-shadow);
+  transform: translateX(2px);
+}
+
+/* --------------------------------------------------------------------------
+   Reference Header (the clickable summary)
+   -------------------------------------------------------------------------- */
+.bib-entry details {
+  margin: 0;
+}
+
+.bib-entry summary {
+  cursor: pointer;
+  list-style: none;
+  display: block;
+}
+
+.bib-entry summary::-webkit-details-marker {
+  display: none;
+}
+
+.bib-entry summary::marker {
+  display: none;
+}
+
+/* Citation key badge */
+.bib-key {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  margin-right: 0.75rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+  border: 1px solid var(--bib-cite-border);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Index number - for ordered bibliographies */
+.bib-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0.5rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: white;
+  background: var(--bib-accent);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* Title styling */
+.bib-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--fg);
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.bib-title a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--bib-accent);
+  transition: border-color 0.2s ease;
+}
+
+.bib-title a:hover {
+  color: var(--bib-accent);
+  border-bottom-style: solid;
+}
+
+/* External link icon */
+.bib-title a::after {
+  content: " ↗";
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Metadata Row (authors, year, etc.)
+   -------------------------------------------------------------------------- */
+.bib-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.9em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-meta-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.bib-authors {
+  font-style: italic;
+}
+
+/* Expand indicator */
+.bib-expand-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.2em 0.5em;
+  font-size: 0.75em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.bib-entry:hover .bib-expand-hint {
+  opacity: 1;
+}
+
+.bib-expand-arrow {
+  transition: transform 0.3s ease;
+}
+
+details[open] .bib-expand-arrow {
+  transform: rotate(180deg);
+}
+
+/* --------------------------------------------------------------------------
+   Abstract Section (expandable content)
+   -------------------------------------------------------------------------- */
+.bib-abstract {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bib-divider);
+  animation: bib-fade-in 0.3s ease;
+}
+
+@keyframes bib-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bib-abstract-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bib-text-secondary);
+}
+
+.bib-abstract-content {
+  padding: 1rem;
+  font-size: 0.95em;
+  line-height: 1.7;
+  background: var(--bib-abstract-bg);
+  border-radius: 6px;
+  text-align: justify;
+}
+
+/* --------------------------------------------------------------------------
+   Copy Button
+   -------------------------------------------------------------------------- */
+.bib-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35em 0.7em;
+  margin-left: 0.75rem;
+  font-size: 0.75em;
+  font-weight: 500;
+  color: var(--bib-text-secondary);
+  background: transparent;
+  border: 1px solid var(--bib-divider);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bib-copy-btn:hover {
+  color: var(--bib-accent);
+  border-color: var(--bib-accent);
+  background: var(--bib-cite-bg);
+}
+
+.bib-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* --------------------------------------------------------------------------
+   Chapter References Section
+   -------------------------------------------------------------------------- */
+.bib-chapter-separator {
+  height: 0;
+  margin: 3rem 0 1.5rem 0;
+  border: none;
+  border-top: 2px solid var(--bib-divider);
+}
+
+.bib-chapter-refs-header {
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--bib-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .bib-entry {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .bib-meta {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-title {
+    font-size: 1em;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles
+   -------------------------------------------------------------------------- */
+@media print {
+  .bib-entry {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .bib-copy-btn,
+  .bib-expand-hint {
+    display: none;
+  }
+
+  .bib-entry details {
+    pointer-events: none;
+  }
+
+  .bib-entry details[open] .bib-abstract {
+    display: block;
+  }
+}
+</style>
+<article class="bib-entry" id="mdBook-1">
+<details data-key="mdBook" class="ref">
+<summary class="citation">
+<span class="bib-key">mdBook</span><span class="bib-index">1</span>
+<cite class="bib-title"><a href="https://rust-lang.github.io/mdBook/" target="_blank" rel="noopener noreferrer">mdBook Documentation</a></cite>
+<div class="bib-meta">
+<span class="bib-meta-item bib-authors">Contributors, Various</span>
+<span class="bib-meta-item bib-date" style="white-space:nowrap">— 2015</span>
+<span class="bib-expand-hint"><span class="bib-expand-arrow">▼</span> Abstract</span>
+</div>
+
+</summary>
+<section class="bib-abstract">
+<header class="bib-abstract-header">Abstract</header>
+<div class="bib-abstract-content">mdBook is a command line tool and Rust crate to create books using Markdown (as by the CommonMark specification) files. It's very similar to Gitbook but written in Rust.</div>
+
+</section>
+</details>
+</article>
+<article class="bib-entry" id="Klabnik2018-1">
+<details data-key="Klabnik2018" class="ref">
+<summary class="citation">
+<span class="bib-key">Klabnik2018</span><span class="bib-index">2</span>
+<cite class="bib-title"><a href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener noreferrer">The Rust Programming Language</a></cite>
+<div class="bib-meta">
+<span class="bib-meta-item bib-authors">Klabnik, Steve; Nichols, Carol</span>
+<span class="bib-meta-item bib-date" style="white-space:nowrap">— 2018</span>
+</div>
+
+</summary>
+</details>
+</article>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
