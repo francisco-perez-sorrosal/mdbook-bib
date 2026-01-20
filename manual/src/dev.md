@@ -20,7 +20,7 @@ Tests are organized into logical modules under `src/tests/`:
 | `citation.rs` | Citation placeholder replacement, regex patterns |
 | `config.rs` | Configuration parsing, Zotero, per-chapter settings |
 | `backend.rs` | Custom and CSL backend formatting, regression tests |
-| `integration.rs` | Full book builds (test_book, CSL style variants) |
+| `integration.rs` | Full book builds (example_books variants) |
 | `edge_cases.rs` | Error handling, malformed input, unicode support |
 
 ### Test Utilities

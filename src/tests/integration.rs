@@ -11,13 +11,13 @@ use mdbook_driver::MDBook;
 use std::path::PathBuf;
 
 // =============================================================================
-// Test Book Integration Tests
+// Example Book Integration Tests
 // =============================================================================
 
 #[test]
-fn process_test_book() {
+fn process_basic_example_book() {
     let mut manual_src_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manual_src_path.push("test_book/");
+    manual_src_path.push("example_books/basic/");
     let mut md = MDBook::load(manual_src_path).unwrap();
     let mdbook_bib_prepro = Bibliography;
     md.with_preprocessor(mdbook_bib_prepro);
@@ -29,7 +29,7 @@ fn process_test_book() {
     // Check both, root level and nested html files get placeholders substituted with
     // bib references with relative paths
     let mut book_dest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    book_dest_path.push("test_book/public");
+    book_dest_path.push("example_books/basic/public");
 
     let bib_reference = "bibliography.html#mdBook";
 
@@ -53,10 +53,10 @@ fn process_test_book() {
 // =============================================================================
 
 #[test]
-fn process_test_book_csl_ieee() {
-    // Integration test for CSL IEEE test book
+fn process_csl_ieee_example_book() {
+    // Integration test for CSL IEEE example book
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("test_book_csl_ieee/");
+    path.push("example_books/csl_ieee/");
 
     let mut md = MDBook::load(path).unwrap();
     let mdbook_bib_prepro = Bibliography;
@@ -69,7 +69,7 @@ fn process_test_book_csl_ieee() {
 
     // Verify output contains CSL-formatted citations
     let mut output_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    output_path.push("test_book_csl_ieee/book");
+    output_path.push("example_books/csl_ieee/book");
 
     // Check that the bibliography page exists
     let mut bib_path = output_path.clone();
@@ -84,10 +84,10 @@ fn process_test_book_csl_ieee() {
 }
 
 #[test]
-fn process_test_book_csl_chicago() {
-    // Integration test for CSL Chicago test book
+fn process_csl_chicago_example_book() {
+    // Integration test for CSL Chicago example book
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("test_book_csl_chicago/");
+    path.push("example_books/csl_chicago/");
 
     let mut md = MDBook::load(path).unwrap();
     let mdbook_bib_prepro = Bibliography;
@@ -100,10 +100,10 @@ fn process_test_book_csl_chicago() {
 }
 
 #[test]
-fn process_test_book_csl_nature() {
-    // Integration test for CSL Nature test book
+fn process_csl_nature_example_book() {
+    // Integration test for CSL Nature example book
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("test_book_csl_nature/");
+    path.push("example_books/csl_nature/");
 
     let mut md = MDBook::load(path).unwrap();
     let mdbook_bib_prepro = Bibliography;
@@ -116,7 +116,7 @@ fn process_test_book_csl_nature() {
 
     // Nature uses superscript - verify <sup> tags in output
     let mut output_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    output_path.push("test_book_csl_nature/book/biology.html");
+    output_path.push("example_books/csl_nature/book/biology.html");
 
     if output_path.exists() {
         match find_str_in_file("<sup>", output_path) {

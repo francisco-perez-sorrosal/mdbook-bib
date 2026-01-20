@@ -51,11 +51,7 @@ Cite in `src/chapter_1.md`:
 As shown in @@hello, citations are easy!
 ```
 
-Build book: `mdbook build`
-
-Serve the book: `mdbook serve`
-
-Then open http://localhost:3000 in your browser to view your book.
+Build and serve the book: `mdbook build && mdbook serve`. Then open http://localhost:3000 in your browser to view the content.
 
 
 ## Install
@@ -66,9 +62,7 @@ If you have [mdbook](https://github.com/rust-lang/mdBook) installed just do:
 cargo install mdbook-bib
 ```
 
-Make sure your PATH env var contains Cargo's `/bin` directory where the plugin was installed. Then follow the instructions below to use the plugin.
-
-See all options in the [Install section of the manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/install.html).
+See all options in the [Install section](https://francisco-perez-sorrosal.github.io/mdbook-bib/install.html).
 
 ## Add a Bibliography and Cite Your Entries
 
@@ -146,6 +140,10 @@ See [CSL Backend documentation](https://francisco-perez-sorrosal.github.io/mdboo
 See the [manual](https://francisco-perez-sorrosal.github.io/mdbook-bib/) for all configuration options.
 
 **Tip**: Debug builds with `MDBOOK_LOG=mdbook_bib=debug mdbook build`.
+
+## Example Books
+
+The [`example_books/`](example_books/) directory contains working examples demonstrating different configurations.
 
 ## Contribute
 

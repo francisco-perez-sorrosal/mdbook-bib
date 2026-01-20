@@ -56,13 +56,15 @@ MDBOOK_LOG=mdbook_bib=debug,handlebars=warn mdbook build  # Module-specific leve
 ```
 
 ### Testing with Example Books
-The repository includes test books for integration testing:
-- `test_book/` - Test book with custom templates and CSS
-- `manual/` - The documentation book
+The repository includes example books for integration testing in `example_books/`:
+- `basic/` - Custom backend with Handlebars templates and CSS
+- `csl_ieee/`, `csl_chicago/`, `csl_nature/`, `csl_alphanumeric/` - CSL backend examples
+- `pandoc/` - Pandoc-compatible citation syntax
+- `manual/` - The documentation book (in root directory)
 
-To test the plugin with the test book:
+To test the plugin with an example book:
 ```bash
-cd test_book
+cd example_books/basic
 mdbook build
 ```
 
@@ -156,7 +158,7 @@ Templates receive these data structures:
 Tests are in `src/tests.rs` and use:
 - `tempfile` crate for temporary test files
 - `mdbook-driver` crate for integration testing with mdBook
-- Test fixtures in `test_book/` directory
+- Test fixtures in `example_books/` directory
 
 ## GitHub Workflows
 

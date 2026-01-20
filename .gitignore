@@ -12,13 +12,14 @@ Cargo.lock
 
 # Generated documentation location
 /manual/public
-/test_book/public
-/test_book_pandoc/public
+
+# Example books build output
+/example_books/*/public
+/example_books/*/book
+mdbook-bib.iml
 
 # Intellij stuff
 .idea/
-mdbook-bib.iml
-test_book_csl_*/book/
 
 # Claude Code local settings
 .claude/settings.local.json
