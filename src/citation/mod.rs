@@ -45,10 +45,7 @@ const CODE_BLOCK_PLACEHOLDER: &str = "\u{E000}MDBIB_CODEBLOCK";
 // BibLaTeX-compliant character class for citation keys:
 // - Allowed: alphanumeric, underscore, hyphen, colon, dot, slash, at-symbol
 // - Forbidden: spaces, comma, quotes, hash, braces, percent, tilde, parentheses, equals
-pub const REF_PATTERN: &str = r"
-(?x)                       # insignificant whitespace mode
-\\\{\{\#.*\}\}               # match escaped placeholder
-|                            # or
+pub const REF_PATTERN: &str = r"(?x) # enable insignificant whitespace mode + in-regex comments
 \{\{\s*                      # placeholder opening parens and whitespace
 \#cite                       # explicitly match #cite (only, not other mdBook helpers like #include, #title)
 \s+                          # separating whitespace
