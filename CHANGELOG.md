@@ -1,5 +1,16 @@
 #
 
+## [WIP](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/HEAD)
+
+**Closed issues:**
+
+- Unable to parse input, GitHub Actions failed. [\#56](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/56)
+- Interoperability with pandoc [\#51](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/51)
+
+**Merged pull requests:**
+
+- fix\(citation\): clean up REF\_PATTERN [\#80](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/80) ([datdenkikniet](https://github.com/datdenkikniet))
+
 ## [v0.5.2](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.2) (2026-01-20)
 
 **Closed issues:**
@@ -50,7 +61,6 @@
 
 - Switch log for tracing to match mdbook project logging/tracing features [\#57](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/57)
 - Build fails with mdbook 0.5.0 [\#53](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/53)
-- Interoperability with pandoc [\#51](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/51)
 - Make more explicit logging for nom\_bibtex attribute parsing [\#50](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/50)
 - Allow to create a bibliography on a page of all citations on that page [\#38](https://github.com/francisco-perez-sorrosal/mdbook-bib/issues/38)
 
