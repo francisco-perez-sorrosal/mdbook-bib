@@ -165,7 +165,7 @@ pub fn expand_cite_references_in_book(
     book.for_each_mut(|section: &mut BookItem| {
         if let BookItem::Chapter(ref mut ch) = *section {
             if let Some(ref chapter_path) = ch.path {
-                tracing::info!(
+                tracing::debug!(
                     "Replacing placeholders: {} in {}",
                     syntax_info,
                     chapter_path.as_path().display()
@@ -211,15 +211,15 @@ pub fn add_bib_at_end_of_chapters(
                     .unwrap_or_default();
 
                 if cited.is_empty() {
-                    tracing::info!(
+                    tracing::debug!(
                         "No citations in chapter {}, skipping bibliography",
                         chapter_key
                     );
                     return;
                 }
 
-                tracing::info!("Adding bibliography at the end of chapter {}", chapter_key);
-                tracing::info!("Refs cited in this chapter: {:?}", cited);
+                tracing::debug!("Adding bibliography at the end of chapter {}", chapter_key);
+                tracing::debug!("Refs cited in this chapter: {:?}", cited);
 
                 let ch_bib_content_html = renderer::generate_bibliography_html(
                     bibliography,
@@ -285,7 +285,7 @@ fn replace_citation_placeholder(
             format!("\\[Error formatting {cite}\\]")
         });
 
-        tracing::info!(
+        tracing::debug!(
             "Citation replacement ({:?}): '{}' -> '{}'",
             variant,
             cite,

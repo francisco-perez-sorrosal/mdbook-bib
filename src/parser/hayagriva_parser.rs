@@ -13,7 +13,7 @@ pub fn parse_bibliography(
     raw_content: String,
     format: BibFormat,
 ) -> MdResult<IndexMap<String, BibItem>, Error> {
-    tracing::info!(
+    tracing::debug!(
         "🦀 HAYAGRIVA PARSER: Parsing bibliography (format: {:?})...",
         format
     );
@@ -32,7 +32,7 @@ pub fn parse_bibliography(
         .iter()
         .map(|entry| {
             let citation_key = entry.key().to_string();
-            tracing::info!("Processing bibliography entry: {}", citation_key);
+            tracing::debug!("Processing bibliography entry: {}", citation_key);
 
             let title = entry.title().map(format_string_to_text).unwrap_or_else(|| {
                 tracing::warn!(

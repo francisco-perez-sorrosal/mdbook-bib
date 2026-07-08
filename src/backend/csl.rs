@@ -60,7 +60,7 @@ impl CslBackend {
     /// The backend includes 80+ bundled styles from the hayagriva archive.
     /// Use `supported_style_aliases()` to list common aliases.
     pub fn new(style_name: String) -> anyhow::Result<Self> {
-        tracing::info!("Initializing CSL backend with style: {}", style_name);
+        tracing::debug!("Initializing CSL backend with style: {}", style_name);
 
         // Look up in registry first (provides aliases), then fall back to hayagriva's by_name
         let style_info = find_style_info(&style_name);
@@ -69,7 +69,7 @@ impl CslBackend {
         // Detect format from CSL metadata (used as fallback when not in registry)
         let detected_format = detect_style_format(&style);
         if resolved_info.is_none() {
-            tracing::info!(
+            tracing::warn!(
                 "Style '{}' not in registry, detected format: {:?}",
                 style_name,
                 detected_format.citation_format()
@@ -78,7 +78,7 @@ impl CslBackend {
 
         let locales = locales();
 
-        tracing::info!(
+        tracing::debug!(
             "CSL backend initialized successfully with style '{}'",
             style_name
         );
