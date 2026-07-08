@@ -42,7 +42,7 @@ impl Bibliography {
     ) -> Result<(String, BibFormat), Error> {
         let (bib_content, format) = match &cfg.bibliography {
             Some(biblio_file) => {
-                tracing::info!("Bibliography file: {}", biblio_file);
+                tracing::debug!("Bibliography file: {}", biblio_file);
                 let mut biblio_path = ctx.root.join(&ctx.config.book.src);
                 biblio_path = biblio_path.join(Path::new(&biblio_file));
                 if !biblio_path.exists() {
@@ -107,7 +107,7 @@ impl Preprocessor for Bibliography {
     }
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, anyhow::Error> {
-        tracing::info!("Processor Name: {}", self.name());
+        tracing::debug!("Processor Name: {}", self.name());
         let book_src_root = ctx.root.join(&ctx.config.book.src);
         let table = match ctx.config.get::<toml::value::Table>("preprocessor.bib") {
             Ok(Some(table)) => Some(table),
@@ -175,11 +175,11 @@ impl Preprocessor for Bibliography {
         // Create the appropriate backend based on configuration
         let backend: Box<dyn crate::backend::BibliographyBackend> = match config.backend {
             BackendMode::Custom => {
-                tracing::info!("Using Custom (Handlebars) backend for rendering");
+                tracing::debug!("Using Custom (Handlebars) backend for rendering");
                 Box::new(CustomBackend::new(&handlebars))
             }
             BackendMode::Csl => {
-                tracing::info!(
+                tracing::debug!(
                     "Using CSL backend with style '{}'",
                     config.csl_style.as_deref().unwrap_or("apa")
                 );
@@ -192,7 +192,7 @@ impl Preprocessor for Bibliography {
         };
 
         tracing::info!("Backend initialized: {}", backend.name());
-        tracing::info!("Citation syntax: {:?}", config.citation_syntax);
+        tracing::debug!("Citation syntax: {:?}", config.citation_syntax);
 
         // First, expand citations to assign indices to BibItems
         let citation_result = citation::expand_cite_references_in_book(

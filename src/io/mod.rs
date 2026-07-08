@@ -35,11 +35,11 @@ pub fn detect_format<P: AsRef<Path>>(biblio_file: P) -> BibFormat {
 
     match ext.as_str() {
         "yaml" | "yml" => {
-            tracing::info!("Detected YAML bibliography format");
+            tracing::debug!("Detected YAML bibliography format");
             BibFormat::Yaml
         }
         _ => {
-            tracing::info!("Detected BibTeX bibliography format");
+            tracing::debug!("Detected BibTeX bibliography format");
             BibFormat::BibTeX
         }
     }
