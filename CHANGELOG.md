@@ -9,6 +9,7 @@
 
 **Merged pull requests:**
 
+- misc: reduce logging verbosity [\#81](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/81) ([datdenkikniet](https://github.com/datdenkikniet))
 - fix\(citation\): clean up REF\_PATTERN [\#80](https://github.com/francisco-perez-sorrosal/mdbook-bib/pull/80) ([datdenkikniet](https://github.com/datdenkikniet))
 
 ## [v0.5.2](https://github.com/francisco-perez-sorrosal/mdbook-bib/tree/v0.5.2) (2026-01-20)
