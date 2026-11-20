@@ -66,6 +66,32 @@ pub struct CitationContext {
     pub variant: CitationVariant,
 }
 
+/// A locator within a cited work (e.g., page number, chapter, section).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CitationLocator {
+    /// CSL locator type (e.g., Page, Chapter, Section).
+    pub kind: hayagriva::citationberg::taxonomy::Locator,
+    /// Locator value (e.g., `"12"`, `"3-5"`, `"2"`).
+    pub value: String,
+}
+
+/// A single citation item inside a Pandoc bracketed citation group.
+#[derive(Debug, Clone)]
+pub struct CitationGroupItem<'a> {
+    /// The bibliography item being cited.
+    pub item: &'a BibItem,
+    /// Optional prefix text before this item (e.g., `"see "`).
+    pub prefix: Option<String>,
+    /// Optional structured locator (e.g., page 12, chapter 2).
+    pub locator: Option<CitationLocator>,
+    /// Optional suffix text after the citation/locator (e.g., `", and passim"`).
+    pub suffix: Option<String>,
+    /// Whether to suppress the author name (`[-@key]`).
+    pub suppress_author: bool,
+    /// Original locator/suffix text as written (used by fallback backends).
+    pub raw_locator: Option<String>,
+}
+
 /// Trait for bibliography rendering backends.
 ///
 /// Implementations provide different rendering strategies:
@@ -90,6 +116,62 @@ pub trait BibliographyBackend {
     /// # Arguments
     /// * `item` - The bibliography item to format
     fn format_reference(&self, item: &BibItem) -> MdResult<String>;
+
+    /// Format a bracketed citation group containing one or more items,
+    /// optionally with prefixes, locators, suffixes, or suppressed authors.
+    ///
+    /// Non-CSL backends use this default implementation, which renders each
+    /// item individually via [`BibliographyBackend::format_citation`] and joins
+    /// them with `"; "` inside a single pair of parentheses.
+    fn format_citation_group(
+        &self,
+        items: &[CitationGroupItem<'_>],
+        context: &CitationContext,
+    ) -> MdResult<String> {
+        if items.is_empty() {
+            return Ok(String::new());
+        }
+
+        // Preserve single-item legacy output when no group features are used.
+        if items.len() == 1
+            && items[0].prefix.is_none()
+            && items[0].locator.is_none()
+            && items[0].suffix.is_none()
+            && items[0].raw_locator.is_none()
+        {
+            let mut item_ctx = context.clone();
+            item_ctx.variant = if items[0].suppress_author {
+                CitationVariant::SuppressAuthor
+            } else {
+                CitationVariant::Parenthetical
+            };
+            return self.format_citation(items[0].item, &item_ctx);
+        }
+
+        let mut parts = Vec::with_capacity(items.len());
+        for group_item in items {
+            let mut item_ctx = context.clone();
+            item_ctx.variant = if group_item.suppress_author {
+                CitationVariant::SuppressAuthor
+            } else {
+                CitationVariant::Parenthetical
+            };
+            let rendered = self.format_citation(group_item.item, &item_ctx)?;
+            let mut part = String::new();
+            if let Some(prefix) = &group_item.prefix {
+                part.push_str(prefix);
+            }
+            part.push_str(&rendered);
+            if let Some(raw_loc) = &group_item.raw_locator {
+                part.push_str(raw_loc);
+            } else if let Some(suffix) = &group_item.suffix {
+                part.push_str(suffix);
+            }
+            parts.push(part);
+        }
+
+        Ok(format!("({})", parts.join("; ")))
+    }
 
     /// Get the backend name for logging and debugging.
     fn name(&self) -> &str;

@@ -59,6 +59,10 @@ citation-syntax = "pandoc"
 | `@key` | `@smith2024 says...` | Author-in-text |
 | `[@key]` | `This is true [@smith2024]` | Parenthetical |
 | `[-@key]` | `Smith says [-@smith2024]` | Suppress author (year only) |
+| `[@key, p. 42]` | `As argued [@smith2024, p. 42]` | Citation with locator |
+| `[-@key, p. 42]` | `Smith argues [-@smith2024, p. 42]` | Suppress author with locator |
+| `[@a; @b]` | `Prior work [@smith2024; @jones2023]` | Multi-citation group |
+| `[see @a, ch. 3; @b]` | `[see @smith2024, ch. 3; @jones2023]` | Prefix, locator, and multi-citation |
 | `\@` | `user\@example.com` | Literal @ (escaped) |
 
 This lets you use the same source files with both mdBook (HTML) and Pandoc (PDF).
@@ -83,10 +87,12 @@ Contact: user\@example.com
 
 This difference is by design for cross-tool compatibility. If you need digit-prefixed keys with Pandoc syntax, use the native `{{#cite 123key}}` form instead.
 
-**Unsupported Pandoc features:**
-- Multi-citation: `[@smith2024; @jones2023]` — use separate citations instead
-- Locators: `[@smith2024, p. 42]` — page numbers not supported
-- Prefixes/suffixes: `[see @smith2024, ch. 3]` — use surrounding text instead
+**Supported locator labels (CSL backend):**
+- Pages: `p.`, `pp.`, `page`, `pages` (or bare page numbers after `, `)
+- Chapters & sections: `ch.`, `chap.`, `chapter`, `sec.`, `section`, `§`
+- Other common CSL locators: `fig.`, `vol.`, `para.`, `pt.`, `no.`, `app.`, `bk.`, `col.`, `eq.`, `fol.`, `l.`, `n.`, `op.`, `sc.`, `s.v.`, `supp.`, `tbl.`, `v.`, `act`, `canon`, `rule`, `title`
+
+In multi-citation groups (`[@a; @b]`), each cited entry is linked individually to its bibliography anchor. With the Custom backend, grouped items fall back to rendering each citation separated by `; ` inside parentheses.
 
 ---
 
