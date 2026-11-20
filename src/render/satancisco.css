@@ -203,6 +203,17 @@ details[open] .bib-expand-arrow { transform: rotate(180deg); }
   background: var(--bib-cite-bg);
 }
 
+/* CSL Bibliography entries */
+.csl-entry {
+  margin-bottom: 0.75em;
+  line-height: 1.5;
+}
+
+.csl-hanging-indent .csl-entry {
+  padding-left: 2em;
+  text-indent: -2em;
+}
+
 /* Chapter references section */
 .bib-chapter-separator {
   height: 0;

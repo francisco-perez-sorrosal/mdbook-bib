@@ -6,10 +6,11 @@
 use anyhow::anyhow;
 use hayagriva::archive::{locales, ArchivedStyle};
 use hayagriva::citationberg::{IndependentStyle, Locale, Style};
-use hayagriva::{BibliographyDriver, BibliographyRequest, CitationItem, CitationRequest};
-use lazy_static::lazy_static;
+use hayagriva::{
+    BibliographyDriver, BibliographyRequest, BufWriteFormat, CitationItem, CitationRequest,
+    ElemChildren,
+};
 use mdbook_preprocessor::errors::Result as MdResult;
-use regex::Regex;
 
 use crate::models::BibItem;
 
@@ -18,10 +19,6 @@ use super::hayagriva_style::{
     CitationFormat, CitationRendering, CitationStyle, DetectedStyleFormat, StyleInfo,
 };
 use super::{BibliographyBackend, CitationContext, CitationVariant};
-
-lazy_static! {
-    static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-}
 
 /// CSL backend using hayagriva's BibliographyDriver.
 ///
@@ -159,7 +156,7 @@ impl CslBackend {
         let rendered = driver.finish(bib_request);
 
         let citation_text = match rendered.citations.first() {
-            Some(c) => c.citation.to_string(),
+            Some(c) => Self::elem_children_to_html(&c.citation),
             None => {
                 tracing::warn!(
                     "Hayagriva returned no citation for '{}', using fallback",
@@ -169,30 +166,61 @@ impl CslBackend {
             }
         };
 
-        Ok(Self::strip_ansi_codes(&citation_text))
+        Ok(citation_text)
     }
 
-    /// Strip ANSI escape codes from text.
-    ///
-    /// Hayagriva outputs formatted text with ANSI codes for terminal display,
-    /// which need to be removed for HTML output. This handles both standard
-    /// escape sequences (`\x1b[...m`) and bare codes (`[0m`, `[3m`, etc.)
-    /// that hayagriva sometimes emits without the ESC prefix.
-    fn strip_ansi_codes(text: &str) -> String {
-        // Standard ANSI escape sequences
-        let result = ANSI_REGEX.replace_all(text, "");
+    /// Render hayagriva `ElemChildren` directly to HTML (preserving italics, bold, links, etc.).
+    fn elem_children_to_html(children: &ElemChildren) -> String {
+        let mut html = String::new();
+        let _ = children.write_buf(&mut html, BufWriteFormat::Html);
+        html
+    }
 
-        // Bare ANSI codes without ESC prefix (hayagriva quirk)
-        const BARE_CODES: &[&str] = &[
-            "[0m", "[1m", "[2m", "[3m", "[4m", // basic formatting
-            "[22m", "[23m", "[24m", // reset formatting
+    /// Escape markdown-significant characters outside inline HTML tags so that
+    /// formatted inline citations wrapped in `[text](link)` render cleanly.
+    fn escape_markdown_link_text(text: &str) -> String {
+        const HTML_TAG_PREFIXES: &[&str] = &[
+            "<span",
+            "</span",
+            "<a ",
+            "<a>",
+            "</a>",
+            "<i>",
+            "</i>",
+            "<b>",
+            "</b>",
+            "<em>",
+            "</em>",
+            "<strong>",
+            "</strong>",
+            "<sup>",
+            "</sup>",
+            "<sub>",
+            "</sub>",
+            "<u>",
+            "</u>",
         ];
 
-        let mut result = result.into_owned();
-        for code in BARE_CODES {
-            result = result.replace(code, "");
+        let mut out = String::with_capacity(text.len());
+        let mut rest = text;
+        while let Some(ch) = rest.chars().next() {
+            if ch == '<' && HTML_TAG_PREFIXES.iter().any(|p| rest.starts_with(p)) {
+                if let Some(end) = rest.find('>') {
+                    out.push_str(&rest[..=end]);
+                    rest = &rest[end + 1..];
+                    continue;
+                }
+            }
+            match ch {
+                '\\' | '[' | ']' | '*' | '_' | '`' => {
+                    out.push('\\');
+                    out.push(ch);
+                }
+                _ => out.push(ch),
+            }
+            rest = &rest[ch.len_utf8()..];
         }
-        result
+        out
     }
 
     /// Format a fallback bibliography entry when hayagriva doesn't provide one.
@@ -305,14 +333,17 @@ impl BibliographyBackend for CslBackend {
                 // For label styles (alphanumeric), use hayagriva to generate author-based labels
                 let content =
                     self.get_hayagriva_citation_text(item, &format!("[{}]", item.citation_key))?;
-                let label = content.trim_matches(&['[', ']'] as &[char]);
+                let label =
+                    Self::escape_markdown_link_text(content.trim_matches(&['[', ']'] as &[char]));
                 format!("[[{label}]({link})]")
             }
             CitationContentType::AuthorDate => {
                 // For author-date styles, handle Pandoc citation variants
                 let full_citation =
                     self.get_hayagriva_citation_text(item, &format!("({})", item.citation_key))?;
-                let full_text = full_citation.trim_matches(&['(', ')'] as &[char]);
+                let full_text = Self::escape_markdown_link_text(
+                    full_citation.trim_matches(&['(', ')'] as &[char]),
+                );
 
                 match variant {
                     CitationVariant::Standard | CitationVariant::Parenthetical => {
@@ -323,13 +354,17 @@ impl BibliographyBackend for CslBackend {
                         // Author-in-text: "Smith (2024)" - author outside parens, year linked
                         // Use structured data from BibItem to avoid fragile string parsing
                         let author = Self::format_authors_for_citation(&item.authors);
-                        let year = item.pub_year.as_deref().unwrap_or("n.d.");
+                        let year = Self::escape_markdown_link_text(
+                            item.pub_year.as_deref().unwrap_or("n.d."),
+                        );
                         format!("{author} ([{year}]({link}))")
                     }
                     CitationVariant::SuppressAuthor => {
                         // Suppress author: "(2024)" - only year, author suppressed
                         // Use structured data from BibItem
-                        let year = item.pub_year.as_deref().unwrap_or("n.d.");
+                        let year = Self::escape_markdown_link_text(
+                            item.pub_year.as_deref().unwrap_or("n.d."),
+                        );
                         format!("([{year}]({link}))")
                     }
                 }
@@ -365,14 +400,16 @@ impl BibliographyBackend for CslBackend {
         let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
         let rendered = driver.finish(bib_request);
 
-        // Extract the bibliography entry for this item
-        let bib_html = rendered
-            .bibliography
-            .and_then(|bib| bib.items.first().map(|i| i.content.to_string()));
+        // Extract the bibliography entry and hanging-indent metadata for this item
+        let bib_rendered = rendered.bibliography.as_ref();
+        let hanging_indent = bib_rendered.is_some_and(|bib| bib.hanging_indent);
+        let bib_html = bib_rendered
+            .and_then(|bib| bib.items.first())
+            .map(|i| Self::elem_children_to_html(&i.content));
 
         // If no bibliography content from hayagriva, construct a fallback
         let bib_content = match bib_html {
-            Some(html) => Self::strip_ansi_codes(&html),
+            Some(html) => html,
             None => Self::format_fallback_bibliography(item),
         };
 
@@ -393,12 +430,11 @@ impl BibliographyBackend for CslBackend {
                 let citation_text = rendered
                     .citations
                     .first()
-                    .map(|c| c.citation.to_string())
+                    .map(|c| Self::elem_children_to_html(&c.citation))
                     .unwrap_or_else(|| format!("[{}]", item.citation_key));
 
-                let clean_label = Self::strip_ansi_codes(&citation_text);
                 // trim_matches handles potential nested brackets
-                let label = clean_label.trim_matches(&['[', ']'] as &[char]);
+                let label = citation_text.trim_matches(&['[', ']'] as &[char]);
 
                 format!("[{label}] {bib_content}")
             }
@@ -408,11 +444,17 @@ impl BibliographyBackend for CslBackend {
             }
         };
 
-        // Wrap in a div with CSL entry class and add anchor for linking
-        Ok(format!(
+        // Wrap in a div with CSL entry class and add anchor for linking;
+        // preserve `class='csl-entry'` and wrap with `csl-hanging-indent` when applicable.
+        let entry_div = format!(
             "<div class='csl-entry' id='{}'>{}</div>",
             item.citation_key, formatted_entry
-        ))
+        );
+        if hanging_indent {
+            Ok(format!("<div class='csl-hanging-indent'>{entry_div}</div>"))
+        } else {
+            Ok(entry_div)
+        }
     }
 
     fn name(&self) -> &str {
@@ -584,7 +626,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ansi_stripping_debug() {
+    fn test_html_output_no_ansi_codes() {
         let backend = CslBackend::new("ieee".to_string()).unwrap();
 
         let entry_str = r#"@article{test2024,
@@ -597,7 +639,6 @@ mod tests {
         let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
         let entry = bibliography.iter().next().unwrap();
 
-        // Create a citation request directly to see raw output
         let mut driver = BibliographyDriver::new();
         let citation_item = CitationItem::with_entry(entry);
         let citation_request =
@@ -608,28 +649,119 @@ mod tests {
         let rendered = driver.finish(bib_request);
 
         if let Some(citation) = rendered.citations.first() {
-            let raw = citation.citation.to_string();
-            println!("\n=== RAW OUTPUT ===");
-            println!("String: {raw:?}");
-            println!("Bytes: {:?}", raw.as_bytes());
-            println!("Contains [0m: {}", raw.contains("[0m"));
-
-            let stripped = CslBackend::strip_ansi_codes(&raw);
-            println!("\n=== AFTER STRIPPING ===");
-            println!("String: {stripped:?}");
-            println!("Bytes: {:?}", stripped.as_bytes());
-
-            // Verify stripping worked
-            assert!(
-                !stripped.contains("[0m"),
-                "Stripped output should not contain [0m"
-            );
-            assert!(
-                !stripped.contains("[3m"),
-                "Stripped output should not contain [3m"
-            );
-            assert_eq!(stripped, "[1]", "IEEE citation should be [1]");
+            let html = CslBackend::elem_children_to_html(&citation.citation);
+            assert!(!html.contains("[0m"), "HTML output should not contain [0m");
+            assert!(!html.contains("[3m"), "HTML output should not contain [3m");
+            assert!(!html.contains("\x1b"), "HTML output should not contain ESC");
+            assert_eq!(html, "[1]", "IEEE citation should be [1]");
         }
+    }
+
+    #[test]
+    fn test_apa_book_reference_renders_italics_and_hanging_indent() {
+        let backend = CslBackend::new("apa".to_string()).unwrap();
+        let yaml = r#"
+slooter2018:
+  type: book
+  title: "De zes rollen van de leraar"
+  author: "Slooter, Martie"
+  date: 2018
+  publisher: Pica
+"#;
+        let bibliography = hayagriva::io::from_yaml_str(yaml).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "slooter2018".to_string(),
+            title: "De zes rollen van de leraar".to_string(),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let ref_html = backend.format_reference(&item).unwrap();
+        assert!(
+            ref_html.contains("font-style: italic;")
+                && ref_html.contains("De zes rollen van de leraar"),
+            "APA book title should be italicized in HTML: {ref_html}"
+        );
+        assert!(
+            ref_html.contains("class='csl-hanging-indent'"),
+            "APA reference should have hanging indent class: {ref_html}"
+        );
+        assert!(
+            ref_html.contains("class='csl-entry'"),
+            "APA reference should preserve csl-entry class: {ref_html}"
+        );
+    }
+
+    #[test]
+    fn test_apa_reference_renders_url_as_link() {
+        let backend = CslBackend::new("apa".to_string()).unwrap();
+        let yaml = r#"
+surma2019:
+  type: book
+  title: "Wijze lessen"
+  author: ["Surma, Tim", "Kirschner, Paul A."]
+  date: 2019
+  publisher: Ten Brink Uitgevers
+  url: https://www.ou.nl/web/wijze-lessen
+"#;
+        let bibliography = hayagriva::io::from_yaml_str(yaml).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "surma2019".to_string(),
+            title: "Wijze lessen".to_string(),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let ref_html = backend.format_reference(&item).unwrap();
+        assert!(
+            ref_html.contains(r#"<a href="https://www.ou.nl/web/wijze-lessen">"#),
+            "APA entry with URL should render clickable anchor tag: {ref_html}"
+        );
+    }
+
+    #[test]
+    fn test_ieee_reference_has_no_hanging_indent() {
+        let backend = CslBackend::new("ieee".to_string()).unwrap();
+        let entry_str = r#"@book{test2024,
+            author = {Smith, John},
+            title = {A Test Book},
+            publisher = {Test Press},
+            year = {2024},
+        }"#;
+        let bibliography = hayagriva::io::from_biblatex_str(entry_str).unwrap();
+        let entry = bibliography.iter().next().unwrap();
+
+        let item = BibItem {
+            citation_key: "test2024".to_string(),
+            title: "A Test Book".to_string(),
+            index: Some(1),
+            hayagriva_entry: Some(Arc::new(entry.clone())),
+            ..Default::default()
+        };
+
+        let ref_html = backend.format_reference(&item).unwrap();
+        assert!(
+            !ref_html.contains("csl-hanging-indent"),
+            "IEEE style should not get csl-hanging-indent: {ref_html}"
+        );
+        assert!(
+            ref_html.contains("font-style: italic;"),
+            "IEEE book title should still be italicized: {ref_html}"
+        );
+    }
+
+    #[test]
+    fn test_escape_markdown_link_text_preserves_html_tags() {
+        let input = r#"Smith <span style="font-style: italic;">et al.</span>, [n.d.]"#;
+        let escaped = CslBackend::escape_markdown_link_text(input);
+        assert_eq!(
+            escaped,
+            r#"Smith <span style="font-style: italic;">et al.</span>, \[n.d.\]"#
+        );
     }
 
     #[test]
