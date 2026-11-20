@@ -6,7 +6,10 @@
 use anyhow::anyhow;
 use hayagriva::archive::{locales, ArchivedStyle};
 use hayagriva::citationberg::{IndependentStyle, Locale, Style};
-use hayagriva::{BibliographyDriver, BibliographyRequest, CitationItem, CitationRequest};
+use hayagriva::{
+    BibliographyDriver, BibliographyRequest, BufWriteFormat, CitationItem, CitationRequest,
+    CitePurpose, ElemChild, ElemChildren, ElemMeta, LocatorPayload, SpecificLocator,
+};
 use lazy_static::lazy_static;
 use mdbook_preprocessor::errors::Result as MdResult;
 use regex::Regex;
@@ -17,7 +20,7 @@ use super::hayagriva_style::{
     detect_style_format, find_style_info, supported_style_aliases, CitationContentType,
     CitationFormat, CitationRendering, CitationStyle, DetectedStyleFormat, StyleInfo,
 };
-use super::{BibliographyBackend, CitationContext, CitationVariant};
+use super::{BibliographyBackend, CitationContext, CitationGroupItem, CitationVariant};
 
 lazy_static! {
     static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
@@ -135,6 +138,144 @@ impl CslBackend {
         match &self.style_info {
             Some(info) => info.citation_format(),
             None => self.detected_format.citation_format(),
+        }
+    }
+
+    /// Render hayagriva `ElemChildren` to HTML using `BufWriteFormat::Html`.
+    fn group_elem_children_to_html(children: &ElemChildren) -> String {
+        let mut html = String::new();
+        let _ = children.write_buf(&mut html, BufWriteFormat::Html);
+        html
+    }
+
+    /// Render a single `suppress_author` item that also carries a locator
+    /// (e.g., `[-@slooter2018, p. 12]` -> `"2018, p. 12"`).
+    ///
+    /// Hayagriva's `CitePurpose::Year` omits locators, whereas `CitePurpose::Prose`
+    /// renders `"Author (Year, p. 12)"` using the style's own suppress-author logic.
+    /// We strip the `CitePurpose::Author` prefix and outer delimiters to keep
+    /// full CSL formatting of the year and locator.
+    fn render_suppress_author_with_locator(
+        &self,
+        group_item: &CitationGroupItem<'_>,
+    ) -> MdResult<String> {
+        let entry = group_item.item.hayagriva_entry.as_ref().ok_or_else(|| {
+            anyhow!(
+                "BibItem '{}' missing hayagriva_entry for CSL rendering",
+                group_item.item.citation_key
+            )
+        })?;
+        let locator = group_item
+            .locator
+            .as_ref()
+            .map(|loc| SpecificLocator(loc.kind, LocatorPayload::Str(&loc.value)));
+
+        let mut prose_driver = BibliographyDriver::new();
+        prose_driver.citation(CitationRequest::from_items(
+            vec![CitationItem::new(
+                entry.as_ref(),
+                locator,
+                None,
+                false,
+                Some(CitePurpose::Prose),
+            )],
+            &self.style,
+            &self.locales,
+        ));
+        let prose_rendered =
+            prose_driver.finish(BibliographyRequest::new(&self.style, None, &self.locales));
+        let prose_html = prose_rendered
+            .citations
+            .first()
+            .map(|c| Self::group_elem_children_to_html(&c.citation))
+            .unwrap_or_default();
+
+        let mut author_driver = BibliographyDriver::new();
+        author_driver.citation(CitationRequest::from_items(
+            vec![CitationItem::new(
+                entry.as_ref(),
+                None,
+                None,
+                false,
+                Some(CitePurpose::Author),
+            )],
+            &self.style,
+            &self.locales,
+        ));
+        let author_rendered =
+            author_driver.finish(BibliographyRequest::new(&self.style, None, &self.locales));
+        let author_html = author_rendered
+            .citations
+            .first()
+            .map(|c| Self::group_elem_children_to_html(&c.citation))
+            .unwrap_or_default();
+
+        let without_author = prose_html
+            .strip_prefix(&author_html)
+            .unwrap_or(&prose_html)
+            .trim();
+        let prefix = self.style.citation.layout.prefix.as_deref().unwrap_or("(");
+        let suffix = self.style.citation.layout.suffix.as_deref().unwrap_or(")");
+        let without_prefix = without_author
+            .strip_prefix(prefix)
+            .unwrap_or(without_author);
+        let inner = without_prefix
+            .strip_suffix(suffix)
+            .unwrap_or(without_prefix)
+            .trim();
+
+        Ok(inner.to_string())
+    }
+
+    /// Recursively render `ElemChildren` from a multi-item `CitationRequest`,
+    /// linking each `ElemMeta::Entry(idx)` span to its corresponding bibliography anchor
+    /// and splicing any per-item prefix/suffix around that link.
+    fn render_group_children(
+        &self,
+        children: &ElemChildren,
+        items: &[CitationGroupItem<'_>],
+        context: &CitationContext,
+        suppress_with_locator_overrides: &[Option<String>],
+        out: &mut String,
+    ) {
+        for child in &children.0 {
+            match child {
+                ElemChild::Elem(elem) => {
+                    if let Some(ElemMeta::Entry(idx)) = elem.meta {
+                        if let Some(group_item) = items.get(idx) {
+                            if let Some(prefix) = &group_item.prefix {
+                                out.push_str(prefix);
+                            }
+                            let entry_html = suppress_with_locator_overrides
+                                .get(idx)
+                                .and_then(|o| o.as_ref())
+                                .cloned()
+                                .unwrap_or_else(|| {
+                                    Self::group_elem_children_to_html(&elem.children)
+                                });
+                            let link = format!(
+                                "{}#{}",
+                                context.bib_page_path, group_item.item.citation_key
+                            );
+                            out.push_str(&format!("<a href=\"{link}\">{entry_html}</a>"));
+                            if let Some(suffix) = &group_item.suffix {
+                                out.push_str(suffix);
+                            }
+                        }
+                    } else {
+                        self.render_group_children(
+                            &elem.children,
+                            items,
+                            context,
+                            suppress_with_locator_overrides,
+                            out,
+                        );
+                    }
+                }
+                other => {
+                    let _ = other.write_buf(out, BufWriteFormat::Html);
+                }
+            }
         }
     }
 
@@ -337,6 +478,132 @@ impl BibliographyBackend for CslBackend {
         };
 
         Ok(linked_citation)
+    }
+
+    fn format_citation_group(
+        &self,
+        items: &[CitationGroupItem<'_>],
+        context: &CitationContext,
+    ) -> MdResult<String> {
+        if items.is_empty() {
+            return Ok(String::new());
+        }
+
+        // Preserve single-cite behavior when there is no group, prefix, locator, or suffix
+        if items.len() == 1
+            && items[0].prefix.is_none()
+            && items[0].locator.is_none()
+            && items[0].suffix.is_none()
+            && items[0].raw_locator.is_none()
+        {
+            let mut single_ctx = context.clone();
+            single_ctx.variant = if items[0].suppress_author {
+                CitationVariant::SuppressAuthor
+            } else {
+                CitationVariant::Parenthetical
+            };
+            return self.format_citation(items[0].item, &single_ctx);
+        }
+
+        let format = self.citation_format();
+        if format.content == CitationContentType::Numeric {
+            let mut rendered_items = Vec::with_capacity(items.len());
+            for group_item in items {
+                let link = format!("{}#{}", context.bib_page_path, group_item.item.citation_key);
+                let num = group_item.item.index.unwrap_or(1).to_string();
+                let mut part = String::new();
+                if let Some(prefix) = &group_item.prefix {
+                    part.push_str(prefix);
+                }
+                part.push_str(&format!("<a href=\"{link}\">{num}</a>"));
+                if let Some(raw_loc) = &group_item.raw_locator {
+                    part.push_str(raw_loc);
+                } else if let Some(suffix) = &group_item.suffix {
+                    part.push_str(suffix);
+                }
+                rendered_items.push(part);
+            }
+            let sep = if items
+                .iter()
+                .any(|i| i.prefix.is_some() || i.locator.is_some() || i.suffix.is_some())
+            {
+                "; "
+            } else {
+                ", "
+            };
+            return Ok(match format.rendering {
+                CitationRendering::Superscript => {
+                    format!("<sup>{}</sup>", rendered_items.join(", "))
+                }
+                CitationRendering::Bracketed => {
+                    format!("[{}]", rendered_items.join(sep))
+                }
+            });
+        }
+
+        let mut citation_items = Vec::with_capacity(items.len());
+        let mut suppress_overrides = Vec::with_capacity(items.len());
+
+        for group_item in items {
+            let entry = group_item.item.hayagriva_entry.as_ref().ok_or_else(|| {
+                anyhow!(
+                    "BibItem '{}' missing hayagriva_entry for CSL rendering",
+                    group_item.item.citation_key
+                )
+            })?;
+            let locator = group_item
+                .locator
+                .as_ref()
+                .map(|loc| SpecificLocator(loc.kind, LocatorPayload::Str(&loc.value)));
+
+            let purpose = if format.content == CitationContentType::AuthorDate
+                && group_item.suppress_author
+                && group_item.locator.is_none()
+            {
+                Some(CitePurpose::Year)
+            } else {
+                None
+            };
+
+            if format.content == CitationContentType::AuthorDate
+                && group_item.suppress_author
+                && group_item.locator.is_some()
+            {
+                suppress_overrides
+                    .push(Some(self.render_suppress_author_with_locator(group_item)?));
+            } else {
+                suppress_overrides.push(None);
+            }
+
+            citation_items.push(CitationItem::new(
+                entry.as_ref(),
+                locator,
+                None,
+                false,
+                purpose,
+            ));
+        }
+
+        let mut driver = BibliographyDriver::new();
+        let citation_request =
+            CitationRequest::from_items(citation_items, &self.style, &self.locales);
+        driver.citation(citation_request);
+
+        let bib_request = BibliographyRequest::new(&self.style, None, &self.locales);
+        let rendered = driver.finish(bib_request);
+
+        let mut out = String::new();
+        if let Some(citation) = rendered.citations.first() {
+            self.render_group_children(
+                &citation.citation,
+                items,
+                context,
+                &suppress_overrides,
+                &mut out,
+            );
+        }
+
+        Ok(out)
     }
 
     fn format_reference(&self, item: &BibItem) -> MdResult<String> {
@@ -1042,5 +1309,197 @@ mod tests {
         // Authors list with empty inner vec should be filtered
         let authors = vec![vec![], vec!["Smith".to_string()]];
         assert_eq!(CslBackend::format_authors_for_citation(&authors), "Smith");
+    }
+
+    #[test]
+    fn test_format_citation_group_apa_multicite_and_locators() {
+        let backend = CslBackend::new("apa".to_string()).unwrap();
+        let yaml = r#"
+slooter2018:
+  type: book
+  title: "De zes rollen van de leraar"
+  author: "Slooter, Martie"
+  date: 2018
+  publisher: Pica
+
+surma2019:
+  type: book
+  title: "Wijze lessen"
+  author: ["Surma, Tim", "Vanhoyweghen, Kristel", "Sluijsmans, Dominique", "Camp, Gino"]
+  date: 2019
+  publisher: Ten Brink Uitgevers
+"#;
+        let bibliography =
+            crate::parser::parse_bibliography(yaml.to_string(), crate::parser::BibFormat::Yaml)
+                .unwrap();
+        let slooter = bibliography.get("slooter2018").unwrap();
+        let surma = bibliography.get("surma2019").unwrap();
+
+        let context = CitationContext {
+            bib_page_path: "bibliography.html".to_string(),
+            chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Parenthetical,
+        };
+
+        // Multi-cite: [@slooter2018; @surma2019]
+        let multi = backend
+            .format_citation_group(
+                &[
+                    CitationGroupItem {
+                        item: slooter,
+                        prefix: None,
+                        locator: None,
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: None,
+                    },
+                    CitationGroupItem {
+                        item: surma,
+                        prefix: None,
+                        locator: None,
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: None,
+                    },
+                ],
+                &context,
+            )
+            .unwrap();
+        assert_eq!(
+            multi,
+            r#"(<a href="bibliography.html#slooter2018">Slooter, 2018</a>; <a href="bibliography.html#surma2019">Surma et al., 2019</a>)"#
+        );
+
+        // Locator: [@slooter2018, p. 12]
+        let loc_page = backend
+            .format_citation_group(
+                &[CitationGroupItem {
+                    item: slooter,
+                    prefix: None,
+                    locator: Some(crate::backend::CitationLocator {
+                        kind: hayagriva::citationberg::taxonomy::Locator::Page,
+                        value: "12".to_string(),
+                    }),
+                    suffix: None,
+                    suppress_author: false,
+                    raw_locator: Some(", p. 12".to_string()),
+                }],
+                &context,
+            )
+            .unwrap();
+        assert_eq!(
+            loc_page,
+            r#"(<a href="bibliography.html#slooter2018">Slooter, 2018, p. 12</a>)"#
+        );
+
+        // Suppress author with locator: [-@slooter2018, p. 12]
+        let suppress_loc = backend
+            .format_citation_group(
+                &[CitationGroupItem {
+                    item: slooter,
+                    prefix: None,
+                    locator: Some(crate::backend::CitationLocator {
+                        kind: hayagriva::citationberg::taxonomy::Locator::Page,
+                        value: "12".to_string(),
+                    }),
+                    suffix: None,
+                    suppress_author: true,
+                    raw_locator: Some(", p. 12".to_string()),
+                }],
+                &context,
+            )
+            .unwrap();
+        assert_eq!(
+            suppress_loc,
+            r#"(<a href="bibliography.html#slooter2018">2018, p. 12</a>)"#
+        );
+
+        // Mixed prefix + locator + second cite: [see @slooter2018, p. 12; @surma2019]
+        let mixed = backend
+            .format_citation_group(
+                &[
+                    CitationGroupItem {
+                        item: slooter,
+                        prefix: Some("see ".to_string()),
+                        locator: Some(crate::backend::CitationLocator {
+                            kind: hayagriva::citationberg::taxonomy::Locator::Page,
+                            value: "12".to_string(),
+                        }),
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: Some(", p. 12".to_string()),
+                    },
+                    CitationGroupItem {
+                        item: surma,
+                        prefix: None,
+                        locator: None,
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: None,
+                    },
+                ],
+                &context,
+            )
+            .unwrap();
+        assert_eq!(
+            mixed,
+            r#"(see <a href="bibliography.html#slooter2018">Slooter, 2018, p. 12</a>; <a href="bibliography.html#surma2019">Surma et al., 2019</a>)"#
+        );
+    }
+
+    #[test]
+    fn test_format_citation_group_ieee_numeric() {
+        let backend = CslBackend::new("ieee".to_string()).unwrap();
+        let yaml = r#"
+a2024:
+  type: article
+  title: "First"
+  author: "Alpha, A."
+  date: 2024
+b2023:
+  type: article
+  title: "Second"
+  author: "Beta, B."
+  date: 2023
+"#;
+        let mut bibliography =
+            crate::parser::parse_bibliography(yaml.to_string(), crate::parser::BibFormat::Yaml)
+                .unwrap();
+        bibliography.get_mut("a2024").unwrap().index = Some(1);
+        bibliography.get_mut("b2023").unwrap().index = Some(2);
+
+        let context = CitationContext {
+            bib_page_path: "bibliography.html".to_string(),
+            chapter_path: "chapter1.md".to_string(),
+            variant: CitationVariant::Parenthetical,
+        };
+
+        let multi = backend
+            .format_citation_group(
+                &[
+                    CitationGroupItem {
+                        item: bibliography.get("a2024").unwrap(),
+                        prefix: None,
+                        locator: None,
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: None,
+                    },
+                    CitationGroupItem {
+                        item: bibliography.get("b2023").unwrap(),
+                        prefix: None,
+                        locator: None,
+                        suffix: None,
+                        suppress_author: false,
+                        raw_locator: None,
+                    },
+                ],
+                &context,
+            )
+            .unwrap();
+        assert_eq!(
+            multi,
+            r#"[<a href="bibliography.html#a2024">1</a>, <a href="bibliography.html#b2023">2</a>]"#
+        );
     }
 }

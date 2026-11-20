@@ -93,9 +93,13 @@ citation-syntax = "pandoc"
 Then use standard Pandoc citations:
 
 ```markdown
-@key              # Author-in-text: "Smith (2024)"
-[@key]            # Parenthetical: "(Smith, 2024)"
-[-@key]           # Suppress author: "(2024)"
+@key                      # Author-in-text: "Smith (2024)"
+[@key]                    # Parenthetical: "(Smith, 2024)"
+[-@key]                   # Suppress author: "(2024)"
+[@key, p. 12]             # With locator: "(Smith, 2024, p. 12)"
+[-@key, p. 12]            # Suppress author + locator: "(2024, p. 12)"
+[@a; @b]                  # Multi-citation: "(Alpha, 2024; Beta, 2023)"
+[see @a, ch. 2; @b]       # Prefix, locator, and multi-citation
 ```
 
 This lets you use the same source files with both mdBook (HTML) and Pandoc (PDF).

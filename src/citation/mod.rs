@@ -7,7 +7,11 @@ use lazy_static::lazy_static;
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
 use regex::Regex;
 
-use crate::backend::{BibliographyBackend, CitationContext, CitationVariant};
+use hayagriva::citationberg::taxonomy::Locator;
+
+use crate::backend::{
+    BibliographyBackend, CitationContext, CitationGroupItem, CitationLocator, CitationVariant,
+};
 use crate::config::{CitationSyntax, SortOrder};
 use crate::models::BibItem;
 use crate::renderer;
@@ -19,6 +23,8 @@ static BIB_OUT_FILE: &str = "bibliography";
 const ESCAPED_AT_PLACEHOLDER: &str = "\u{E000}MDBIB_ESCAPED_AT\u{E001}";
 // Placeholder prefix for protected code blocks.
 const CODE_BLOCK_PLACEHOLDER: &str = "\u{E000}MDBIB_CODEBLOCK";
+// Placeholder prefix for protected markdown links during Pandoc processing.
+const MD_LINK_PLACEHOLDER: &str = "\u{E000}MDBIB_MDLINK";
 
 // =============================================================================
 // Citation Key Patterns
@@ -61,14 +67,19 @@ pub const AT_REF_PATTERN: &str = r##"(@@)([a-zA-Z0-9_\-/@]+(?:[.:][a-zA-Z0-9_\-/
 // Escaped @ - will be replaced with placeholder before processing
 pub const ESCAPED_AT_PATTERN: &str = r"\\@";
 
-// Pandoc bracketed with suppress-author: [-@key]
-// Must be processed before regular bracketed to avoid partial matches
+// Pandoc bracketed with suppress-author: [-@key] (kept for test/API compatibility)
+#[allow(dead_code)]
 pub const PANDOC_SUPPRESS_AUTHOR_PATTERN: &str =
     r"\[-@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)\]";
 
-// Pandoc bracketed: [@key]
+// Pandoc bracketed: [@key] (kept for test/API compatibility)
+#[allow(dead_code)]
 pub const PANDOC_BRACKETED_PATTERN: &str =
     r"\[@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)\]";
+
+// Pandoc citation key pattern inside a bracketed segment: optional `-` then `@key`
+const PANDOC_SEGMENT_KEY_PATTERN: &str =
+    r"(-?)@([a-zA-Z_][a-zA-Z0-9_]*(?:[:.#$%&\-+?<>~/][a-zA-Z0-9_]+)*)";
 
 // Pandoc author-in-text: @key (not preceded by \, @, word char, or /)
 // Captures prefix char (group 1) to preserve it in replacement, key is in group 2.
@@ -80,19 +91,19 @@ pub const PANDOC_CITE_PATTERN: &str =
 // Code block patterns for protection
 const FENCED_CODE_PATTERN: &str = r"(?s)```[^\n]*\n.*?```|~~~[^\n]*\n.*?~~~";
 const INLINE_CODE_PATTERN: &str = r"`[^`\n]+`";
+const MARKDOWN_LINK_PATTERN: &str = r"\[[^\[\]\n]+\]\([^\)\n]+\)";
 
 lazy_static! {
     static ref REF_REGEX: Regex = Regex::new(REF_PATTERN).unwrap();
     static ref AT_REF_REGEX: Regex = Regex::new(AT_REF_PATTERN).unwrap();
     // Pandoc patterns
     static ref ESCAPED_AT_REGEX: Regex = Regex::new(ESCAPED_AT_PATTERN).unwrap();
-    static ref PANDOC_SUPPRESS_AUTHOR_REGEX: Regex =
-        Regex::new(PANDOC_SUPPRESS_AUTHOR_PATTERN).unwrap();
-    static ref PANDOC_BRACKETED_REGEX: Regex = Regex::new(PANDOC_BRACKETED_PATTERN).unwrap();
+    static ref PANDOC_SEGMENT_KEY_REGEX: Regex = Regex::new(PANDOC_SEGMENT_KEY_PATTERN).unwrap();
     static ref PANDOC_CITE_REGEX: Regex = Regex::new(PANDOC_CITE_PATTERN).unwrap();
     // Code block patterns
     static ref FENCED_CODE_REGEX: Regex = Regex::new(FENCED_CODE_PATTERN).unwrap();
     static ref INLINE_CODE_REGEX: Regex = Regex::new(INLINE_CODE_PATTERN).unwrap();
+    static ref MARKDOWN_LINK_REGEX: Regex = Regex::new(MARKDOWN_LINK_PATTERN).unwrap();
 }
 
 /// Result of citation expansion, containing both global and per-chapter citations.
@@ -132,6 +143,30 @@ fn protect_code_blocks(content: &str) -> (String, Vec<String>) {
         .into_owned();
 
     (result, blocks)
+}
+
+/// Protect markdown links `[text](url)` from Pandoc citation processing.
+fn protect_markdown_links(content: &str) -> (String, Vec<String>) {
+    let mut links = Vec::new();
+    let result = MARKDOWN_LINK_REGEX
+        .replace_all(content, |caps: &regex::Captures| {
+            let link = caps.get(0).unwrap().as_str().to_string();
+            let idx = links.len();
+            links.push(link);
+            format!("{MD_LINK_PLACEHOLDER}{idx}\u{E001}")
+        })
+        .into_owned();
+    (result, links)
+}
+
+/// Restore markdown links protected during Pandoc citation processing.
+fn restore_markdown_links(content: &str, links: &[String]) -> String {
+    let mut result = content.to_string();
+    for (idx, link) in links.iter().enumerate() {
+        let placeholder = format!("{MD_LINK_PLACEHOLDER}{idx}\u{E001}");
+        result = result.replacen(&placeholder, link, 1);
+    }
+    result
 }
 
 /// Restore code blocks that were protected during citation processing.
@@ -238,6 +273,482 @@ pub fn add_bib_at_end_of_chapters(
             }
         }
     });
+}
+
+/// Parsed item from a Pandoc bracketed citation group (`[prefix -@key, locator suffix]`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedPandocItem {
+    prefix: Option<String>,
+    key: String,
+    suppress_author: bool,
+    locator: Option<CitationLocator>,
+    suffix: Option<String>,
+    raw_locator: Option<String>,
+}
+
+const LOCATOR_TERMS: &[(&str, Locator)] = &[
+    ("sub verbo", Locator::SubVerbo),
+    ("sub-verbo", Locator::SubVerbo),
+    ("paragraphs", Locator::Paragraph),
+    ("paragraph", Locator::Paragraph),
+    ("appendices", Locator::Appendix),
+    ("appendix", Locator::Appendix),
+    ("chapters", Locator::Chapter),
+    ("chapter", Locator::Chapter),
+    ("sections", Locator::Section),
+    ("section", Locator::Section),
+    ("supplements", Locator::Supplement),
+    ("supplement", Locator::Supplement),
+    ("equations", Locator::Equation),
+    ("equation", Locator::Equation),
+    ("figures", Locator::Figure),
+    ("figure", Locator::Figure),
+    ("volumes", Locator::Volume),
+    ("volume", Locator::Volume),
+    ("columns", Locator::Column),
+    ("column", Locator::Column),
+    ("folios", Locator::Folio),
+    ("folio", Locator::Folio),
+    ("issues", Locator::Issue),
+    ("issue", Locator::Issue),
+    ("lines", Locator::Line),
+    ("line", Locator::Line),
+    ("notes", Locator::Note),
+    ("note", Locator::Note),
+    ("pages", Locator::Page),
+    ("page", Locator::Page),
+    ("parts", Locator::Part),
+    ("part", Locator::Part),
+    ("scenes", Locator::Scene),
+    ("scene", Locator::Scene),
+    ("tables", Locator::Table),
+    ("table", Locator::Table),
+    ("verses", Locator::Verse),
+    ("verse", Locator::Verse),
+    ("books", Locator::Book),
+    ("book", Locator::Book),
+    ("chaps", Locator::Chapter),
+    ("chap", Locator::Chapter),
+    ("paras", Locator::Paragraph),
+    ("para", Locator::Paragraph),
+    ("secs", Locator::Section),
+    ("sec", Locator::Section),
+    ("figs", Locator::Figure),
+    ("fig", Locator::Figure),
+    ("vols", Locator::Volume),
+    ("vol", Locator::Volume),
+    ("apps", Locator::Appendix),
+    ("app", Locator::Appendix),
+    ("cols", Locator::Column),
+    ("col", Locator::Column),
+    ("fols", Locator::Folio),
+    ("fol", Locator::Folio),
+    ("opera", Locator::Opus),
+    ("opus", Locator::Opus),
+    ("supp", Locator::Supplement),
+    ("canon", Locator::Canon),
+    ("title", Locator::Title),
+    ("rule", Locator::Rule),
+    ("s.v.", Locator::SubVerbo),
+    ("s.v", Locator::SubVerbo),
+    ("bks", Locator::Book),
+    ("bk", Locator::Book),
+    ("eqs", Locator::Equation),
+    ("eq", Locator::Equation),
+    ("nos", Locator::Issue),
+    ("no", Locator::Issue),
+    ("opp", Locator::Opus),
+    ("op", Locator::Opus),
+    ("pts", Locator::Part),
+    ("pt", Locator::Part),
+    ("tbl", Locator::Table),
+    ("can", Locator::Canon),
+    ("act", Locator::Act),
+    ("ch", Locator::Chapter),
+    ("pp", Locator::Page),
+    ("ll", Locator::Line),
+    ("nn", Locator::Note),
+    ("vv", Locator::Verse),
+    ("sc", Locator::Scene),
+    ("§§", Locator::Section),
+    ("¶¶", Locator::Paragraph),
+    ("§", Locator::Section),
+    ("¶", Locator::Paragraph),
+    ("p", Locator::Page),
+    ("l", Locator::Line),
+    ("n", Locator::Note),
+    ("v", Locator::Verse),
+];
+
+/// Split the portion after a locator term (e.g., `"12"`, `"3-5, and passim"`, `"12 and ff."`)
+/// into `(locator_value, optional_suffix)`.
+fn split_locator_value_and_suffix(input: &str) -> Option<(String, Option<String>)> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    // Split off comma-introduced suffix unless the comma precedes another page number
+    let (head, comma_tail) = if let Some(comma_idx) = trimmed.find(',') {
+        let after_comma = trimmed[comma_idx + 1..].trim_start();
+        if after_comma
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_digit())
+        {
+            (trimmed, None)
+        } else {
+            (&trimmed[..comma_idx], Some(&trimmed[comma_idx..]))
+        }
+    } else {
+        (trimmed, None)
+    };
+
+    let head_trimmed = head.trim();
+    if head_trimmed.is_empty() {
+        return None;
+    }
+
+    // If there are multiple whitespace-separated tokens, keep the first token as the locator
+    // value and preserve trailing words as suffix (unless it's a numeric comma list like "12, 15").
+    let (value, word_tail) = if comma_tail.is_none() && head_trimmed.contains(',') {
+        (head_trimmed, "")
+    } else if let Some(ws_idx) = head_trimmed.find(char::is_whitespace) {
+        (&head_trimmed[..ws_idx], &head_trimmed[ws_idx..])
+    } else {
+        (head_trimmed, "")
+    };
+
+    if value.is_empty() {
+        return None;
+    }
+
+    let mut suffix = String::new();
+    suffix.push_str(word_tail);
+    if let Some(tail) = comma_tail {
+        suffix.push_str(tail);
+    }
+
+    Some((
+        value.to_string(),
+        if suffix.trim().is_empty() {
+            None
+        } else {
+            Some(suffix)
+        },
+    ))
+}
+
+/// Match a known Pandoc locator label at the start of `after_sep` (case-insensitive).
+fn match_locator_term(after_sep: &str) -> Option<(Locator, &str)> {
+    let lower = after_sep.to_lowercase();
+    for &(term, locator) in LOCATOR_TERMS {
+        if !lower.starts_with(term) {
+            continue;
+        }
+        // Check boundary in original string by matching byte length of term
+        // (for ASCII terms lower and original have identical byte lengths;
+        // for '§'/'¶' both are identical UTF-8 sequences).
+        let after_term = after_sep.get(term.len()..)?;
+        if term.ends_with('.') {
+            if after_term.starts_with(char::is_whitespace) {
+                return Some((locator, after_term.trim_start()));
+            }
+        } else if let Some(after_dot) = after_term.strip_prefix('.') {
+            if after_dot.starts_with(char::is_whitespace)
+                || after_dot.chars().next().is_some_and(|c| c.is_ascii_digit())
+            {
+                return Some((locator, after_dot.trim_start()));
+            }
+        } else if after_term.starts_with(char::is_whitespace) {
+            return Some((locator, after_term.trim_start()));
+        }
+    }
+    None
+}
+
+/// Parse the remainder after `@key` inside a bracketed Pandoc citation segment.
+fn parse_locator_and_suffix(
+    remainder: &str,
+) -> (Option<CitationLocator>, Option<String>, Option<String>) {
+    if remainder.trim().is_empty() {
+        return (None, None, None);
+    }
+
+    let raw_locator = Some(remainder.to_string());
+    let trimmed_start = remainder.trim_start();
+    let (had_comma, after_sep) = if let Some(rest) = trimmed_start.strip_prefix(',') {
+        (true, rest.trim_start())
+    } else {
+        (false, trimmed_start)
+    };
+
+    if after_sep.is_empty() {
+        return (None, Some(remainder.to_string()), raw_locator);
+    }
+
+    if let Some((kind, val_rest)) = match_locator_term(after_sep) {
+        if let Some((value, suffix)) = split_locator_value_and_suffix(val_rest) {
+            return (Some(CitationLocator { kind, value }), suffix, raw_locator);
+        }
+    } else if had_comma && after_sep.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+        if let Some((value, suffix)) = split_locator_value_and_suffix(after_sep) {
+            return (
+                Some(CitationLocator {
+                    kind: Locator::Page,
+                    value,
+                }),
+                suffix,
+                raw_locator,
+            );
+        }
+    }
+
+    (None, Some(remainder.to_string()), raw_locator)
+}
+
+/// Parse the interior of `[...]` as one or more `;`-separated Pandoc citation items.
+/// Returns `None` if any segment does not contain a valid Pandoc `@key`/`-@key`.
+fn parse_pandoc_bracketed_group(inner: &str) -> Option<Vec<ParsedPandocItem>> {
+    if inner.contains('[') || inner.contains(']') || inner.contains("\n\n") {
+        return None;
+    }
+
+    let mut items = Vec::new();
+    for segment in inner.split(';') {
+        let seg = segment.trim_start();
+        let mut matched = None;
+        for caps in PANDOC_SEGMENT_KEY_REGEX.captures_iter(seg) {
+            let full = caps.get(0).unwrap();
+            // Verify boundary before `-@key` or `@key` to avoid matching emails/URLs/@@
+            let valid_boundary = if full.start() == 0 {
+                true
+            } else {
+                seg[..full.start()].chars().next_back().is_some_and(|prev| {
+                    !prev.is_alphanumeric()
+                        && prev != '_'
+                        && prev != '\\'
+                        && prev != '/'
+                        && prev != '@'
+                })
+            };
+            if valid_boundary {
+                matched = Some(caps);
+                break;
+            }
+        }
+
+        let caps = matched?;
+        let full = caps.get(0).unwrap();
+        let suppress_author = !caps.get(1).map(|m| m.as_str()).unwrap_or("").is_empty();
+        let key = caps.get(2).unwrap().as_str().to_string();
+
+        let prefix_slice = &seg[..full.start()];
+        let prefix = if prefix_slice.is_empty() {
+            None
+        } else {
+            Some(prefix_slice.to_string())
+        };
+
+        let remainder = &seg[full.end()..];
+        let (locator, suffix, raw_locator) = parse_locator_and_suffix(remainder);
+
+        items.push(ParsedPandocItem {
+            prefix,
+            key,
+            suppress_author,
+            locator,
+            suffix,
+            raw_locator,
+        });
+    }
+
+    if items.is_empty() {
+        None
+    } else {
+        Some(items)
+    }
+}
+
+/// Replace a parsed bracketed citation group using the bibliography backend.
+fn replace_citation_group_placeholder(
+    parsed_items: &[ParsedPandocItem],
+    chapter_path: &Path,
+    bib: &RefCell<&mut IndexMap<String, BibItem>>,
+    cited_set: &RefCell<&mut HashSet<String>>,
+    idx: &RefCell<&mut u32>,
+    backend: &dyn BibliographyBackend,
+) -> String {
+    // Track all keys and assign indices on first occurrence
+    {
+        let mut cited_mut = cited_set.borrow_mut();
+        let mut bib_mut = bib.borrow_mut();
+        let mut idx_mut = idx.borrow_mut();
+
+        for parsed in parsed_items {
+            let cite = parsed.key.trim();
+            cited_mut.insert(cite.to_owned());
+            if let Some(item) = bib_mut.get_mut(cite) {
+                if item.index.is_none() {
+                    **idx_mut += 1;
+                    item.index = Some(**idx_mut);
+                }
+            }
+        }
+    }
+
+    let bib_ref = bib.borrow();
+    let path_to_root = breadcrumbs_up_to_root(chapter_path);
+    let context = CitationContext {
+        bib_page_path: format!("{path_to_root}{BIB_OUT_FILE}.html"),
+        chapter_path: chapter_path.display().to_string(),
+        variant: CitationVariant::Parenthetical,
+    };
+
+    // Fast path: all keys exist in bibliography
+    let all_known = parsed_items
+        .iter()
+        .all(|p| bib_ref.contains_key(p.key.trim()));
+
+    if all_known {
+        let group_items: Vec<CitationGroupItem<'_>> = parsed_items
+            .iter()
+            .map(|p| CitationGroupItem {
+                item: bib_ref.get(p.key.trim()).unwrap(),
+                prefix: p.prefix.clone(),
+                locator: p.locator.clone(),
+                suffix: p.suffix.clone(),
+                suppress_author: p.suppress_author,
+                raw_locator: p.raw_locator.clone(),
+            })
+            .collect();
+
+        return backend
+            .format_citation_group(&group_items, &context)
+            .unwrap_or_else(|e| {
+                tracing::error!("Failed to format citation group: {}", e);
+                let keys: Vec<&str> = parsed_items.iter().map(|p| p.key.as_str()).collect();
+                format!("\\[Error formatting {}\\]", keys.join("; "))
+            });
+    }
+
+    // Handle single or mixed unknown keys gracefully
+    let mut parts = Vec::with_capacity(parsed_items.len());
+    for p in parsed_items {
+        let cite = p.key.trim();
+        if let Some(item) = bib_ref.get(cite) {
+            let single = CitationGroupItem {
+                item,
+                prefix: p.prefix.clone(),
+                locator: p.locator.clone(),
+                suffix: p.suffix.clone(),
+                suppress_author: p.suppress_author,
+                raw_locator: p.raw_locator.clone(),
+            };
+            parts.push(
+                backend
+                    .format_citation_group(&[single], &context)
+                    .unwrap_or_else(|_| format!("\\[Error formatting {cite}\\]")),
+            );
+        } else {
+            tracing::warn!("Unknown bibliography reference: '{}'", cite);
+            parts.push(format!("\\[Unknown bib ref: {cite}\\]"));
+        }
+    }
+    parts.join("; ")
+}
+
+/// Scan `content` for Pandoc bracketed citation groups (`[...]`) and replace them.
+fn replace_pandoc_bracketed_groups(
+    content: &str,
+    chapter_path: &Path,
+    bib: &RefCell<&mut IndexMap<String, BibItem>>,
+    cited_set: &RefCell<&mut HashSet<String>>,
+    idx: &RefCell<&mut u32>,
+    backend: &dyn BibliographyBackend,
+) -> String {
+    let mut out = String::with_capacity(content.len());
+    let mut pos = 0;
+    let bytes = content.as_bytes();
+
+    while pos < bytes.len() {
+        let Some(rel_open) = content[pos..].find('[') else {
+            out.push_str(&content[pos..]);
+            break;
+        };
+        let open = pos + rel_open;
+        out.push_str(&content[pos..open]);
+
+        // Scan forward for matching ']', aborting if a nested '[' or blank line occurs
+        let mut scan = open + 1;
+        let mut close_idx = None;
+        let mut nested_open = None;
+        let mut blank_line = false;
+
+        while scan < bytes.len() {
+            let b = bytes[scan];
+            if b == b'[' {
+                nested_open = Some(scan);
+                break;
+            }
+            if b == b']' {
+                close_idx = Some(scan);
+                break;
+            }
+            if b == b'\n'
+                && (bytes.get(scan + 1) == Some(&b'\n')
+                    || (bytes.get(scan + 1) == Some(&b'\r') && bytes.get(scan + 2) == Some(&b'\n')))
+            {
+                blank_line = true;
+                break;
+            }
+            scan += 1;
+        }
+
+        if let Some(nested) = nested_open {
+            // Copy up to the nested '[' and resume from there so inner [@cite] still works
+            out.push_str(&content[open..nested]);
+            pos = nested;
+            continue;
+        }
+
+        if blank_line || close_idx.is_none() {
+            out.push('[');
+            pos = open + 1;
+            continue;
+        }
+
+        let close = close_idx.unwrap();
+        // Skip markdown links [text](url) and reference links [text][ref]
+        let next_byte = bytes.get(close + 1).copied();
+        if matches!(next_byte, Some(b'(') | Some(b'[')) {
+            out.push_str(&content[open..=close]);
+            pos = close + 1;
+            continue;
+        }
+
+        let inner = &content[open + 1..close];
+        if inner.contains('@') {
+            if let Some(parsed) = parse_pandoc_bracketed_group(inner) {
+                let replacement = replace_citation_group_placeholder(
+                    &parsed,
+                    chapter_path,
+                    bib,
+                    cited_set,
+                    idx,
+                    backend,
+                );
+                out.push_str(&replacement);
+                pos = close + 1;
+                continue;
+            }
+        }
+
+        out.push_str(&content[open..=close]);
+        pos = close + 1;
+    }
+
+    out
 }
 
 /// Replace a single citation placeholder with its formatted citation.
@@ -358,37 +869,19 @@ pub fn replace_all_placeholders(
 
     // Step 5: Process Pandoc-style patterns if enabled
     if *citation_syntax == CitationSyntax::Pandoc {
-        // Process [-@key] (suppress author) - must come before [@key]
-        content = PANDOC_SUPPRESS_AUTHOR_REGEX
-            .replace_all(&content, |caps: &regex::Captures| {
-                let citation_key = caps.get(1).map(|m| m.as_str()).unwrap_or("");
-                replace_citation_placeholder(
-                    citation_key,
-                    chapter_path,
-                    &bib,
-                    &cited_set,
-                    &idx,
-                    backend,
-                    CitationVariant::SuppressAuthor,
-                )
-            })
-            .into_owned();
+        // Protect markdown links `[text](url)` so `@` inside link text/URLs is not expanded
+        let (protected, md_links) = protect_markdown_links(&content);
+        content = protected;
 
-        // Process [@key] (parenthetical)
-        content = PANDOC_BRACKETED_REGEX
-            .replace_all(&content, |caps: &regex::Captures| {
-                let citation_key = caps.get(1).map(|m| m.as_str()).unwrap_or("");
-                replace_citation_placeholder(
-                    citation_key,
-                    chapter_path,
-                    &bib,
-                    &cited_set,
-                    &idx,
-                    backend,
-                    CitationVariant::Parenthetical,
-                )
-            })
-            .into_owned();
+        // Process bracketed citations: [@key], [-@key], [@a; @b], [@a, p. 12], [see @a, p. 12; @b]
+        content = replace_pandoc_bracketed_groups(
+            &content,
+            chapter_path,
+            &bib,
+            &cited_set,
+            &idx,
+            backend,
+        );
 
         // Process @key (author-in-text) - must be last as it's most permissive
         // Pattern captures prefix char (group 1) to avoid matching emails; key is in group 2
@@ -409,7 +902,8 @@ pub fn replace_all_placeholders(
             })
             .into_owned();
 
-        // Restore escaped @ symbols
+        // Restore markdown links and escaped @ symbols
+        content = restore_markdown_links(&content, &md_links);
         content = content.replace(ESCAPED_AT_PLACEHOLDER, "@");
     }
 

@@ -945,3 +945,242 @@ And {{#cite another_key}} too.
     assert!(cited.contains("legacy_key"), "@@legacy_key should work");
     assert!(cited.contains("another_key"), "{{#cite}} should work");
 }
+
+// =============================================================================
+// Pandoc Multi-Citation and Locator Tests
+// =============================================================================
+
+#[test]
+fn test_pandoc_multicite_and_locators_with_csl_apa() {
+    use crate::backend::CslBackend;
+    use crate::parser::{self, BibFormat};
+
+    let yaml = r#"
+slooter2018:
+  type: book
+  title: "De zes rollen van de leraar"
+  author: "Slooter, Martie"
+  date: 2018
+  publisher: Pica
+
+surma2019:
+  type: book
+  title: "Wijze lessen"
+  author: ["Surma, Tim", "Vanhoyweghen, Kristel", "Sluijsmans, Dominique", "Camp, Gino"]
+  date: 2019
+  publisher: Ten Brink Uitgevers
+"#;
+
+    let mut bibliography = parser::parse_bibliography(yaml.to_string(), BibFormat::Yaml).unwrap();
+    let backend = CslBackend::new("apa".to_string()).unwrap();
+
+    let content = r#"
+Multi-cite: [@slooter2018; @surma2019].
+Page locator: [@slooter2018, p. 12].
+Page range: [@slooter2018, pp. 3-5].
+Chapter locator: [@slooter2018, ch. 2].
+Section locator: [@slooter2018, sec. 1.2].
+Figure locator: [@slooter2018, fig. 4].
+Volume locator: [@slooter2018, vol. 2].
+Paragraph locator: [@slooter2018, para. 5].
+Mixed prefix and locator: [see @slooter2018, p. 12; @surma2019].
+Suffix preserved: [@slooter2018, p. 12, and passim].
+Suppress author with locator: [-@slooter2018, p. 12].
+"#;
+
+    let chapter = Chapter::new("Test", content.to_string(), "chapter.md", vec![]);
+    let mut cited = HashSet::new();
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    assert!(cited.contains("slooter2018"));
+    assert!(cited.contains("surma2019"));
+
+    assert!(
+        result.contains(r#"(<a href="bibliography.html#slooter2018">Slooter, 2018</a>; <a href="bibliography.html#surma2019">Surma et al., 2019</a>)"#),
+        "Multi-cite failed: {result}"
+    );
+    assert!(
+        result.contains(r#"(<a href="bibliography.html#slooter2018">Slooter, 2018, p. 12</a>)"#),
+        "Single page locator failed: {result}"
+    );
+    assert!(
+        result.contains("pp. 3") && result.contains("5"),
+        "Page range locator failed: {result}"
+    );
+    assert!(
+        result.contains("Chapter 2"),
+        "Chapter locator failed: {result}"
+    );
+    assert!(
+        result.contains("Section 1.2"),
+        "Section locator failed: {result}"
+    );
+    assert!(
+        result.contains("Figure 4"),
+        "Figure locator failed: {result}"
+    );
+    assert!(
+        result.contains("Volume 2"),
+        "Volume locator failed: {result}"
+    );
+    assert!(
+        result.contains("para. 5"),
+        "Paragraph locator failed: {result}"
+    );
+    assert!(
+        result.contains(r#"(see <a href="bibliography.html#slooter2018">Slooter, 2018, p. 12</a>; <a href="bibliography.html#surma2019">Surma et al., 2019</a>)"#),
+        "Mixed prefix + locator + second cite failed: {result}"
+    );
+    assert!(
+        result.contains(
+            r#"(<a href="bibliography.html#slooter2018">Slooter, 2018, p. 12</a>, and passim)"#
+        ),
+        "Suffix preservation failed: {result}"
+    );
+    assert!(
+        result.contains(r#"(<a href="bibliography.html#slooter2018">2018, p. 12</a>)"#),
+        "Suppress author with locator failed: {result}"
+    );
+}
+
+#[test]
+fn test_pandoc_multicite_and_locators_with_custom_backend() {
+    let mut bibliography = IndexMap::new();
+    for key in ["alpha2024", "beta2023"] {
+        bibliography.insert(
+            key.to_string(),
+            BibItemBuilder::article(key)
+                .title(&format!("Title for {key}"))
+                .authors(&["Author"])
+                .year("2024")
+                .build(),
+        );
+    }
+
+    let content = r#"
+Single: [@alpha2024].
+Multi: [@alpha2024; @beta2023].
+Mixed: [see @alpha2024, p. 12; @beta2023].
+"#;
+
+    let chapter = Chapter::new("Test", content.to_string(), "chapter.md", vec![]);
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("[{{item.citation_key}}]");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    assert!(cited.contains("alpha2024"));
+    assert!(cited.contains("beta2023"));
+    assert!(
+        result.contains("Single: [alpha2024]."),
+        "Single cite fallback should preserve legacy behavior: {result}"
+    );
+    assert!(
+        result.contains("Multi: ([alpha2024]; [beta2023])."),
+        "Custom backend multi-cite fallback failed: {result}"
+    );
+    assert!(
+        result.contains("Mixed: (see [alpha2024], p. 12; [beta2023])."),
+        "Custom backend mixed fallback failed: {result}"
+    );
+}
+
+#[test]
+fn test_pandoc_bracketed_skips_links_emails_and_invalid_groups() {
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "alpha2024".to_string(),
+        BibItemBuilder::article("alpha2024")
+            .title("Title")
+            .authors(&["Alpha"])
+            .year("2024")
+            .build(),
+    );
+
+    let content = r#"
+Markdown link: [see @alpha2024](https://example.com)
+Email in brackets: [contact user@example.com]
+Invalid group with plain text: [not a citation; @alpha2024]
+Valid citation inside text: [@alpha2024, page 7]
+"#;
+
+    let chapter = Chapter::new("Test", content.to_string(), "chapter.md", vec![]);
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("{{item.citation_key}}");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    assert!(
+        result.contains("[see @alpha2024](https://example.com)"),
+        "Markdown link should stay untouched: {result}"
+    );
+    assert!(
+        result.contains("[contact user@example.com]"),
+        "Email inside brackets should stay untouched: {result}"
+    );
+    assert!(
+        result.contains("(alpha2024, page 7)"),
+        "Valid locator citation should be replaced: {result}"
+    );
+}
+
+#[test]
+fn test_pandoc_multicite_with_unknown_key() {
+    let mut bibliography = IndexMap::new();
+    bibliography.insert(
+        "alpha2024".to_string(),
+        BibItemBuilder::article("alpha2024")
+            .title("Title")
+            .authors(&["Alpha"])
+            .year("2024")
+            .build(),
+    );
+
+    let chapter = Chapter::new(
+        "Test",
+        "Mixed: [@alpha2024; @missing2025]".to_string(),
+        "chapter.md",
+        vec![],
+    );
+    let mut cited = HashSet::new();
+    let backend = create_citation_backend_with_template("[{{item.citation_key}}]");
+    let mut last_index = 0;
+
+    let result = crate::citation::replace_all_placeholders(
+        &chapter,
+        &mut bibliography,
+        &mut cited,
+        &backend,
+        &mut last_index,
+        &CitationSyntax::Pandoc,
+    );
+
+    assert!(cited.contains("alpha2024"));
+    assert!(result.contains("[alpha2024]"));
+    assert!(result.contains(r"\[Unknown bib ref: missing2025\]"));
+}
